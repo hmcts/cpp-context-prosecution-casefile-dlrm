@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/migrated/json/schemas/migrated-case-details.json",
+  "type": "object",
+  "description": "Migrated Case File Details",
+  "properties": {
+    "caseDetails": {
+      "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/json/schemas/case-details.json"
+    },
+    "hearings": {
+      "type": "array",
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/migrated/json/schemas/migrated-hearing.json"
+      }
+    },
+    "defendants": {
+      "type": "array",
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/migrated/json/schemas/migrated-defendant.json"
+      }
+    },
+    "migrationSourceSystem": {
+      "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/migrated/json/schemas/migrationSourceSystem.json"
+    }
+  },
+  "required": [
+    "migrationSourceSystem"
+  ],
+  "additionalProperties": false
+}

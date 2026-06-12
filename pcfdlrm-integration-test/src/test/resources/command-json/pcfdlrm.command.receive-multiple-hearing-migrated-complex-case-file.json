@@ -1,0 +1,198 @@
+{
+  "migratedCaseDetails": {
+    "caseDetails": {
+      "originatingOrganisation": "B01NM00",
+      "cpsOrganisation": "A30AB00",
+      "caseId": "CASE_ID",
+      "initiationCode": "C",
+      "prosecutorCaseReference": "CASE-URN",
+      "prosecutor": {
+
+        "prosecutingAuthority": "prosAut"
+      },
+      "sendingCourt": "C50EX00",
+      "receivingCourt": "B01LY00",
+      "dateOfSending": "2024-08-23",
+      "dateOfCommittal": "2024-01-15",
+      "receiptType": "Bring back",
+      "retrialIndicator": false
+    },
+    "hearings": [
+      {
+        "courtHearingLocation": "C55BN01",
+        "courtRoomId": 1234,
+        "dateOfHearing": "HEARING_DATE",
+        "timeOfHearing": "10:05:00",
+        "durationMinutes": 60,
+        "hearingType": "FHG",
+        "listedDefendants": [
+          {
+            "prosecutorDefendantId": "a9860e1a-8695-4fd4-8046-c1c4fe6c7f80",
+            "listedOffences": [
+              "XHIBIT-offence-id-1"
+            ]
+          }
+        ]
+      },
+      {
+        "courtHearingLocation": "C55BN02",
+        "courtRoomId": 1234,
+        "durationMinutes": 80,
+        "hearingType": "FHG",
+        "listedDefendants": [
+          {
+            "prosecutorDefendantId": "a9860e1a-8695-4fd4-8046-c1c4fe6c7f80",
+            "listedOffences": [
+              "XHIBIT-offence-id-3"
+            ]
+          }
+        ]
+      },
+      {
+        "courtHearingLocation": "C56BN01",
+        "courtRoomId": 1234,
+        "durationMinutes": 60,
+        "weekCommencingDate": {
+          "startDate": "2025-11-10",
+          "duration": 3
+        },
+        "hearingType": "FHG",
+        "listedDefendants": [
+          {
+            "prosecutorDefendantId": "a9860e1a-8695-4fd4-8046-c1c4fe6c7f80",
+            "listedOffences": [
+              "XHIBIT-offence-id-2"
+            ]
+          }
+        ]
+      }
+    ],
+    "defendants": [
+      {
+        "id": "9824e40f-0289-4221-8854-346eb28c8f27",
+        "prosecutorDefendantId": "a9860e1a-8695-4fd4-8046-c1c4fe6c7f80",
+        "prosecutorDefendantReference": "DEFENDANT_REFERENCE1",
+        "documentationLanguage": "W",
+        "hearingLanguage": "W",
+        "numPreviousConvictions": 3,
+        "individual": {
+          "custodyStatus": "B",
+          "personalInformation": {
+            "title": "Baron",
+            "firstName": "John",
+            "lastName": "Smith",
+            "occupation": "Software Developer",
+            "occupationCode": 43,
+            "address": {
+              "address1": "66 Exeter Street",
+              "address2": "line 2",
+              "address3": "line 3",
+              "address4": "line 4",
+              "address5": "line 5",
+              "postcode": "M60 1NW"
+            },
+            "contactDetails": {
+              "work": "020111222",
+              "home": "020111223",
+              "mobile": "07572222943",
+              "primaryEmail": "scrooge.mcduck@mail.com",
+              "secondaryEmail": "scrooge.mcduck2@mail.com"
+            }
+          },
+          "selfDefinedInformation": {
+            "gender": "MALE"
+          },
+          "parentGuardianInformation": {
+            "selfDefinedEthnicity": "W1",
+            "observedEthnicity": "1",
+            "gender": "MALE",
+            "dateOfBirth": "2015-04-04",
+            "personalInformation": {
+              "lastName": "Brown"
+            }
+          }
+        },
+        "offences": [
+          {
+            "offenceCode": "OFCODE12",
+            "offenceId": "550e8400-e29b-41d4-a716-446655440001",
+            "prosecutorOffenceId": "XHIBIT-offence-id-1",
+            "offenceSequenceNumber": 1,
+            "offenceCommittedDate": "2018-09-10",
+            "offenceCommittedEndDate": "2018-10-10",
+            "offenceDateCode": 1,
+            "offenceLocation": "Croydon",
+            "offenceWording": "TV Licence not paid",
+            "chargeDate": "2019-01-10",
+            "appliedCompensation": 200,
+            "alcoholRelatedOffence": {
+              "alcoholLevelMethod": "A",
+              "alcoholLevelAmount": 100
+            },
+            "vehicleRelatedOffence": {
+              "vehicleCode": "O",
+              "vehicleRegistrationMark": "AA11 ABC"
+            }
+          },
+          {
+            "offenceCode": "OFCODE12",
+            "offenceId": "550e8400-e29b-41d4-a716-446655440003",
+            "prosecutorOffenceId": "XHIBIT-offence-id-3",
+            "offenceSequenceNumber": 1,
+            "offenceCommittedDate": "2018-09-10",
+            "offenceCommittedEndDate": "2018-10-10",
+            "offenceDateCode": 1,
+            "offenceLocation": "Croydon",
+            "offenceWording": "TV Licence not paid",
+            "chargeDate": "2019-01-10",
+            "appliedCompensation": 200,
+            "alcoholRelatedOffence": {
+              "alcoholLevelMethod": "A",
+              "alcoholLevelAmount": 100
+            },
+            "vehicleRelatedOffence": {
+              "vehicleCode": "O",
+              "vehicleRegistrationMark": "AA11 ABC"
+            }
+          },
+          {
+            "offenceCode": "OFCODE12",
+            "offenceId": "550e8400-e29b-41d4-a716-446655440002",
+            "prosecutorOffenceId": "XHIBIT-offence-id-2",
+            "offenceSequenceNumber": 1,
+            "offenceCommittedDate": "2018-10-10",
+            "offenceCommittedEndDate": "2018-11-10",
+            "offenceDateCode": 1,
+            "offenceLocation": "Croydon",
+            "offenceWording": "TV Licence not paid",
+            "chargeDate": "2019-02-10",
+            "appliedCompensation": 200,
+            "alcoholRelatedOffence": {
+              "alcoholLevelMethod": "A",
+              "alcoholLevelAmount": 100
+            },
+            "vehicleRelatedOffence": {
+              "vehicleCode": "O",
+              "vehicleRegistrationMark": "AA11 ABC"
+            }
+          }
+        ],
+        "postingDate": "2018-09-10"
+      }
+    ],
+    "migrationSourceSystem" :{
+      "migrationSourceSystemName" : "XHIBIT",
+      "migrationSourceSystemCaseIdentifier" : "This is from XHIBIT"
+    }
+  },
+  "materials": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "azureLocation": "http://inazure/secrets/17",
+      "fileName": "abc.pdf",
+      "fileType": "99",
+      "documentType": 2
+    }
+  ],
+  "submissionId": "SUBMISSION_ID"
+}

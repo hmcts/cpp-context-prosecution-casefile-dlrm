@@ -1,0 +1,18 @@
+#%RAML 0.8
+title: Prosecution Casefile DLRM Command Handler
+baseUri: message://command/handler/message/pcfdlrm
+
+/pcfdlrm.handler.command:
+  post:
+    body:
+      application/vnd.pcfdlrm.command.receive-migrated-case-file+json:
+        schema: !include json/schema/pcfdlrm.command.receive-migrated-case-file.json
+        example: !include json/pcfdlrm.command.receive-migrated-case-file.json
+
+      application/vnd.pcfdlrm.command.accept-migrated-case+json:
+        schema: !include json/schema/pcfdlrm.command.accept-migrated-case.json
+        example: !include json/pcfdlrm.command.accept-case.json
+
+      application/vnd.pcfdlrm.command.add-case-court-document+json:
+        schema: !include json/schema/pcfdlrm.command.add-case-court-document.json
+        example: !include json/pcfdlrm.command.add-case-court-document.json

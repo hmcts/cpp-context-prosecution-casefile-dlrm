@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/json/schemas/material.json",
+  "type": "object",
+  "properties": {
+    "fileStoreId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "documentType": {
+      "type": "string"
+    },
+    "fileType": {
+      "type": "string"
+    },
+    "isUnbundledDocument": {
+      "type": "boolean",
+      "default": false
+    },
+    "fileCloudLocation": {
+      "type": "string"
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "fileStoreId"
+      ]
+    },
+    {
+      "required": [
+        "fileCloudLocation"
+      ]
+    }
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,88 @@
+{
+  "pleaStatusTypes": [
+    {
+      "id": "7fbc9a21-4d8e-4a6b-8c2f-3b5a1e9d8c01",
+      "sequence": 20,
+      "pleaTypeCode": "G",
+      "pleaTypeUIFlag": true,
+      "pleaTypeDescription": "Guilty",
+      "pleaTypeGuiltyFlag": "Yes",
+      "pleaTypeCivilFlag": "No",
+      "pleaStatusCode": "1",
+      "pleaValue": "GUILTY",
+      "jurisdiction": "CROWN"
+    },
+    {
+      "id": "2e8d4a9c-1b7f-4e3a-9d6c-8f2b5a1e0d34",
+      "sequence": 40,
+      "pleaTypeCode": "GSJP",
+      "pleaTypeUIFlag": true,
+      "pleaTypeDescription": "Guilty Single Justice Procedure",
+      "pleaTypeGuiltyFlag": "Yes",
+      "pleaTypeCivilFlag": "No",
+      "pleaStatusCode": "6",
+      "pleaValue": "GUILTY_SINGLE_JUSTICE_PROCEDURE",
+      "jurisdiction": "MAGISTRATES"
+    },
+    {
+      "id": "9a1e0d34-5b2c-4f8e-bd6c-7a9f1e8d3c2b",
+      "sequence": 50,
+      "pleaTypeCode": "IG",
+      "pleaTypeUIFlag": true,
+      "pleaTypeDescription": "Indicated plea of Guilty",
+      "pleaTypeGuiltyFlag": "Yes",
+      "pleaTypeCivilFlag": "No",
+      "pleaStatusCode": "1",
+      "pleaValue": "INDICATED_GUILTY",
+      "jurisdiction": "MAGISTRATES"
+    },
+    {
+      "id": "cd2f5a1e-8b3c-4d9e-af6d-2c7b1e0d9a4f",
+      "sequence": 60,
+      "pleaTypeCode": "ADB",
+      "pleaTypeUIFlag": false,
+      "pleaTypeDescription": "Admits Breach",
+      "pleaTypeGuiltyFlag": "Yes",
+      "pleaTypeCivilFlag": "No",
+      "pleaStatusCode": "1",
+      "pleaValue": "ADMITS_BREACH",
+      "jurisdiction": "MAGISTRATES"
+    },
+    {
+      "id": "5f3a1e9d-0c2b-4d8e-bd6c-1a7f2b5c9d4e",
+      "sequence": 70,
+      "pleaTypeCode": "NG",
+      "pleaTypeUIFlag": true,
+      "pleaTypeDescription": "Not Guilty",
+      "pleaTypeGuiltyFlag": "No",
+      "pleaTypeCivilFlag": "No",
+      "pleaStatusCode": "2",
+      "pleaValue": "NOT_GUILTY",
+      "jurisdiction": "EITHER"
+    },
+    {
+      "id": "1b7f2b5c-9d4e-4f3a-8c6d-0e2b5a1e9d3c",
+      "sequence": 80,
+      "pleaTypeCode": "UNFIT",
+      "pleaTypeUIFlag": true,
+      "pleaTypeDescription": "Unfit to Plead",
+      "pleaTypeGuiltyFlag": "No",
+      "pleaTypeCivilFlag": "No",
+      "pleaStatusCode": "3",
+      "pleaValue": "UNFIT_TO_PLEAD",
+      "jurisdiction": "MAGISTRATES"
+    },
+    {
+      "id": "d8c01e2b-5a3c-4f9e-bd7d-4f3a1e9d8c02",
+      "sequence": 130,
+      "pleaTypeCode": "CON",
+      "pleaTypeUIFlag": false,
+      "pleaTypeDescription": "Consents",
+      "pleaTypeGuiltyFlag": "Yes",
+      "pleaTypeCivilFlag": "Yes",
+      "pleaStatusCode": "7",
+      "pleaValue": "CONSENTS",
+      "jurisdiction": "MAGISTRATES"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+#%RAML 0.8
+title: pcfdlrm-command-api - Command API
+baseUri: http://localhost:8080/pcfdlrm-command-api/command/api/rest/pcfdlrm
+protocols: [ HTTP ]
+
+/receive-migrated-case-file:
+  post:
+    description: |
+      Receive Migrated Case File.
+      ...
+      (mapping):
+          requestType: application/vnd.pcfdlrm.receive-migrated-case-file+json
+          name: pcfdlrm.receive-migrated-case-file
+      ...
+    body:
+      application/vnd.pcfdlrm.receive-migrated-case-file+json:
+        example:
+          !include json/pcfdlrm.receive-migrated-case-file.json
+        schema:
+          !include json/schema/pcfdlrm.receive-migrated-case-file.json
