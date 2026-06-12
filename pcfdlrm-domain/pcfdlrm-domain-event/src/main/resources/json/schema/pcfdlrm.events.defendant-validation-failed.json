@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://moj.gov.uk/cps/prosecution/casefile/dlrm/domain/event/defendant-validation-failed.json",
+  "type": "object",
+  "properties": {
+    "defendant": {
+      "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/migrated/json/schemas/migrated-defendant.json"
+    },
+    "problems": {
+      "type": "array",
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/json/schemas/problem.json"
+      }
+    },
+    "caseId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "urn": {
+      "type": "string"
+    },
+    "caseType": {
+      "type": "string"
+    },
+    "policeSystemId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "caseId"
+  ],
+  "additionalProperties": false
+}

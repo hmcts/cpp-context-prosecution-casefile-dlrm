@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://moj.gov.uk/cps/pcfdlrm/command/handler/add-case-court-document.json",
+  "type": "object",
+  "properties": {
+    "materialId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "courtDocument": {
+      "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/json/schemas/court-document.json"
+    },
+    "isUnbundledDocument": {
+      "type": "boolean",
+      "default": false
+    },
+    "isCpsCase": {
+      "type": "boolean"
+    },
+    "fileStoreId": {
+      "type": "string"
+    },
+    "fileCloudLocation": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "materialId",
+    "courtDocument"
+  ],
+  "oneOf": [
+    {
+      "required": [
+        "fileStoreId"
+      ]
+    },
+    {
+      "required": [
+        "fileCloudLocation"
+      ]
+    }
+  ],
+  "additionalProperties": false
+}
+

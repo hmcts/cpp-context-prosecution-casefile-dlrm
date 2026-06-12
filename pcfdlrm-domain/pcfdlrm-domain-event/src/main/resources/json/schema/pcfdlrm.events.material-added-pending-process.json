@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://moj.gov.uk/cps/prosecution/casefile/dlrm/domain/event/material-added-pending-process.json",
+  "type": "object",
+  "properties": {
+    "materialId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "courtDocument": {
+      "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/json/schemas/court-document.json"
+    }
+  },
+  "required": [
+    "materialId"
+  ],
+  "additionalProperties": false
+}

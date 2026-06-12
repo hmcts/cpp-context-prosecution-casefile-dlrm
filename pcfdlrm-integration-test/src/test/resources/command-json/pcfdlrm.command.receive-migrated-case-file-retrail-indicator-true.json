@@ -1,0 +1,161 @@
+{
+  "migratedCaseDetails": {
+    "caseDetails": {
+      "originatingOrganisation": "B01NM00",
+      "cpsOrganisation": "A30AB00",
+      "caseId": "CASE_ID",
+      "initiationCode": "Q",
+      "prosecutorCaseReference": "CASE_URN",
+      "prosecutor": {
+
+        "prosecutingAuthority": "prosAut"
+      },
+      "sendingCourt": "C55BN00",
+      "receivingCourt": "C55BN00",
+      "dateOfSending": "2024-08-23",
+      "dateOfCommittal": "2024-01-15",
+      "receiptType": "Bring back",
+      "retrialIndicator": true
+    },
+    "hearings": [
+      {
+        "courtHearingLocation": "C55BN01",
+        "courtRoomId": 1234,
+        "dateOfHearing": "HEARING_DATE",
+        "timeOfHearing": "10:05:01",
+        "durationMinutes": 60,
+        "weekCommencingDate": {
+          "startDate": "2025-11-10",
+          "duration": 3
+        },
+        "hearingType": "FHG",
+        "listedDefendants": [
+          {
+            "prosecutorDefendantId": "a9860e1a-8695-4fd4-8046-c1c4fe6c7f80",
+            "listedOffences": [
+              "LIBRA-offence-id-1"
+            ]
+          }
+        ]
+      }
+    ],
+    "defendants": [
+      {
+        "id": "DEFENDANT_ID",
+        "prosecutorDefendantId": "a9860e1a-8695-4fd4-8046-c1c4fe6c7f80",
+        "prosecutorDefendantReference": "DEFENDANT_REFERENCE1",
+        "documentationLanguage": "W",
+        "hearingLanguage": "W",
+        "custodyStatus": "B",
+        "numPreviousConvictions": 3,
+        "individual": {
+          "personalInformation": {
+            "title": "Baron",
+            "firstName": "John",
+            "lastName": "Smith",
+            "occupation": "Software Developer",
+            "occupationCode": 43,
+            "address": {
+              "address1": "66 Exeter Street",
+              "address2": "line 2",
+              "address3": "line 3",
+              "address4": "line 4",
+              "address5": "line 5",
+              "postcode": "M60 1NW"
+            },
+            "contactDetails": {
+              "work": "020111222",
+              "home": "020111223",
+              "mobile": "07572222943",
+              "primaryEmail": "scrooge.mcduck@mail.com",
+              "secondaryEmail": "scrooge.mcduck2@mail.com"
+            }
+          },
+          "selfDefinedInformation": {
+            "gender": "MALE"
+          },
+          "parentGuardianInformation": {
+            "selfDefinedEthnicity": "W1",
+            "observedEthnicity": "1",
+            "gender": "MALE",
+            "dateOfBirth": "2015-04-04",
+            "personalInformation": {
+              "lastName": "Brown"
+            }
+          }
+        },
+        "offences": [
+          {
+            "offenceCode": "OFCODE12",
+            "offenceId": "550e8400-e29b-41d4-a716-446655440001",
+            "prosecutorOffenceId": "LIBRA-offence-id-1",
+            "offenceSequenceNumber": 1,
+            "offenceCommittedDate": "2018-09-10",
+            "offenceCommittedEndDate": "2018-10-10",
+            "offenceDateCode": 1,
+            "offenceLocation": "Croydon",
+            "offenceWording": "TV Licence not paid",
+            "chargeDate": "2019-01-10",
+            "appliedCompensation": 200,
+            "alcoholRelatedOffence": {
+              "alcoholLevelMethod": "A",
+              "alcoholLevelAmount": 100
+            },
+            "vehicleRelatedOffence": {
+              "vehicleCode": "O",
+              "vehicleRegistrationMark": "AA11 ABC"
+            },
+            "plea": {
+              "pleaDate": "2024-06-09",
+              "id": "7fbc9a21-4d8e-4a6b-8c2f-3b5a1e9d8c01"
+            },
+            "verdict": {
+              "verdictDate": "2024-06-09",
+              "id": "3be1b0c3-dc72-3a96-9474-07cb9b37a43e"
+            }
+          },
+          {
+            "offenceCode": "OFCODE12",
+            "offenceId": "650e8400-e29b-41d4-a716-446655440001",
+            "prosecutorOffenceId": "LIBRA-offence-id-2",
+            "offenceSequenceNumber": 2,
+            "offenceCommittedDate": "2018-09-10",
+            "offenceCommittedEndDate": "2018-10-10",
+            "offenceDateCode": 1,
+            "offenceLocation": "Croydon",
+            "offenceWording": "TV Licence not paid",
+            "chargeDate": "2019-01-10",
+            "appliedCompensation": 200,
+            "alcoholRelatedOffence": {
+              "alcoholLevelMethod": "A",
+              "alcoholLevelAmount": 100
+            },
+            "plea": {
+              "pleaDate": "2024-06-09",
+              "id": "7fbc9a21-4d8e-4a6b-8c2f-3b5a1e9d8c01"
+            },
+            "verdict": {
+              "verdictDate": "2024-06-09",
+              "id": "3be1b0c3-dc72-3a96-9474-07cb9b37a43e"
+            }
+          }
+        ],
+        "postingDate": "2018-09-10"
+      }
+    ],
+    "migrationSourceSystem": {
+      "migrationSourceSystemName": "XHIBIT",
+      "migrationSourceSystemCaseIdentifier": "This is from Libra"
+    }
+  },
+  "materials": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "azureLocation": "http://inazure/secrets/15",
+      "fileName": "abc.pdf",
+      "fileType": "99",
+      "documentType": 2
+    }
+  ],
+  "submissionId": "SUBMISSION_ID"
+}

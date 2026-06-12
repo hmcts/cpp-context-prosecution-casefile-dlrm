@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/json/schemas/document-category.json",
+  "type": "object",
+  "properties": {
+    "caseDocument": {
+      "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/json/schemas/case-document.json"
+    },
+    "applicationDocument": {
+      "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/json/schemas/application-document.json"
+    },
+    "defendantDocument": {
+      "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/json/schemas/defendant-document.json"
+    },
+    "nowDocument": {
+      "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/json/schemas/now-document.json"
+    }
+  },
+  "oneOf": [
+    {
+      "required": [
+        "caseDocument"
+      ]
+    },
+    {
+      "required": [
+        "applicationDocument"
+      ]
+    },
+    {
+      "required": [
+        "defendantDocument"
+      ]
+    },
+    {
+      "required": [
+        "nowDocument"
+      ]
+    }
+  ]
+}

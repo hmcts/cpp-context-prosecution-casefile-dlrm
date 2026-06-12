@@ -1,0 +1,30 @@
+subscriptions_descriptor:
+  spec_version: 1.0.0
+  service: pcfdlrm
+  service_component: EVENT_PROCESSOR
+  subscriptions:
+    - name: event processor subscription
+      events:
+        - name: pcfdlrm.events.migrated-case-file-received
+          schema_uri: http://moj.gov.uk/cps/prosecution/casefile/dlrm/domain/event/migrated-case-file-received.json
+
+        - name: pcfdlrm.events.material-ready-for-court-document
+          schema_uri: http://moj.gov.uk/cps/prosecution/casefile/dlrm/domain/event/material-ready-for-court-document.json
+
+        - name: pcfdlrm.events.material-added
+          schema_uri: http://moj.gov.uk/cps/prosecution/casefile/dlrm/domain/event/material-added
+
+        - name: pcfdlrm.events.migrated-case-file-processed
+          schema_uri: http://moj.gov.uk/cps/prosecution/casefile/dlrm/domain/event/migrated-case-file-processed.json
+
+      event_source_name: pcfdlrm
+
+    - name: public event subscription
+      events:
+        - name: public.progression.prosecution-case-created
+          schema_uri: http://moj.gov.uk/cpp/json/schemas/progression/events/public.progression.prosecution-case-created.json
+
+        - name: material.material-added
+          schema_uri: http://moj.gov.uk/cpp/json/schemas/material/events/public.material.material-added.json
+
+      event_source_name: public.event.source

@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/migrated/json/schemas/migrated-court-indicated-sentence.json",
+  "description": "The court indication of sentence when requested at mode of trial",
+  "type": "object",
+  "properties": {
+    "courtIndicatedSentenceTypeId": {
+      "description": "The reference data identifier",
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "courtIndicatedSentenceDescription": {
+      "description": "The details of the sentence indication provided by court",
+      "type": "string"
+    }
+  },
+  "required": [
+    "courtIndicatedSentenceTypeId",
+    "courtIndicatedSentenceDescription"
+  ],
+  "additionalProperties": false
+}

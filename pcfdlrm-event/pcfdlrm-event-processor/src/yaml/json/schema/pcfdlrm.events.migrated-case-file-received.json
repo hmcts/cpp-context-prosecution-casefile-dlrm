@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://moj.gov.uk/cps/prosecution/casefile/dlrm/domain/event/migrated-case-file-received.json",
+  "type": "object",
+  "properties": {
+    "receiveMigratedCaseFile": {
+      "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/migrated/json/schemas/receive-migrated-case-file.json",
+      "description": "Migrated Case File Receive"
+    }
+  },
+  "required": [
+    "receiveMigratedCaseFile"
+  ]
+}

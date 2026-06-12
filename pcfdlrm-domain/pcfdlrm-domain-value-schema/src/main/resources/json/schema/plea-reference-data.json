@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "id": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/json/schemas/plea-reference-data.json",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "pleaTypeCode": {
+      "type": "string"
+    },
+    "pleaValue": {
+      "type": "string"
+    },
+    "pleaTypeGuiltyFlag": {
+      "type": "string"
+    },
+    "jurisdiction": {
+      "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/json/schemas/pcf-definitions.json#/definitions/jurisdiction"
+    }
+  },
+  "additionalProperties": false
+}

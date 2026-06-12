@@ -1,0 +1,15 @@
+{
+  "verdictTypes": [
+    {
+      "id": "3be1b0c3-dc72-3a96-9474-07cb9b37a43e",
+      "description": "Found not guilty but guilty by Judge alone (under DVC&V Act 2004) of alternative offence not charged namely",
+      "category": "Not Guilty but Guilty of alternative offence",
+      "categoryType": "NOT_GUILTY_BUT_GUILTY_OF_ALTERNATIVE_OFFENCE_BY_JURY_CONVICTED",
+      "sequence": 165,
+      "jurisdiction": "CROWN",
+      "verdictCode": "NGJAA",
+      "jurySplitAvailable": "No",
+      "cjsVerdictCode": "A"
+    }
+  ]
+}

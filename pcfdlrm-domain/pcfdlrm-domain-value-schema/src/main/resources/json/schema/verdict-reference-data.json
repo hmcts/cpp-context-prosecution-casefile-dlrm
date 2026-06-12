@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "id": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/json/schemas/verdict-reference-data.json",
+  "properties": {
+    "id": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of the verdict"
+    },
+    "category": {
+      "type": "string",
+      "description": "Category of the verdict"
+    },
+    "categoryType": {
+      "type": "string",
+      "description": "Type of the category classification"
+    },
+    "sequence": {
+      "type": "integer",
+      "description": "Sequence number of the verdict"
+    },
+    "jurisdiction": {
+      "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/json/schemas/pcf-definitions.json#/definitions/jurisdiction"
+    },
+    "verdictCode": {
+      "type": "string",
+      "description": "Code representing the verdict"
+    },
+    "jurySplitAvailable": {
+      "type": "string",
+      "description": "Indicates if jury split information is available"
+    },
+    "cjsVerdictCode": {
+      "type": "string",
+      "description": "Criminal Justice System verdict code"
+    }
+  }
+}
