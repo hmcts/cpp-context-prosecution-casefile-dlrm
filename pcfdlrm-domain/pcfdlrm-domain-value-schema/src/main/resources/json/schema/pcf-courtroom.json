@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/json/schemas/courtRoom.json",
+  "type": "object",
+  "description": "Court room details",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "courtroomId": {
+      "type": "integer"
+    },
+    "courtroomName": {
+      "type": "string"
+    }
+  }
+}

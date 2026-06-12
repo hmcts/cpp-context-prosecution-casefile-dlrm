@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/migrated/json/schemas/migrated-hearing.json",
+  "type": "object",
+  "properties": {
+    "courtHearingLocation": {
+      "type": "string"
+    },
+    "courtRoomId": {
+      "type": "integer"
+    },
+    "dateOfHearing": {
+      "type": "string"
+    },
+    "timeOfHearing": {
+      "type": "string"
+    },
+    "durationMinutes": {
+      "type": "integer"
+    },
+    "weekCommencingDate": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/migrated/json/schemas/migrated-week-commencing-date.json"
+    },
+    "hearingType": {
+      "type": "string"
+    },
+    "listedDefendants": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/migrated/json/schemas/listed-defendant.json"
+      }
+    }
+  },
+  "required": [
+    "courtHearingLocation",
+    "hearingType",
+    "listedDefendants"
+  ],
+  "additionalProperties": false
+}

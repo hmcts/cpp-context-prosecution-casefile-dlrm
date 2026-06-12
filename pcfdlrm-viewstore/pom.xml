@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>pcfdlrm-parent</artifactId>
+        <groupId>uk.gov.moj.cpp.pcfdlrm</groupId>
+        <version>17.104.9-DLRM8-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>pcfdlrm-viewstore</artifactId>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>pcfdlrm-viewstore-liquibase</module>
+        <module>pcfdlrm-viewstore-persistence</module>
+    </modules>
+
+</project>

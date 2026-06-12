@@ -1,0 +1,181 @@
+{
+  "bundles": [
+    {
+      "id": "21438016-ed0f-3efc-8126-c0a62e8cb623",
+      "seqNum": 230,
+      "cpsBundleCode": "0",
+      "bundleCode": "ONBD",
+      "bundleDescription": "Other non-bundle Document",
+      "unbundleFlag": false,
+      "bundleAcceptanceFlag": false,
+      "bundleSections": [
+
+      ]
+    },
+    {
+      "id": "2c87029f-1ef5-31cb-ba94-ff9c149b3532",
+      "seqNum": 50,
+      "cpsBundleCode": "9",
+      "bundleCode": "EX",
+      "bundleDescription": "Exhibits",
+      "targetSectionCode": "EX",
+      "unbundleFlag": false,
+      "bundleAcceptanceFlag": true,
+      "bundleSections": [
+
+      ]
+    },
+    {
+      "id": "2c87029f-1ef5-31cb-ba94-ff9c449b3532",
+      "seqNum": 99,
+      "cpsBundleCode": "99",
+      "bundleCode": "PSJH",
+      "bundleDescription": "Private section - Judges & HMCTS",
+      "targetSectionCode": "PSJH",
+      "unbundleFlag": false,
+      "bundleAcceptanceFlag": true,
+      "bundleSections": [
+
+      ]
+    },
+    {
+      "id": "83371363-76ea-32e9-a8ad-c0690d4a3c33",
+      "seqNum": 20,
+      "cpsBundleCode": "2",
+      "bundleCode": "MCE",
+      "bundleDescription": "Magistrates' Court Evidence",
+      "targetSectionCode": "MCEB",
+      "unbundleFlag": true,
+      "bundleAcceptanceFlag": true,
+      "bundleSections": [
+        {
+          "seqNum": 70,
+          "bundleSectionCode": "PC",
+          "bundleSectionName": "Pre Cons",
+          "splitBundleSubSection": false,
+          "targetSectionCode": "PC"
+        },
+        {
+          "seqNum": 80,
+          "bundleSectionCode": "WS",
+          "bundleSectionName": "Witness Statements",
+          "splitBundleSubSection": true,
+          "targetSectionCode": "WS"
+        },
+        {
+          "seqNum": 90,
+          "bundleSectionCode": "EX",
+          "bundleSectionName": "Exhibits",
+          "splitBundleSubSection": true,
+          "targetSectionCode": "EX"
+        },
+        {
+          "seqNum": 140,
+          "bundleSectionCode": "UMD",
+          "bundleSectionName": "Unused Material",
+          "splitBundleSubSection": false,
+          "targetSectionCode": "UM"
+        }
+      ]
+    },
+    {
+      "id": "0ae2eb42-f85c-312d-b874-c7767a50c71d",
+      "seqNum": 40,
+      "cpsBundleCode": "6",
+      "bundleCode": "UM",
+      "bundleDescription": "Unused Material Disclosure",
+      "targetSectionCode": "UM",
+      "unbundleFlag": false,
+      "bundleAcceptanceFlag": true,
+      "bundleSections": [
+        {
+          "seqNum": 150,
+          "bundleSectionCode": "UD",
+          "bundleSectionName": "Unused - Disclosed",
+          "splitBundleSubSection": false,
+          "targetSectionCode": "UM"
+        }
+      ]
+    },
+    {
+      "id": "524b8cc7-7898-3901-8a0b-a1e57434fe8c",
+      "seqNum": 10,
+      "cpsBundleCode": "1",
+      "bundleCode": "IDPC",
+      "bundleDescription": "IDPC",
+      "targetSectionCode": "IDPC",
+      "unbundleFlag": true,
+      "bundleAcceptanceFlag": true,
+      "bundleSections": [
+        {
+          "seqNum": 10,
+          "bundleSectionCode": "CH",
+          "bundleSectionName": "Charges",
+          "splitBundleSubSection": false,
+          "targetSectionCode": "CH"
+        },
+        {
+          "seqNum": 20,
+          "bundleSectionCode": "CS",
+          "bundleSectionName": "Case Summary",
+          "splitBundleSubSection": false,
+          "targetSectionCode": "CS"
+        },
+        {
+          "seqNum": 30,
+          "bundleSectionCode": "KWS",
+          "bundleSectionName": "Key Witness Statements",
+          "splitBundleSubSection": true,
+          "targetSectionCode": "KWS"
+        },
+        {
+          "seqNum": 40,
+          "bundleSectionCode": "KE",
+          "bundleSectionName": "Key Exhibits",
+          "splitBundleSubSection": true,
+          "targetSectionCode": "KE"
+        },
+        {
+          "seqNum": 50,
+          "bundleSectionCode": "TAI",
+          "bundleSectionName": "Transcripts ABE interviews",
+          "splitBundleSubSection": true,
+          "targetSectionCode": "TAI"
+        },
+        {
+          "seqNum": 60,
+          "bundleSectionCode": "SFR",
+          "bundleSectionName": "Streamlined Forensic Reports",
+          "splitBundleSubSection": true,
+          "targetSectionCode": "SFR"
+        },
+        {
+          "seqNum": 70,
+          "bundleSectionCode": "PC",
+          "bundleSectionName": "Pre Cons",
+          "splitBundleSubSection": false,
+          "targetSectionCode": "PC"
+        }
+      ]
+    },
+    {
+      "id": "2e6d1ccd-1ff5-33ae-a7f5-abb4d240c044",
+      "seqNum": 60,
+      "cpsBundleCode": "8",
+      "bundleCode": "WS",
+      "bundleDescription": "Witness Statements",
+      "targetSectionCode": "WS",
+      "unbundleFlag": false,
+      "bundleAcceptanceFlag": true,
+      "bundleSections": [
+        {
+          "seqNum": 80,
+          "bundleSectionCode": "WS",
+          "bundleSectionName": "Witness Statements",
+          "splitBundleSubSection": true,
+          "targetSectionCode": "WS"
+        }
+      ]
+    }
+  ]
+}

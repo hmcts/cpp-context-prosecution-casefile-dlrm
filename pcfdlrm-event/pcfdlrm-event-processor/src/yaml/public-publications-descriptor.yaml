@@ -1,0 +1,11 @@
+subscriptions_descriptor:
+  spec_version: 1.0.0
+  service: progression
+  service_component: EVENT_PROCESSOR
+  subscriptions:
+    - name: public event processor subscription
+      events:
+        - name: public.pcfdlrm.migrated-case-file-processed
+          schema_uri: http://moj.gov.uk/cps/prosecution/casefile/dlrm/domain/event/public.pcfdlrm.migrated-case-file-processed.json
+
+      event_source_name: public.event.source

@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/migrated/json/schemas/listed-defendant.json",
+  "type": "object",
+  "properties": {
+    "prosecutorDefendantId": {
+      "type": "string"
+    },
+    "listedOffences": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "prosecutorDefendantId",
+    "listedOffences"
+  ]
+}

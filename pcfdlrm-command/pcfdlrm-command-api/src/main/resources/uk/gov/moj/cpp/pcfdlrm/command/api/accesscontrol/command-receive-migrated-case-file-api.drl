@@ -1,0 +1,16 @@
+package uk.gov.moj.cpp.pcfdlrm.command.api.accesscontrol;
+
+import uk.gov.moj.cpp.accesscontrol.drools.Outcome;
+import uk.gov.moj.cpp.accesscontrol.drools.Action;
+
+global uk.gov.moj.cpp.accesscontrol.common.providers.UserAndGroupProvider userAndGroupProvider;
+
+rule "Command - Rule for Migrate Case File"
+  when
+    $outcome: Outcome();
+    $action: Action(name == "pcfdlrm.receive-migrated-case-file");
+    eval(userAndGroupProvider.isSystemUser($action));
+
+  then
+    $outcome.setSuccess(true);
+end
