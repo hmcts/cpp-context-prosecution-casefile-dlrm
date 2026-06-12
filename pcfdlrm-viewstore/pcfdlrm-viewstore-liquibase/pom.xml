@@ -4,7 +4,7 @@
     <parent>
         <artifactId>pcfdlrm-viewstore</artifactId>
         <groupId>uk.gov.moj.cpp.pcfdlrm</groupId>
-        <version>17.104.9-DLRM8-SNAPSHOT</version>
+        <version>17.104.10-DLRM8-SNAPSHOT</version>
     </parent>
 
     <artifactId>pcfdlrm-viewstore-liquibase</artifactId>
