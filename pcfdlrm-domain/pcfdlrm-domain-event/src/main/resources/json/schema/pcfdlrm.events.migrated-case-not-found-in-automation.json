@@ -1,0 +1,10 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://moj.gov.uk/cps/prosecution/casefile/dlrm/domain/event/migrated-case-not-found-in-automation.json",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string"
+    }
+  }
+}

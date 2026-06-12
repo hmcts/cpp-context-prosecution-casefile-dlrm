@@ -1,0 +1,57 @@
+---
+resource_descriptor:
+  spec_version: '1.0.0'
+  version: '${project.version}'
+
+  resources:
+    - name: java:/app/pcfdlrm-service/DS.eventstore
+      type: xa-datasource
+      setup:
+        - type: liquibase
+          maven:
+            groupId: uk.gov.justice.services
+            artifactId: event-repository-liquibase
+            type: jar
+            version: '${cpp.framework.version}'
+        - type: liquibase
+          maven:
+            groupId: uk.gov.justice.services
+            artifactId: aggregate-snapshot-repository-liquibase
+            type: jar
+            version: '${project.version}'
+
+    - name: java:/DS.pcfdlrm
+      type: xa-datasource
+      setup:
+        - type: liquibase
+          maven:
+            groupId: uk.gov.justice.services
+            artifactId: event-buffer-liquibase
+            type: jar
+            version: '${cpp.framework.version}'
+        - type: liquibase
+          maven:
+            groupId: uk.gov.moj.cpp.pcfdlrm
+            artifactId: pcfdlrm-viewstore-liquibase
+            type: jar
+            version: '${project.version}'
+
+    - name: pcfdlrm.handler.command
+      type: queue
+    - name: pcfdlrm.event
+      type: topic
+    - name: public.event
+      type: topic
+
+  services:
+    # pcfdlrm provides these service mappings
+    - name: 'pcfdlrm-service'
+      id: 'pcfdlrm_service'
+      target: '/pcfdlrm-service'
+      map:
+        - '/pcfdlrm-command-api'
+        - '/pcfdlrm-command-handler'
+        - '/pcfdlrm-event-listener'
+        - '/pcfdlrm-event-processor'
+        - '/pcfdlrm-query-api'
+      matcher: '/pcfdlrm-[^/]+'

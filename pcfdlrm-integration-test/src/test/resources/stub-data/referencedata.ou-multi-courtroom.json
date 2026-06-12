@@ -1,0 +1,56 @@
+{
+  "organisationunits": [
+    {
+      "id": "f8254db1-1683-483e-afb3-b87fde5a0a24",
+      "oucode": "C55BN01",
+      "oucodeL1Code": "C",
+      "oucodeL1Name": "Magistrates' Courts",
+      "oucodeL3Name": "Port Talbot",
+      "oucodeL3WelshName": "Welsh Name",
+      "address1": "The Court House",
+      "address2": "Cramic Way",
+      "address3": "Port Talbot",
+      "address4": "West Glam.",
+      "address5": "address line 5",
+      "postcode": "SA13 1RU",
+      "welshAddress1": "Llys Ynadon",
+      "welshAddress2": "Adeilad y Llys",
+      "welshAddress3": "Adeilad y Llys",
+      "welshAddress4": "Gorllewin Meorgannwgc",
+      "welshAddress5": "Caerdydd",
+      "defaultStartTime": "10:30",
+      "defaultDurationHrs": "6",
+      "courtRooms": {
+        "id": "9e4932f7-97b2-3010-b942-ddd2624e4dd8",
+        "courtroomId": 2330,
+        "courtroomName": "Courtroom 01"
+      }
+    },
+    {
+      "id": "f8254db1-1683-483e-afb3-b87fde5a0a36",
+      "oucode": "C56BN01",
+      "oucodeL1Code": "C",
+      "oucodeL1Name": "Magistrates' Courts",
+      "oucodeL3Name": "Port Talbot",
+      "oucodeL3WelshName": "Welsh Name",
+      "address1": "The Court House",
+      "address2": "Cramic Ways",
+      "address3": "Port Talbots",
+      "address4": "West Glams.",
+      "address5": "address line 55",
+      "postcode": "SA14 1RU",
+      "welshAddress1": "Llys Ynadon",
+      "welshAddress2": "Adeilad y Llys",
+      "welshAddress3": "Adeilad y Llys",
+      "welshAddress4": "Gorllewin Meorgannwgc",
+      "welshAddress5": "Caerdydd",
+      "defaultStartTime": "11:30",
+      "defaultDurationHrs": "6",
+      "courtRooms": {
+        "id": "9e4932f7-97b2-3010-b942-ddd2624e4dd9",
+        "courtroomId": 2331,
+        "courtroomName": "Courtroom 01"
+      }
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/migrated/json/schemas/migrated-allocation-decision.json",
+  "description": "The allocation decision made regarding the jurisdiction required or elected for dealing with the offence in question",
+  "type": "object",
+  "properties": {
+    "originatingHearingId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "offenceId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "motReasonId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    },
+    "motReasonDescription": {
+      "type": "string"
+    },
+    "motReasonCode": {
+      "type": "string"
+    },
+    "allocationDecisionDate": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date"
+    },
+    "courtIndicatedSentence": {
+      "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/migrated/json/schemas/migrated-court-indicated-sentence.json"
+    },
+    "sequenceNumber": {
+      "type": "integer"
+    }
+  },
+  "required": [
+  "motReasonId"
+ ],
+  "additionalProperties": false
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://moj.gov.uk/cps/pcfdlrm/command/api/receive-migrated-case-file.json",
+  "type": "object",
+  "description": "Migrated Case File Receive",
+  "properties": {
+    "migratedCaseDetails": {
+      "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/migrated/json/schemas/migrated-case-details.json"
+    },
+    "materials": {
+      "type": "array",
+      "items": {
+        "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/migrated/json/schemas/migrated-material.json"
+      }
+    },
+    "channel": {
+      "type": "string",
+      "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/json/schemas/pcf-definitions.json#/definitions/channel"
+    },
+    "submissionId": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/uuid"
+    }
+  },
+  "required": [
+    "migratedCaseDetails",
+    "submissionId"
+  ],
+  "additionalProperties": false
+}
+

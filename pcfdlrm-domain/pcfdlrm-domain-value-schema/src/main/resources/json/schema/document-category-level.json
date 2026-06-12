@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/json/schemas/document-category-level.json",
+  "type": "string",
+  "maxLength": 1,
+  "enum": [
+    "Case level",
+    "Defendant level",
+    "Applications"
+  ]
+}
