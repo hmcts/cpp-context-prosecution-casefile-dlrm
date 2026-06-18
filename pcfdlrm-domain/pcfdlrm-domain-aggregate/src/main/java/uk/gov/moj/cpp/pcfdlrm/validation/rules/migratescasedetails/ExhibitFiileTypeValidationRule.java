@@ -6,6 +6,7 @@ import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_FILE_TYPE_FOR_XHIBIT;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANT_COUNT;
 import static uk.gov.moj.cpp.pcfdlrm.validation.Problems.newProblem;
 import static uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult.VALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult.newValidationResult;
@@ -50,6 +51,11 @@ public class ExhibitFiileTypeValidationRule implements ValidationRule<MigratedMa
                 return newValidationResult(of(newProblem(INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION,
                         FieldName.FILE_TYPE.getValue(), ofNullable(fileType).orElse(""))));
             }
+        }
+
+        if (materials.size() > input.getDefendantCount()) {
+            return newValidationResult(of(newProblem(COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANT_COUNT,
+                    FieldName.FILE_NAME.getValue(), materials.size())));
         }
 
         return VALID;

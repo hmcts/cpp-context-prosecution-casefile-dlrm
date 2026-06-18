@@ -22,6 +22,7 @@ import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID2;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.MigratedCaseFileAggregate.HEARING_VALIDATION;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.MigratedCaseFileAggregate.NO_MATCHING_DEFENDANTS_WITH_HEARINGS_FOUND_FOR_HEARING;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.MigratedCaseFileAggregate.COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANTS;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURTROOM_ID_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_TIME_LIMIT_REQUIRED;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Language.E;
@@ -1283,6 +1284,38 @@ class MigratedCaseFileAggregateTest {
         migratedMaterials.add(migratedMaterial1);
 
         return migratedMaterials;
+    }
+
+    @Test
+    void shouldFailFastWhenNumberOfFilesExceedsNumberOfDefendants() {
+        final MigratedMaterial material1 = MigratedMaterial.migratedMaterial()
+                .withCaseId(CASE_ID).withDefendantId(DEFENDANT_ID.toString())
+                .withAzureLocation("azure/abc.pdf").withDocumentType(3)
+                .withFileName("abc.pdf").withFileType("99").build();
+        final MigratedMaterial material2 = MigratedMaterial.migratedMaterial()
+                .withCaseId(CASE_ID).withDefendantId(DEFENDANT_ID2.toString())
+                .withAzureLocation("azure/def.pdf").withDocumentType(3)
+                .withFileName("def.pdf").withFileType("99").build();
+        final MigratedMaterial material3 = MigratedMaterial.migratedMaterial()
+                .withCaseId(CASE_ID).withDefendantId(DEFENDANT_ID.toString())
+                .withAzureLocation("azure/ghi.pdf").withDocumentType(3)
+                .withFileName("ghi.pdf").withFileType("99").build();
+
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "FEMALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, List.of(material1, material2, material3));
+
+        final List<Object> eventStream = migratedCaseFileAggregate.receiveMigratedCaseFile(new CaseProcessingArgs(
+                receiveMigratedCase, prosecutionWithReferenceData,
+                List.of(caseRefDataEnricher), List.of(defendantRefDataEnricher),
+                referenceDataQueryService, getSections(),
+                getDocumentMetadataReferenceDataList(), List.of(migratedHearingRefDataEnricher)
+        )).toList();
+
+        assertThat(eventStream.size(), is(1));
+        final MigratedCaseFileProcessed migratedCaseFileProcessed = (MigratedCaseFileProcessed) eventStream.get(0);
+        assertNotNull(migratedCaseFileProcessed);
+        assertThat(migratedCaseFileProcessed.getDescription(), is(COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANTS));
+        assertThat(migratedCaseFileProcessed.getProcessingIsSuccessful(), is(false));
     }
 
     @ParameterizedTest

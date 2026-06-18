@@ -46,6 +46,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class ReceiveMigratedCaseFileIT {
 
     private static final String NO_MATCHING_DEFENDANTS_WITH_HEARINGS_FOUND_FOR_HEARING = "No matching defendants with hearings found for the hearing";
+    private static final String COURT_RECORD_SHEET_NOT_PDF = "Court Record Sheet must be a PDF file";
 
     private final ReceiveMigratedCaseFileHelper receiveMigratedCaseFileHelper = new ReceiveMigratedCaseFileHelper();
     private final AddMaterialHelper addMaterialHelper = new AddMaterialHelper();
@@ -85,6 +86,19 @@ class ReceiveMigratedCaseFileIT {
         receiveMigratedCaseFileHelper.verifyReceiveMigratedCaseFileForMultipleMaterial(addMaterialHelper, submissionId, filePathIndex, fileType);
     }
 
+
+    @Test
+    void receiveMigratedCaseFileWhenXhibitMaterialIsNotPdf() {
+        final String submissionId = UUID.randomUUID().toString();
+        final String caseId = UUID.randomUUID().toString();
+        final String staticPayLoad = getStringFromResource("command-json/pcfdlrm.command.receive-migrated-case-file-xhibit-invalid-file-type.json")
+                .replace("SUBMISSION_ID", submissionId)
+                .replace("CASE_ID", caseId)
+                .replace("HEARING_DATE", LocalDate.now().plusDays(1).toString());
+
+        receiveMigratedCaseFileHelper.receiveMigratedCaseFile(staticPayLoad);
+        receiveMigratedCaseFileHelper.verifyCaseProcessed(addMaterialHelper, submissionId, COURT_RECORD_SHEET_NOT_PDF);
+    }
 
     @Test
     void receiveMigratedCaseFileWhenNoVerdictDate() {
