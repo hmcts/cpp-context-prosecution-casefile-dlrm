@@ -24,7 +24,7 @@
         <authorisation.service.version>0.1.49</authorisation.service.version>
         <coredomain.version>17.103.13</coredomain.version>
         <cpp.structure.version>2.0.335</cpp.structure.version>
-        <referencedata.version>17.103.132</referencedata.version>
+        <referencedata.version>17.103.133</referencedata.version>
         <referencedata.offences.version>17.103.43</referencedata.offences.version>
         <system.enterprise-id.version>0.0.3</system.enterprise-id.version>
         <resulting.version>17.0.47</resulting.version>

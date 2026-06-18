@@ -5,6 +5,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_FILE_TYPE_FOR_XHIBIT;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANT_COUNT;
 import static uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult.VALID;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedMaterial.migratedMaterial;
 
@@ -22,6 +23,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedMa
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 @ExtendWith(MockitoExtension.class)
@@ -79,7 +81,7 @@ class ExhibitFiileTypeValidationRuleTest {
         MigratedMaterial validMaterial = migratedMaterial().withFileName("first.pdf").withFileType("99").build();
         MigratedMaterial invalidMaterial = migratedMaterial().withFileName("second.docx").withFileType("99").build();
         MigratedMaterialsWithOriginatingSystem input = new MigratedMaterialsWithOriginatingSystem(
-                Arrays.asList(validMaterial, invalidMaterial), "XHIBIT", getSections());
+                Arrays.asList(validMaterial, invalidMaterial), "XHIBIT", getSections(), 2);
 
         // When
         ValidationResult result = validationRule.validate(input, referenceDataQueryService);
@@ -87,6 +89,7 @@ class ExhibitFiileTypeValidationRuleTest {
         // Then
         assertFalse(result.problems().isEmpty());
         assertThat(result.problems().get(0).getCode(), is(INVALID_FILE_TYPE_FOR_XHIBIT.name()));
+        assertThat(result.problems().get(0).getValues().get(0).getValue(), is("second.docx"));
     }
 
     @Test
@@ -95,7 +98,7 @@ class ExhibitFiileTypeValidationRuleTest {
         MigratedMaterial validMaterial = migratedMaterial().withFileName("first.pdf").withFileType("99").build();
         MigratedMaterial invalidMaterial = migratedMaterial().withFileName("second.pdf").withFileType("1").build();
         MigratedMaterialsWithOriginatingSystem input = new MigratedMaterialsWithOriginatingSystem(
-                Arrays.asList(validMaterial, invalidMaterial), "XHIBIT", getSections());
+                Arrays.asList(validMaterial, invalidMaterial), "XHIBIT", getSections(), 2);
 
         // When
         ValidationResult result = validationRule.validate(input, referenceDataQueryService);
@@ -116,6 +119,7 @@ class ExhibitFiileTypeValidationRuleTest {
         // Then
         assertFalse(result.problems().isEmpty());
         assertThat(result.problems().get(0).getCode(), is(INVALID_FILE_TYPE_FOR_XHIBIT.name()));
+        assertThat(result.problems().get(0).getValues().get(0).getValue(), is("document.docx"));
     }
 
     @Test
@@ -149,13 +153,13 @@ class ExhibitFiileTypeValidationRuleTest {
                 .withFileName(fileName)
                 .withFileType("99")
                 .build();
-        return new MigratedMaterialsWithOriginatingSystem(Collections.singletonList(material), systemName, getSections());
+        return new MigratedMaterialsWithOriginatingSystem(Collections.singletonList(material), systemName, getSections(), 1);
     }
 
     private MigratedMaterialsWithOriginatingSystem createInputWithMultipleFiles(String systemName) {
         MigratedMaterial material1 = migratedMaterial().withFileName("abc.pdf").withFileType("99").build();
         MigratedMaterial material2 = migratedMaterial().withFileName("def.pdf").withFileType("99").build();
-        return new MigratedMaterialsWithOriginatingSystem(Arrays.asList(material1, material2), systemName, getSections());
+        return new MigratedMaterialsWithOriginatingSystem(Arrays.asList(material1, material2), systemName, getSections(), 2);
     }
 
     private MigratedMaterialsWithOriginatingSystem createInputWithFileType(String fileName, String systemName, String fileType) {
@@ -163,7 +167,45 @@ class ExhibitFiileTypeValidationRuleTest {
                 .withFileName(fileName)
                 .withFileType(fileType)
                 .build();
-        return new MigratedMaterialsWithOriginatingSystem(Collections.singletonList(material), systemName, getSections());
+        return new MigratedMaterialsWithOriginatingSystem(Collections.singletonList(material), systemName, getSections(), 1);
+    }
+
+    @Test
+    void shouldRejectWhenNumberOfFilesExceedsNumberOfDefendants() {
+        MigratedMaterial file1 = migratedMaterial().withFileName("first.pdf").withFileType("99").build();
+        MigratedMaterial file2 = migratedMaterial().withFileName("second.pdf").withFileType("99").build();
+        MigratedMaterial file3 = migratedMaterial().withFileName("third.pdf").withFileType("99").build();
+        MigratedMaterialsWithOriginatingSystem input = new MigratedMaterialsWithOriginatingSystem(
+                List.of(file1, file2, file3), "XHIBIT", getSections(), 2);
+
+        ValidationResult result = validationRule.validate(input, referenceDataQueryService);
+
+        assertFalse(result.problems().isEmpty());
+        assertThat(result.problems().get(0).getCode(), is(COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANT_COUNT.name()));
+    }
+
+    @Test
+    void shouldReturnValidWhenFewerFilesThanDefendants() {
+        MigratedMaterialsWithOriginatingSystem input = createInput("only.pdf", "XHIBIT");
+        MigratedMaterialsWithOriginatingSystem inputWith2Defendants = new MigratedMaterialsWithOriginatingSystem(
+                input.getMaterials(), input.getMigrationSourceSystemName(), input.getSections(), 2);
+
+        ValidationResult result = validationRule.validate(inputWith2Defendants, referenceDataQueryService);
+
+        assertThat(result, is(VALID));
+    }
+
+    @Test
+    void shouldRejectWhenTwoFilesForSingleDefendant() {
+        MigratedMaterial file1 = migratedMaterial().withFileName("first.pdf").withFileType("99").build();
+        MigratedMaterial file2 = migratedMaterial().withFileName("second.pdf").withFileType("99").build();
+        MigratedMaterialsWithOriginatingSystem input = new MigratedMaterialsWithOriginatingSystem(
+                Arrays.asList(file1, file2), "XHIBIT", getSections(), 1);
+
+        ValidationResult result = validationRule.validate(input, referenceDataQueryService);
+
+        assertFalse(result.problems().isEmpty());
+        assertThat(result.problems().get(0).getCode(), is(COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANT_COUNT.name()));
     }
 
     private static Map<String, ImmutablePair<String, String>> getSections() {
