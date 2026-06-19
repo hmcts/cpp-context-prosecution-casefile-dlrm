@@ -9,7 +9,7 @@
 
     <groupId>uk.gov.moj.cpp.pcfdlrm</groupId>
     <artifactId>pcfdlrm-parent</artifactId>
-    <version>17.104.11-DLRM8-SNAPSHOT</version>
+    <version>17.104.12-DLRM8-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Prosecution Casefile DLRM Microservice - Parent</name>
     <description>Casefile DLRM Microservice - Prosecution Context</description>
