@@ -14,19 +14,21 @@ import static org.mockito.Mockito.when;
 import static uk.gov.justice.core.courts.Gender.FEMALE;
 import static uk.gov.justice.core.courts.Gender.MALE;
 import static uk.gov.justice.core.courts.Gender.NOT_KNOWN;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.MigratedCaseFileAggregate.COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANTS;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.MigratedCaseFileAggregate.HEARING_VALIDATION;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.MigratedCaseFileAggregate.NO_MATCHING_DEFENDANTS_WITH_HEARINGS_FOUND_FOR_HEARING;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildMigratedCaseDetails;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildProsecution;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildReceiveMigratedCaseFile;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.CASE_ID;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID2;
-import static uk.gov.moj.cpp.pcfdlrm.aggregate.MigratedCaseFileAggregate.HEARING_VALIDATION;
-import static uk.gov.moj.cpp.pcfdlrm.aggregate.MigratedCaseFileAggregate.NO_MATCHING_DEFENDANTS_WITH_HEARINGS_FOUND_FOR_HEARING;
-import static uk.gov.moj.cpp.pcfdlrm.aggregate.MigratedCaseFileAggregate.COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANTS;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURTROOM_ID_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_TIME_LIMIT_REQUIRED;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Language.E;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Language.W;
+import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant.migratedDefendant;
+import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedOffence.migratedOffence;
 
 import uk.gov.moj.cpp.pcfdlrm.domain.MigratedHearingWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.domain.ProsecutionWithReferenceData;
@@ -39,32 +41,28 @@ import uk.gov.moj.cpp.pcfdlrm.refdata.proscase.CaseRefDataEnricher;
 import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseMarker;
-import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CourtRoom;
-import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OrganisationUnitWithCourtroomsReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CourtDocument;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CourtDocumentTypeRBAC;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CourtRoom;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.DocumentTypeAccessReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Individual;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OffenceReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OrganisationUnitReferenceData;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OrganisationUnitWithCourtroomsReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.PleaReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Problem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Prosecution;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Prosecutor;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ProsecutorsReferenceData;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ListedDefendant;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedCaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant;
-import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant.migratedDefendant;
-import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedOffence.migratedOffence;
-
-import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ListedDefendant;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedHearing;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedMaterial;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedOffence;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigrationSourceSystem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ReceiveMigratedCaseFile;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.DefendantValidationFailed;
-import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.HearingValidationFailed;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseFileProcessed;
 
 import java.time.LocalDate;
@@ -885,15 +883,9 @@ class MigratedCaseFileAggregateTest {
                 List.of(migratedHearingRefDataEnricher)
         )).toList();
 
-        assertThat(eventStream.size(), is(2));
+        assertThat(eventStream.size(), is(1));
 
-        HearingValidationFailed hearingValidationFailed = (HearingValidationFailed) eventStream.get(0);
-        assertNotNull(hearingValidationFailed);
-        assertThat(hearingValidationFailed.getCaseId(), is(CASE_ID));
-        assertThat(hearingValidationFailed.getSubmissionId(), is(receiveMigratedCase.getSubmissionId()));
-        assertThat(hearingValidationFailed.getCaseUrn(), is(migCaseDetailsWithHearing.getCaseDetails().getProsecutorCaseReference()));
-
-        MigratedCaseFileProcessed migratedCaseFileProcessed = (MigratedCaseFileProcessed) eventStream.get(1);
+        MigratedCaseFileProcessed migratedCaseFileProcessed = (MigratedCaseFileProcessed) eventStream.get(0);
         assertNotNull(migratedCaseFileProcessed);
         assertThat(migratedCaseFileProcessed.getDescription(), is(NO_MATCHING_DEFENDANTS_WITH_HEARINGS_FOUND_FOR_HEARING));
         assertThat(migratedCaseFileProcessed.getProcessingIsSuccessful(), is(false));
@@ -960,15 +952,9 @@ class MigratedCaseFileAggregateTest {
                 List.of(migratedHearingRefDataEnricher)
         )).toList();
 
-        assertThat(eventStream.size(), is(2));
+        assertThat(eventStream.size(), is(1));
 
-        HearingValidationFailed hearingValidationFailed = (HearingValidationFailed) eventStream.get(0);
-        assertNotNull(hearingValidationFailed);
-        assertThat(hearingValidationFailed.getCaseId(), is(CASE_ID));
-        assertThat(hearingValidationFailed.getSubmissionId(), is(receiveMigratedCase.getSubmissionId()));
-        assertThat(hearingValidationFailed.getCaseUrn(), is(migCaseDetailsWithMismatch.getCaseDetails().getProsecutorCaseReference()));
-
-        MigratedCaseFileProcessed migratedCaseFileProcessed = (MigratedCaseFileProcessed) eventStream.get(1);
+        MigratedCaseFileProcessed migratedCaseFileProcessed = (MigratedCaseFileProcessed) eventStream.get(0);
         assertNotNull(migratedCaseFileProcessed);
         assertThat(migratedCaseFileProcessed.getDescription(), is(NO_MATCHING_DEFENDANTS_WITH_HEARINGS_FOUND_FOR_HEARING));
         assertThat(migratedCaseFileProcessed.getProcessingIsSuccessful(), is(false));
@@ -1044,7 +1030,7 @@ class MigratedCaseFileAggregateTest {
         ReceiveMigratedCaseFile resultReceiveMigratedCaseFile = migratedCaseValidatedCreationPending.getReceiveMigratedCaseFile();
         assertThat(resultReceiveMigratedCaseFile.getMigratedCaseDetails().getMigrationSourceSystem().getMigrationSourceSystemName(), is(XHIBIT));
 
-        MigratedCaseValidatedWithWarnings migratedCaseValidatedWithWarnings = (MigratedCaseValidatedWithWarnings) eventStream.get(0);
+        MigratedCaseValidatedWithWarnings migratedCaseValidatedWithWarnings = (MigratedCaseValidatedWithWarnings) eventStream.get(1);
 
         assertNotNull(migratedCaseValidatedWithWarnings);
 
@@ -1126,7 +1112,7 @@ class MigratedCaseFileAggregateTest {
         ReceiveMigratedCaseFile resultReceiveMigratedCaseFile = migratedCaseValidatedCreationPending.getReceiveMigratedCaseFile();
         assertThat(resultReceiveMigratedCaseFile.getMigratedCaseDetails().getMigrationSourceSystem().getMigrationSourceSystemName(), is(XHIBIT));
 
-        MigratedCaseValidatedWithWarnings migratedCaseValidatedWithWarnings = (MigratedCaseValidatedWithWarnings) eventStream.get(0);
+        MigratedCaseValidatedWithWarnings migratedCaseValidatedWithWarnings = (MigratedCaseValidatedWithWarnings) eventStream.get(1);
 
         assertNotNull(migratedCaseValidatedWithWarnings);
 
