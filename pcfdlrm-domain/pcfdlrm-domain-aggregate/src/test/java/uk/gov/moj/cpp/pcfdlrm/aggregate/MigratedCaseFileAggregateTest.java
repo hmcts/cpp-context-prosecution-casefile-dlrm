@@ -44,6 +44,8 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseMarker;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CourtDocument;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CourtDocumentTypeRBAC;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CourtRoom;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.HearingType;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.HearingTypes;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.DocumentTypeAccessReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Individual;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OffenceReferenceData;
@@ -58,6 +60,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ListedDefe
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedCaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedHearing;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedWeekCommencingDate;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedMaterial;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedOffence;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigrationSourceSystem;
@@ -84,6 +87,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -1362,6 +1366,71 @@ class MigratedCaseFileAggregateTest {
         assertThat(hasCourtRoomIdWarning, is(true));
     }
 
+    @ParameterizedTest(name = "{3}")
+    @MethodSource("fixedHearingTimeDefaultingScenarios")
+    void shouldDefaultHearingTimeTo10AmOnlyForFixedHearingWithNoWarnings(
+            final String dateOfHearing,
+            final String timeOfHearing,
+            final String expectedTimeOfHearing,
+            final String scenarioName) {
+
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedDefendant defendant = migratedDefendant()
+                .withValuesFrom(migCaseDetails.getDefendants().get(0))
+                .withProsecutorDefendantId("DEF-001")
+                .withOffences(List.of())
+                .build();
+        final MigratedCaseDetails migCaseDetailsWithHearing = MigratedCaseDetails.migratedCaseDetails()
+                .withValuesFrom(migCaseDetails)
+                .withDefendants(List.of(defendant))
+                .withHearings(List.of(
+                        MigratedHearing.migratedHearing()
+                                .withCourtHearingLocation("C50EX00")
+                                .withCourtRoomId(235)
+                                .withHearingType("SIT")
+                                .withDateOfHearing(dateOfHearing)
+                                .withTimeOfHearing(timeOfHearing)
+                                .withListedDefendants(List.of(
+                                        ListedDefendant.listedDefendant()
+                                                .withProsecutorDefendantId("DEF-001")
+                                                .withListedOffences(List.of())
+                                                .build()))
+                                .build()))
+                .build();
+
+        final Prosecution amendedProsecution = buildProsecution(prosecution, migCaseDetailsWithHearing);
+        final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetailsWithHearing, null);
+
+        when(prosecutionWithReferenceData.getProsecution()).thenReturn(amendedProsecution);
+        when(referenceDataQueryService.retrieveOrganisationUnitWithCourtrooms("C50EX00"))
+                .thenReturn(Optional.of(OrganisationUnitWithCourtroomsReferenceData.organisationUnitWithCourtroomsReferenceData()
+                        .withCourtrooms(List.of(CourtRoom.courtRoom().withCourtroomId(235).build()))
+                        .build()));
+        when(referenceDataQueryService.retrieveHearingTypes())
+                .thenReturn(HearingTypes.hearingTypes()
+                        .withHearingtypes(List.of(HearingType.hearingType().withHearingCode("SIT").build()))
+                        .build());
+
+        migratedCaseFileAggregate.receiveMigratedCaseFile(new CaseProcessingArgs(
+                receiveMigratedCase, prosecutionWithReferenceData,
+                List.of(caseRefDataEnricher), List.of(defendantRefDataEnricher),
+                referenceDataQueryService, getSections(),
+                getDocumentMetadataReferenceDataList(), List.of(migratedHearingRefDataEnricher)
+        ));
+
+        assertThat(migratedCaseFileAggregate.getReceiveMigratedCaseFile()
+                .getMigratedCaseDetails().getHearings().get(0).getTimeOfHearing(), is(expectedTimeOfHearing));
+    }
+
+    private static Stream<Arguments> fixedHearingTimeDefaultingScenarios() {
+        return Stream.of(
+                Arguments.of("2026-03-05", null, null, "past dateOfHearing raises warning — should not default timeOfHearing"),
+                Arguments.of("2027-01-15", "09:30", "09:30", "future dateOfHearing with existing time — should not overwrite timeOfHearing"),
+                Arguments.of("2027-01-15", null, "10:00:00", "GMT: future dateOfHearing with no time — should default to 10:00:00 UTC"),
+                Arguments.of("2027-06-15", null, "09:00:00", "BST: future dateOfHearing with no time — should default to 09:00:00 UTC")
+        );
+    }
+
     private MigratedCaseDetails buildCaseDetailsWithHearing(final Integer courtRoomId) {
         final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
 
@@ -1385,6 +1454,96 @@ class MigratedCaseFileAggregateTest {
                                                 .build()))
                                 .build()))
                 .build();
+    }
+
+    @Test
+    void shouldNotDefaultHearingTimeForWeekCommencingHearing() {
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedDefendant defendant = migratedDefendant()
+                .withValuesFrom(migCaseDetails.getDefendants().get(0))
+                .withProsecutorDefendantId("DEF-001")
+                .withOffences(List.of())
+                .build();
+        final MigratedCaseDetails migCaseDetailsWithHearing = MigratedCaseDetails.migratedCaseDetails()
+                .withValuesFrom(migCaseDetails)
+                .withDefendants(List.of(defendant))
+                .withHearings(List.of(
+                        MigratedHearing.migratedHearing()
+                                .withCourtHearingLocation("C50EX00")
+                                .withHearingType("SIT")
+                                .withWeekCommencingDate(MigratedWeekCommencingDate.migratedWeekCommencingDate()
+                                        .withStartDate("2027-06-14")
+                                        .withDuration(3)
+                                        .build())
+                                .withListedDefendants(List.of(
+                                        ListedDefendant.listedDefendant()
+                                                .withProsecutorDefendantId("DEF-001")
+                                                .withListedOffences(List.of())
+                                                .build()))
+                                .build()))
+                .build();
+
+        final Prosecution amendedProsecution = buildProsecution(prosecution, migCaseDetailsWithHearing);
+        final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetailsWithHearing, null);
+
+        when(prosecutionWithReferenceData.getProsecution()).thenReturn(amendedProsecution);
+        when(referenceDataQueryService.retrieveHearingTypes())
+                .thenReturn(HearingTypes.hearingTypes()
+                        .withHearingtypes(List.of(HearingType.hearingType().withHearingCode("SIT").build()))
+                        .build());
+
+        migratedCaseFileAggregate.receiveMigratedCaseFile(new CaseProcessingArgs(
+                receiveMigratedCase, prosecutionWithReferenceData,
+                List.of(caseRefDataEnricher), List.of(defendantRefDataEnricher),
+                referenceDataQueryService, getSections(),
+                getDocumentMetadataReferenceDataList(), List.of(migratedHearingRefDataEnricher)
+        ));
+
+        assertNull(migratedCaseFileAggregate.getReceiveMigratedCaseFile()
+                .getMigratedCaseDetails().getHearings().get(0).getTimeOfHearing());
+    }
+
+    @Test
+    void shouldNotDefaultHearingTimeForUnscheduledHearing() {
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedDefendant defendant = migratedDefendant()
+                .withValuesFrom(migCaseDetails.getDefendants().get(0))
+                .withProsecutorDefendantId("DEF-001")
+                .withOffences(List.of())
+                .build();
+        final MigratedCaseDetails migCaseDetailsWithHearing = MigratedCaseDetails.migratedCaseDetails()
+                .withValuesFrom(migCaseDetails)
+                .withDefendants(List.of(defendant))
+                .withHearings(List.of(
+                        MigratedHearing.migratedHearing()
+                                .withCourtHearingLocation("C50EX00")
+                                .withHearingType("SIT")
+                                .withListedDefendants(List.of(
+                                        ListedDefendant.listedDefendant()
+                                                .withProsecutorDefendantId("DEF-001")
+                                                .withListedOffences(List.of())
+                                                .build()))
+                                .build()))
+                .build();
+
+        final Prosecution amendedProsecution = buildProsecution(prosecution, migCaseDetailsWithHearing);
+        final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetailsWithHearing, null);
+
+        when(prosecutionWithReferenceData.getProsecution()).thenReturn(amendedProsecution);
+        when(referenceDataQueryService.retrieveHearingTypes())
+                .thenReturn(HearingTypes.hearingTypes()
+                        .withHearingtypes(List.of(HearingType.hearingType().withHearingCode("SIT").build()))
+                        .build());
+
+        migratedCaseFileAggregate.receiveMigratedCaseFile(new CaseProcessingArgs(
+                receiveMigratedCase, prosecutionWithReferenceData,
+                List.of(caseRefDataEnricher), List.of(defendantRefDataEnricher),
+                referenceDataQueryService, getSections(),
+                getDocumentMetadataReferenceDataList(), List.of(migratedHearingRefDataEnricher)
+        ));
+
+        assertNull(migratedCaseFileAggregate.getReceiveMigratedCaseFile()
+                .getMigratedCaseDetails().getHearings().get(0).getTimeOfHearing());
     }
 
     private static Map<String, ImmutablePair<String, String>> getSections() {

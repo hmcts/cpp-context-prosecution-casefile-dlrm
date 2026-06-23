@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.pcfdlrm.aggregate;
 
 import static java.util.stream.Stream.builder;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
@@ -63,6 +64,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Problem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ProblemValue;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Prosecution;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedCaseDetails;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedHearing;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendantWithProblem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedMaterial;
@@ -74,7 +76,13 @@ import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseFilePro
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseNotFoundInAutomation;
 
 import java.io.Serial;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -247,7 +255,8 @@ public class MigratedCaseFileAggregate implements Aggregate {
             }
         }
 
-        final List<Problem> hearingsProblems = validateHearings(receiveMigratedCaseFile, referenceDataQueryService, migratedHearingRefDataEnrichers, migratedCaseDetails, migratedHearingWithReferenceDataList);
+        final HearingValidationResult hearingValidationResult = validateHearings(receiveMigratedCaseFile, referenceDataQueryService, migratedHearingRefDataEnrichers, migratedCaseDetails, migratedHearingWithReferenceDataList);
+        final List<Problem> hearingsProblems = hearingValidationResult.problems();
 
         if (hasNoMatchingDefendantsForXhibitHearing(hearingsProblems, receiveMigratedCaseFile)) {
             builder.add(MigratedCaseFileProcessed.migratedCaseFileProcessed()
@@ -300,11 +309,14 @@ public class MigratedCaseFileAggregate implements Aggregate {
         String prosecutingAuthority = getProsecutingAuthority(receiveMigratedCaseFile.getMigratedCaseDetails().getCaseDetails());
         String prosecutorDefendantId = receiveMigratedCaseFile.getMigratedCaseDetails().getDefendants().get(0).getId().toString();
 
+        final List<MigratedHearing> defaultedHearings = hearingValidationResult.hearings();
+
         receiveMigratedCaseFile = ReceiveMigratedCaseFile.receiveMigratedCaseFile()
                 .withValuesFrom(receiveMigratedCaseFile)
                 .withMigratedCaseDetails(MigratedCaseDetails.migratedCaseDetails()
                         .withValuesFrom(migratedCaseDetails)
                         .withDefendants(migratedDefendants)
+                        .withHearings(defaultedHearings)
                         .build()).build();
 
         final ReceiveMigratedCaseFile finalReceiveMigratedCaseFile = receiveMigratedCaseFile;
@@ -347,20 +359,47 @@ public class MigratedCaseFileAggregate implements Aggregate {
         return apply(builder.build());
     }
 
-    private List<Problem> validateHearings(final ReceiveMigratedCaseFile receiveMigratedCaseFile, final ReferenceDataQueryService referenceDataQueryService, final List<MigratedHearingRefDataEnricher> migratedHearingRefDataEnrichers, final MigratedCaseDetails migratedCaseDetails, final List<MigratedHearingWithReferenceData> migratedHearingWithReferenceDataList) {
-        if (isNotEmpty(migratedCaseDetails.getHearings())) {
-            migratedCaseDetails.getHearings().stream()
-                    .map(migratedHearing -> buildMigratedHearingRefData(
-                            migratedHearingRefDataEnrichers,
-                            migratedCaseDetails.getCaseDetails(),
-                            migratedHearing,
-                            receiveMigratedCaseFile.getMigratedCaseDetails().getDefendants())).forEach(migratedHearingWithReferenceDataList::add);
+    private record HearingValidationResult(List<MigratedHearing> hearings, List<Problem> problems) {}
 
-            return migratedHearingWithReferenceDataList.stream()
-                    .flatMap(e -> validate(e, referenceDataQueryService, getMigratedHearingValidationRules()).stream())
-                    .toList();
+    private HearingValidationResult validateHearings(final ReceiveMigratedCaseFile receiveMigratedCaseFile, final ReferenceDataQueryService referenceDataQueryService, final List<MigratedHearingRefDataEnricher> migratedHearingRefDataEnrichers, final MigratedCaseDetails migratedCaseDetails, final List<MigratedHearingWithReferenceData> migratedHearingWithReferenceDataList) {
+        if (isNotEmpty(migratedCaseDetails.getHearings())) {
+            final List<MigratedHearing> updatedHearings = new ArrayList<>();
+            final List<Problem> allProblems = new ArrayList<>();
+            for (final MigratedHearing hearing : migratedCaseDetails.getHearings()) {
+                final MigratedHearingWithReferenceData refData = buildMigratedHearingRefData(
+                        migratedHearingRefDataEnrichers,
+                        migratedCaseDetails.getCaseDetails(),
+                        hearing,
+                        receiveMigratedCaseFile.getMigratedCaseDetails().getDefendants());
+                migratedHearingWithReferenceDataList.add(refData);
+                final List<Problem> problems = validate(refData, referenceDataQueryService, getMigratedHearingValidationRules());
+                allProblems.addAll(problems);
+                if (problems.isEmpty() && isFixedHearing(hearing) && hearing.getTimeOfHearing() == null) {
+                    updatedHearings.add(MigratedHearing.migratedHearing().withValuesFrom(hearing).withTimeOfHearing(toDefaultUtcTime(hearing.getDateOfHearing())).build());
+                } else {
+                    updatedHearings.add(hearing);
+                }
+            }
+            return new HearingValidationResult(updatedHearings, allProblems);
         }
-        return List.of();
+        return new HearingValidationResult(migratedCaseDetails.getHearings(), List.of());
+    }
+
+    private static final ZoneId LONDON = ZoneId.of("Europe/London");
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss");
+
+    private static boolean isFixedHearing(final MigratedHearing hearing) {
+        return hearing.getWeekCommencingDate() == null
+                && isNotBlank(hearing.getDateOfHearing())
+                && hearing.getCourtRoomId() != null
+                && hearing.getCourtRoomId() > 0;
+    }
+
+    private static String toDefaultUtcTime(final String dateOfHearing) {
+        return LocalDateTime.of(LocalDate.parse(dateOfHearing), LocalTime.of(10, 0))
+                .atZone(LONDON)
+                .withZoneSameInstant(ZoneOffset.UTC)
+                .format(TIME_FORMAT);
     }
 
     private void generateXhibitHearingWarnings(final ReceiveMigratedCaseFile receiveMigratedCaseFile, final List<Problem> hearingsProblems, final Stream.Builder<Object> builder, final MigratedCaseDetails migratedCaseDetails) {
