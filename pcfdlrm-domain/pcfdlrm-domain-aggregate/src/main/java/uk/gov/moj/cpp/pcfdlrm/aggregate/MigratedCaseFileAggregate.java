@@ -378,11 +378,8 @@ public class MigratedCaseFileAggregate implements Aggregate {
                         ? MigratedHearing.migratedHearing().withValuesFrom(hearing).withTimeOfHearing(toDefaultUtcTime(hearing.getDateOfHearing())).build()
                         : hearing;
                 updatedHearings.add(effectiveHearing);
-                migratedHearingWithReferenceDataList.add(buildMigratedHearingRefData(
-                        migratedHearingRefDataEnrichers,
-                        migratedCaseDetails.getCaseDetails(),
-                        effectiveHearing,
-                        receiveMigratedCaseFile.getMigratedCaseDetails().getDefendants()));
+                refData.setMigratedHearing(effectiveHearing);
+                migratedHearingWithReferenceDataList.add(refData);
             }
             return new HearingValidationResult(updatedHearings, allProblems);
         }
