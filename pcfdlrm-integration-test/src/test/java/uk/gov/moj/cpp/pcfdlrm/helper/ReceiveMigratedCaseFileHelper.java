@@ -86,6 +86,10 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
     }
 
     public void verifyReceiveMigratedCaseFileForMultipleMaterial(AddMaterialHelper addMaterialHelper, String submissionId, String[] filepathIndexOne, final String fileType) {
+        verifyReceiveMigratedCaseFileForMultipleMaterial(addMaterialHelper, submissionId, filepathIndexOne, fileType, null);
+    }
+
+    public void verifyReceiveMigratedCaseFileForMultipleMaterial(AddMaterialHelper addMaterialHelper, String submissionId, String[] filepathIndexOne, final String fileType, final String expectedDefaultedHearingTime) {
 
         await()
                 .untilAsserted(() -> {
@@ -101,14 +105,20 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
             addMaterialHelper.verifyUploadMaterialCalled("http://inazure/secrets/" + filepathIndexOne[1]);
         }
 
-
         await()
                 .atMost(5, TimeUnit.SECONDS)
                 .untilAsserted(() -> {
                     final JsonEnvelope migratedCaseValidatedCreationPendingEvent = addMaterialHelper.verifyInMessagingQueue(migratedCaseValidatedCreationPendingConsumer);
-                    assertThat(migratedCaseValidatedCreationPendingEvent, jsonEnvelope(metadata().withName(MIGRATED_CASE_VALIDATED_CREATION_PENDING), payload().isJson(allOf(
-                            withJsonPath("receiveMigratedCaseFile.submissionId", is(submissionId))
-                    ))));
+                    if (expectedDefaultedHearingTime != null) {
+                        assertThat(migratedCaseValidatedCreationPendingEvent, jsonEnvelope(metadata().withName(MIGRATED_CASE_VALIDATED_CREATION_PENDING), payload().isJson(allOf(
+                                withJsonPath("receiveMigratedCaseFile.submissionId", is(submissionId)),
+                                withJsonPath("migratedHearingWithReferenceDataList[0].migratedHearing.timeOfHearing", is(expectedDefaultedHearingTime))
+                        ))));
+                    } else {
+                        assertThat(migratedCaseValidatedCreationPendingEvent, jsonEnvelope(metadata().withName(MIGRATED_CASE_VALIDATED_CREATION_PENDING), payload().isJson(allOf(
+                                withJsonPath("receiveMigratedCaseFile.submissionId", is(submissionId))
+                        ))));
+                    }
                 });
     }
 
