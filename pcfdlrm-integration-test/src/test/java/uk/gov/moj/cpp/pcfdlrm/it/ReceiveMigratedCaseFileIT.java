@@ -210,6 +210,39 @@ class ReceiveMigratedCaseFileIT {
         receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiatedWithAllocationDecision(caseUrn, motReasonId);
     }
     @Test
+    void shouldNotSetOffenceCustodyTimeLimitWhenCustodyStatusIsNotCustody() {
+
+        final String submissionId = UUID.randomUUID().toString();
+
+        final String caseId = UUID.randomUUID().toString();
+
+        final String defendantId = UUID.randomUUID().toString();
+
+        final String materialId = randomUUID().toString();
+
+        final String caseUrn = randomAlphanumeric(10);
+
+        final String offenceId = "550e8400-e29b-41d4-a716-446655440206";
+
+        final String staticPayLoad = getStringFromResource("command-json/pcfdlrm.command.receive-migrated-case-file-custody-status-not-c-with-ctl.json")
+                .replace("SUBMISSION_ID", submissionId)
+                .replace("CASE_ID", caseId)
+                .replace("CASE_URN", caseUrn)
+                .replace("DEFENDANT_ID", defendantId)
+                .replace("HEARING_DATE", LocalDate.now().plusDays(1).toString());
+
+        receiveMigratedCaseFileHelper.receiveMigratedCaseFile(staticPayLoad);
+
+        receiveMigratedCaseFileHelper.verifyReceiveMigratedCaseFileForSingleMaterial(addMaterialHelper, submissionId, new String[]{"23"}, "99");
+
+        final JsonEnvelope materialAddedToMaterialContextPayload = createMaterialAddedPayload(materialId, caseId, defendantId);
+
+        addMaterialHelper.sendMessage(materialAddedToMaterialContextPayload.metadata().name(), materialAddedToMaterialContextPayload);
+
+        receiveMigratedCaseFileHelper.verifyCourtProceedingsInitiatedWithoutOffenceCustodyTimeLimit(caseUrn, offenceId);
+    }
+
+    @Test
     void receiveMigratedCaseFileWhenListedDefendantsDoNotMatchHearing() {
         final String submissionId = UUID.randomUUID().toString();
         final String caseId = UUID.randomUUID().toString();

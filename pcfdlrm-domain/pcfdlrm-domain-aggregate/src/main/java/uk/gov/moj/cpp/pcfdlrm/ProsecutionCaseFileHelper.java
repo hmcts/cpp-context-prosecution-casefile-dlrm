@@ -6,7 +6,7 @@ import static java.util.Objects.nonNull;
 import static uk.gov.justice.core.courts.Gender.NOT_KNOWN;
 import static uk.gov.moj.cpp.json.schemas.prosecution.casefile.dlrm.events.DefendantValidationPassed.defendantValidationPassed;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_STATUS_INVALID;
-import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_TIME_LIMIT_REQUIRED;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_TIME_LIMIT_IS_MISSING;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_GENDER_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_NATIONALITY_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_OBSERVED_ETHNICITY_INVALID;
@@ -69,6 +69,7 @@ public class ProsecutionCaseFileHelper {
     private static final String HEARING_LANGUAGE = "defendant.hearingLanguage";
     private static final String PARENTGUARDIAN_NOT_PROVIDED = "PARENTGUARDIAN_NOT_PROVIDED";
     private static final String DEFENDANT_SELFINFO_NOT_PROVIDED = "DEFENDANT_SELFINFO_NOT_PROVIDED";
+    private static final String IN_CUSTODY="C";
 
     private ProsecutionCaseFileHelper() {
     }
@@ -364,9 +365,9 @@ public class ProsecutionCaseFileHelper {
 
     private static void validateCustodyTimeLimit(final MigratedDefendant defendant, final List<Problem> defendantProblemList) {
         if (nonNull(defendant.getIndividual()) && nonNull(defendant.getIndividual().getCustodyStatus()) &&
-                "C".equals(defendant.getIndividual().getCustodyStatus())) {
+                IN_CUSTODY.equalsIgnoreCase(defendant.getIndividual().getCustodyStatus())) {
             if (isNull(defendant.getIndividual().getCustodyTimeLimit())) {
-                defendantProblemList.add(getProblem(DEFENDANT_CUSTODY_TIME_LIMIT_REQUIRED, "defendant.individual.custodyTimeLimit", DEFENDANT_CUSTODY_TIME_LIMIT_REQUIRED.name()));
+                defendantProblemList.add(getProblem(DEFENDANT_CUSTODY_TIME_LIMIT_IS_MISSING, "defendant.individual.custodyTimeLimit", DEFENDANT_CUSTODY_TIME_LIMIT_IS_MISSING.name()));
             }
         }
     }

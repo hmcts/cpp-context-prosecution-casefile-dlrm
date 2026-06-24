@@ -70,6 +70,7 @@ public class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter implemen
     private static final String XHIBIT = "XHIBIT";
     private static final int COURT_HEARING_OU_CODE_LENGTH = 7;
     public static final String SUMMARY_ONLY_OFFENCE = "Summary-only offence";
+    private static final String IN_CUSTODY = "C";
 
     @Inject
     private ReferenceDataQueryService referenceDataQueryService;
@@ -87,10 +88,12 @@ public class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter implemen
         final Plea plea = convertPlea(offence, referenceDataVO);
         final LocalDate convictionDate = getConvictionDate(offence, referenceDataVO);
         final String offenceWording = isXhibit ? getWording(offence) : offence.getOffenceWording();
-        final CustodyTimeLimit custodyTimeLimit = ofNullable(paramsVO.getCustodyTimeLimit())
+        final CustodyTimeLimit custodyTimeLimit = isInCustody(paramsVO)
+                ? ofNullable(paramsVO.getCustodyTimeLimit())
                 .map(e-> custodyTimeLimit()
                 .withTimeLimit(e.toString())
-                .build()).orElse(null);
+                .build()).orElse(null)
+                : null;
 
         Verdict verdict = convertVerdict(offence, referenceDataVO, plea);
         final Offence.Builder offenceBuilder = offence()
@@ -131,6 +134,10 @@ public class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter implemen
         }
 
         return offenceBuilder.build();
+    }
+
+    private boolean isInCustody(final ParamsVO paramsVO) {
+        return IN_CUSTODY.equalsIgnoreCase(paramsVO.getCustodyStatus());
     }
 
     private boolean isCustodyLimitTobeSet(final MigratedOffence offence, final Plea plea, final ReferenceDataVO referenceDataVO) {

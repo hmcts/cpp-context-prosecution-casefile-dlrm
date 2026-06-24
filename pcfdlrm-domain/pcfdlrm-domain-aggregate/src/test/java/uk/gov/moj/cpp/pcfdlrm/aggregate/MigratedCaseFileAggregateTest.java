@@ -24,7 +24,7 @@ import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.CASE_ID;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID2;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURTROOM_ID_INVALID;
-import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_TIME_LIMIT_REQUIRED;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_TIME_LIMIT_IS_MISSING;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Language.E;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Language.W;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant.migratedDefendant;
@@ -1214,7 +1214,7 @@ class MigratedCaseFileAggregateTest {
         assertThat(defendantValidationFailed.getDefendant().getIndividual().getCustodyStatus(), is("C"));
         assertThat(resultReceiveMigratedCaseFile.getMigratedCaseDetails().getDefendants().get(0).getHearingLanguage(), is(E.name()));
         assertNull(resultReceiveMigratedCaseFile.getMigratedCaseDetails().getDefendants().get(0).getIndividual().getCustodyTimeLimit());
-        assertTrue(problems.stream().anyMatch(problem -> problem.getCode().equals(DEFENDANT_CUSTODY_TIME_LIMIT_REQUIRED.name())));
+        assertTrue(problems.stream().anyMatch(problem -> problem.getCode().equals(DEFENDANT_CUSTODY_TIME_LIMIT_IS_MISSING.name())));
 
     }
 
