@@ -29,7 +29,12 @@ import uk.gov.moj.cpp.pcfdlrm.helper.AddMaterialHelper;
 import uk.gov.moj.cpp.pcfdlrm.helper.ReceiveMigratedCaseFileHelper;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -293,6 +298,28 @@ class ReceiveMigratedCaseFileIT {
 
         assertThat(ReceiveMigratedCaseFileHelper.getLastLoggedRequest(caseUrn),
                 not(containsString("listHearingRequests")));
+    }
+
+    @Test
+    void receiveMigratedCaseFileWithXhibitFdHearingAndNoTimeDefaultsToTenAmLondon() {
+        final String submissionId = UUID.randomUUID().toString();
+        final String caseId = UUID.randomUUID().toString();
+        final LocalDate hearingDate = LocalDate.now().plusDays(1);
+
+        final String payload = getStringFromResource("command-json/pcfdlrm.command.receive-migrated-case-file-xhibit-fd-no-time.json")
+                .replace("SUBMISSION_ID", submissionId)
+                .replace("CASE_ID", caseId)
+                .replace("CASE_URN", randomAlphanumeric(10))
+                .replace("HEARING_DATE", hearingDate.toString());
+
+        final String expectedUtcTime = LocalDateTime.of(hearingDate, LocalTime.of(10, 0))
+                .atZone(ZoneId.of("Europe/London"))
+                .withZoneSameInstant(ZoneOffset.UTC)
+                .format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+
+        receiveMigratedCaseFileHelper.receiveMigratedCaseFile(payload);
+
+        receiveMigratedCaseFileHelper.verifyMigratedCaseFileReceivedWithDefaultedHearingTime(addMaterialHelper, expectedUtcTime);
     }
 
     private JsonEnvelope createMaterialAddedPayload(final String materialId, final String caseId, final String defendantId) {
