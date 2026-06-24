@@ -52,6 +52,7 @@
             **/uk/gov/justice/core/courts/**/*
             **/uk/gov/moj/cps/pcfdlrm/command/handler/**/*
             **/uk/gov/moj/cps/pcfdlrm/domain/event/**/*
+            **/uk/gov/moj/cpp/pcfdlrm/domain/**/*
         </sonar.coverage.exclusions>
         <jgitflow.maven.developBranchName>main</jgitflow.maven.developBranchName>
     </properties>
