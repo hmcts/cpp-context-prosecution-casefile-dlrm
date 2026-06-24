@@ -8,6 +8,8 @@ import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.Is.is;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClientProvider.newPrivateJmsMessageConsumerClientProvider;
@@ -153,6 +155,20 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
                                     .withName(PROGRESSION_INITIATE_COURT_PROCEEDINGS),
                             payload().isJson(allOf(withJsonPath("initiateCourtProceedings.prosecutionCases[0].defendants[0].offences[0].allocationDecision.motReasonId", is(motReasonId))))));
         }
+    }
+
+    public void verifyCourtProceedingsInitiatedWithoutOffenceCustodyTimeLimit(final String caseUrn, final String offenceId) {
+
+        await()
+                .atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(() ->
+                        assertThat(findAll(postRequestedFor(urlMatching("/progression-service/command/api/rest/progression/initiatecourtproceedings"))
+                                .withRequestBody(containing(caseUrn))).size(), is(1)));
+
+        final String requestBody = getLastLoggedRequest(caseUrn);
+
+        assertThat(requestBody, containsString(offenceId));
+        assertThat(requestBody, not(containsString("custodyTimeLimit")));
     }
 
     public static String getLastLoggedRequest(final String caseUrn) {
