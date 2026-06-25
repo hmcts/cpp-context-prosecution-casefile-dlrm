@@ -55,7 +55,7 @@ public class PleaValidationRule implements ValidationRule<DefendantWithReference
 
     private void addOffenceProblems(final MigratedOffence offence, final boolean hasPleaId, final String pleaTypeGuiltyFlag, final List<Problem> problems) {
         if(!hasPleaId && ofNullable(offence.getPlea()).map(MigratedPlea::getId).isPresent()) {
-            final Problem problem = newProblem(ProblemCode.INVALID_PLEA_ID, new ProblemValue(ProblemCode.INVALID_PLEA_ID.name(), "plea id", ofNullable(offence.getPlea()).map(p -> p.getId().toString()).orElse("Invalid plea id")));
+            final Problem problem = newProblem(ProblemCode.INVALID_PLEA, new ProblemValue(ProblemCode.INVALID_PLEA.name(), "plea id", ofNullable(offence.getPlea()).map(p -> p.getId().toString()).orElse("Invalid plea id")));
             problems.add(problem);
         }
 

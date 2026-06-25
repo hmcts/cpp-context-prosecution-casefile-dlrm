@@ -470,8 +470,8 @@ public class MigratedCaseFileAggregate implements Aggregate {
 
 
     private List<MigratedCaseValidatedWithWarnings> generateOffenceWarnings(UUID caseId, String caseUrn, final List<DefendantProblem> defendantProblems) {
-       List<String> problemsToRaise = List.of(ProblemCode.INVALID_PLEA_ID.name(),ProblemCode.PLEA_DATE_ABSENT.name(),ProblemCode.PLEA_DATE_CANNOT_BE_FUTURE_DATE.name(),ProblemCode.CONVICTION_DATE_ABSENT.name(),
-               ProblemCode.INVALID_VERDICT_ID.name(), VERDICT_DATE_ABSENT.name());
+       List<String> problemsToRaise = List.of(ProblemCode.INVALID_PLEA.name(),ProblemCode.PLEA_DATE_ABSENT.name(),ProblemCode.PLEA_DATE_CANNOT_BE_FUTURE_DATE.name(),ProblemCode.CONVICTION_DATE_ABSENT.name(),
+               ProblemCode.INVALID_VERDICT.name(), VERDICT_DATE_ABSENT.name());
         List< Problem> problems = defendantProblems.stream().flatMap(e->e.getProblems().stream()).filter(e-> problemsToRaise.contains(e.getCode())).toList();
 
         return problems.stream()
