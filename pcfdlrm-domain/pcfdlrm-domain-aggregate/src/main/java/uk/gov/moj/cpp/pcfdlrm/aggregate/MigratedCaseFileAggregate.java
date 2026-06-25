@@ -340,6 +340,7 @@ public class MigratedCaseFileAggregate implements Aggregate {
                                             .withMigratedCaseDetails(MigratedCaseDetails.migratedCaseDetails()
                                                     .withValuesFrom(migratedCaseDetails)
                                                     .withDefendants(migratedDefendants)
+                                                    .withHearings(defaultedHearings)
                                                     .build()).build())
                                     .withProsecutionWithReferenceData(receivedProsecutionWithReferenceData)
                                     .withMigratedHearingWithReferenceData(migratedHearingWithReferenceDataList)
@@ -371,14 +372,14 @@ public class MigratedCaseFileAggregate implements Aggregate {
                         migratedCaseDetails.getCaseDetails(),
                         hearing,
                         receiveMigratedCaseFile.getMigratedCaseDetails().getDefendants());
-                migratedHearingWithReferenceDataList.add(refData);
                 final List<Problem> problems = validate(refData, referenceDataQueryService, getMigratedHearingValidationRules());
                 allProblems.addAll(problems);
-                if (problems.isEmpty() && isFixedHearing(hearing) && hearing.getTimeOfHearing() == null) {
-                    updatedHearings.add(MigratedHearing.migratedHearing().withValuesFrom(hearing).withTimeOfHearing(toDefaultUtcTime(hearing.getDateOfHearing())).build());
-                } else {
-                    updatedHearings.add(hearing);
-                }
+                final MigratedHearing effectiveHearing = (problems.isEmpty() && isFixedHearing(hearing) && hearing.getTimeOfHearing() == null)
+                        ? MigratedHearing.migratedHearing().withValuesFrom(hearing).withTimeOfHearing(toDefaultUtcTime(hearing.getDateOfHearing())).build()
+                        : hearing;
+                updatedHearings.add(effectiveHearing);
+                refData.setMigratedHearing(effectiveHearing);
+                migratedHearingWithReferenceDataList.add(refData);
             }
             return new HearingValidationResult(updatedHearings, allProblems);
         }
