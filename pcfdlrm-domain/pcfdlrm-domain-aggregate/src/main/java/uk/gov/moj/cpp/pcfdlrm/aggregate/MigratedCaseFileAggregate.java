@@ -110,6 +110,8 @@ public class MigratedCaseFileAggregate implements Aggregate {
     public static final String COURT_RECORD_SHEET_NOT_PDF = "Court Record Sheet must be a PDF file";
     public static final String COURT_RECORD_SHEET_FILE_TYPE_INVALID = "Court Record Sheet file type is not valid for XHIBIT migration";
     public static final String COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANTS = "Number of Court Record Sheets exceeds number of defendants";
+    private final List<String> offenceProblems = List.of(ProblemCode.INVALID_PLEA.name(),ProblemCode.PLEA_DATE_ABSENT.name(),ProblemCode.PLEA_DATE_CANNOT_BE_FUTURE_DATE.name(),ProblemCode.CONVICTION_DATE_ABSENT.name(),
+            ProblemCode.INVALID_VERDICT.name(), VERDICT_DATE_ABSENT.name());
 
     private UUID submissionId;
 
@@ -291,6 +293,21 @@ public class MigratedCaseFileAggregate implements Aggregate {
             caseValidationWarningsList.forEach(builder::add);
         }
 
+        final List<DefendantProblem> defendantProblems = migratedDefendantWithProblem.getDefendantProblems();
+
+        final List<MigratedCaseValidatedWithWarnings> defendantValidationWarningsList = defendantProblems.stream()
+                .flatMap(defendantProblem -> defendantProblem.getProblems().stream())
+                .filter(problem -> !offenceProblems.contains(problem.getCode()))
+                .map(problem -> migratedCaseValidatedWithWarnings()
+                        .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
+                        .withCaseUrn(migratedCaseDetails.getCaseDetails().getProsecutorCaseReference())
+                        .withType("Defendant validation")
+                        .withWarnings(problem.getCode() + " : " + problem.getValues().stream().map(ProblemValue::getValue).toList())
+                        .build())
+                .toList();
+
+        defendantValidationWarningsList.forEach(builder::add);
+
         generateXhibitHearingWarnings(receiveMigratedCaseFile, hearingsProblems, builder, migratedCaseDetails);
 
         if (hasXhibitDefendantProblems(migratedDefendantWithProblem, receiveMigratedCaseFile)) {
@@ -298,7 +315,8 @@ public class MigratedCaseFileAggregate implements Aggregate {
             final List<MigratedCaseValidatedWithWarnings> migratedCaseValidatedWithWarningsList = generateOffenceWarnings(
                     migratedCaseDetails.getCaseDetails().getCaseId(),
                     migratedCaseDetails.getCaseDetails().getProsecutorCaseReference(),
-                    migratedDefendantWithProblem.getDefendantProblems());
+                    migratedDefendantWithProblem.getDefendantProblems(),
+                    offenceProblems);
 
             migratedCaseValidatedWithWarningsList.forEach(builder::add);
         }
@@ -335,7 +353,7 @@ public class MigratedCaseFileAggregate implements Aggregate {
 
 
                             builder.add(migratedCaseValidatedCreationPending()
-                                    .withMigratedCaseSubmission( ReceiveMigratedCaseFile.receiveMigratedCaseFile()
+                                    .withMigratedCaseSubmission(ReceiveMigratedCaseFile.receiveMigratedCaseFile()
                                             .withValuesFrom(finalReceiveMigratedCaseFile)
                                             .withMigratedCaseDetails(MigratedCaseDetails.migratedCaseDetails()
                                                     .withValuesFrom(migratedCaseDetails)
@@ -469,9 +487,7 @@ public class MigratedCaseFileAggregate implements Aggregate {
     }
 
 
-    private List<MigratedCaseValidatedWithWarnings> generateOffenceWarnings(UUID caseId, String caseUrn, final List<DefendantProblem> defendantProblems) {
-       List<String> problemsToRaise = List.of(ProblemCode.INVALID_PLEA.name(),ProblemCode.PLEA_DATE_ABSENT.name(),ProblemCode.PLEA_DATE_CANNOT_BE_FUTURE_DATE.name(),ProblemCode.CONVICTION_DATE_ABSENT.name(),
-               ProblemCode.INVALID_VERDICT.name(), VERDICT_DATE_ABSENT.name());
+    private List<MigratedCaseValidatedWithWarnings> generateOffenceWarnings(UUID caseId, String caseUrn, final List<DefendantProblem> defendantProblems, List<String> problemsToRaise) {
         List< Problem> problems = defendantProblems.stream().flatMap(e->e.getProblems().stream()).filter(e-> problemsToRaise.contains(e.getCode())).toList();
 
         return problems.stream()
