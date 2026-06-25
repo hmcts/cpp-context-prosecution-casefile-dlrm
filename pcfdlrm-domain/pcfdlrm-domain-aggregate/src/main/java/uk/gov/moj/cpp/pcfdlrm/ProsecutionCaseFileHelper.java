@@ -59,6 +59,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.base.Strings;
+import org.apache.commons.collections.CollectionUtils;
 
 @SuppressWarnings({"squid:S1188", "squid:S3776"})
 public class ProsecutionCaseFileHelper {
@@ -98,7 +99,7 @@ public class ProsecutionCaseFileHelper {
             validateGenderAndLanguage(defendant, defendantProblemList);
             validateCustodyTimeLimit(defendant, defendantProblemList);
 
-            if (!defendantProblemList.isEmpty()) {
+            if (CollectionUtils.isNotEmpty(defendantProblemList)) {
                 defendantErrors.add(defendantProblem()
                         .withProblems(defendantProblemList)
                         .withProsecutorDefendantReference(Strings.isNullOrEmpty(defendant.getProsecutorDefendantReference()) ?

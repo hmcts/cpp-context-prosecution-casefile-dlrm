@@ -363,9 +363,9 @@ class MigratedCaseFileAggregateTest {
 
         assertsForMaterialsAdded(migratedCaseFileAggregate, 1);
 
-        assertThat(eventStream.size(), is(3));
+        assertThat(eventStream.size(), is(10));
 
-        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(2);
+        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(9);
 
         assertNotNull(migratedCaseValidatedCreationPending);
 
@@ -448,7 +448,7 @@ class MigratedCaseFileAggregateTest {
                         List.of(migratedHearingRefDataEnricher)))
                 .toList();
 
-        assertThat(eventStream.size(), is(3));
+        assertThat(eventStream.size(), is(12));
 
     }
 
@@ -491,7 +491,7 @@ class MigratedCaseFileAggregateTest {
                         List.of(migratedHearingRefDataEnricher)))
                 .toList();
 
-        assertThat(eventStream.size(), is(3));
+        assertThat(eventStream.size(), is(12));
 
     }
 
@@ -592,7 +592,7 @@ class MigratedCaseFileAggregateTest {
                         List.of(migratedHearingRefDataEnricher)))
                 .toList();
 
-        assertThat(eventStream.size(), is(3));
+        assertThat(eventStream.size(), is(12));
 
     }
 
@@ -623,8 +623,8 @@ class MigratedCaseFileAggregateTest {
                 List.of(migratedHearingRefDataEnricher))).toList();
 
 
-        assertThat(eventStream.size(), is(4));
-        MigratedCaseValidatedWithWarnings migratedCaseValidatedWithWarnings = (MigratedCaseValidatedWithWarnings) eventStream.get(1);
+        assertThat(eventStream.size(), is(13));
+        MigratedCaseValidatedWithWarnings migratedCaseValidatedWithWarnings = (MigratedCaseValidatedWithWarnings) eventStream.get(10);
         assertThat(migratedCaseValidatedWithWarnings.getType(), is("Offence validation"));
         assertThat(migratedCaseValidatedWithWarnings.getMessage(), containsStringIgnoringCase(INVALID_PLEA.name()));
 
@@ -653,9 +653,9 @@ class MigratedCaseFileAggregateTest {
 
         assertsForMaterialsAdded(migratedCaseFileAggregate, 1);
 
-        assertThat(eventStream.size(), is(3));
+        assertThat(eventStream.size(), is(7));
 
-        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(2);
+        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(6);
 
         assertNotNull(migratedCaseValidatedCreationPending);
 
@@ -691,9 +691,9 @@ class MigratedCaseFileAggregateTest {
 
         assertsForMaterialsAdded(migratedCaseFileAggregate, 1);
 
-        assertThat(eventStream.size(), is(3));
+        assertThat(eventStream.size(), is(9));
 
-        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(2);
+        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(8);
 
         assertNotNull(migratedCaseValidatedCreationPending);
 
@@ -794,9 +794,9 @@ class MigratedCaseFileAggregateTest {
                 List.of(migratedHearingRefDataEnricher))).toList();
         ;
 
-        assertThat(eventStream.size(), is(3));
+        assertThat(eventStream.size(), is(6));
 
-        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(2);
+        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(5);
 
         assertNotNull(migratedCaseValidatedCreationPending);
 
@@ -990,9 +990,9 @@ class MigratedCaseFileAggregateTest {
                 List.of(migratedHearingRefDataEnricher))).toList();
         ;
 
-        assertThat(eventStream.size(), is(3));
+        assertThat(eventStream.size(), is(9));
 
-        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(2);
+        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(8);
 
         assertNotNull(migratedCaseValidatedCreationPending);
 
@@ -1025,9 +1025,9 @@ class MigratedCaseFileAggregateTest {
                 getDocumentMetadataReferenceDataList(),
                 List.of(migratedHearingRefDataEnricher))).toList();
 
-        assertThat(eventStream.size(), is(4));
+        assertThat(eventStream.size(), is(9));
 
-        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(3);
+        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(8);
 
         assertNotNull(migratedCaseValidatedCreationPending);
 
@@ -1064,9 +1064,9 @@ class MigratedCaseFileAggregateTest {
 
         assertsForMaterialsAdded(migratedCaseFileAggregate, 1);
 
-        assertThat(eventStream.size(), is(3));
+        assertThat(eventStream.size(), is(9));
 
-        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(2);
+        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(8);
 
         assertNotNull(migratedCaseValidatedCreationPending);
 
@@ -1107,9 +1107,9 @@ class MigratedCaseFileAggregateTest {
                 List.of(migratedHearingRefDataEnricher))).toList();
         ;
 
-        assertThat(eventStream.size(), is(4));
+        assertThat(eventStream.size(), is(10));
 
-        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(3);
+        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(9);
 
         assertNotNull(migratedCaseValidatedCreationPending);
 
@@ -1157,9 +1157,9 @@ class MigratedCaseFileAggregateTest {
 
         assertsForMaterialsAdded(migratedCaseFileAggregate, 1);
 
-        assertThat(eventStream.size(), is(3));
+        assertThat(eventStream.size(), is(8));
 
-        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(2);
+        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(7);
 
         assertNotNull(migratedCaseValidatedCreationPending);
 
@@ -1205,10 +1205,10 @@ class MigratedCaseFileAggregateTest {
 
         assertsForMaterialsAdded(migratedCaseFileAggregate, 1);
 
-        assertThat(eventStream.size(), is(3));
+        assertThat(eventStream.size(), is(8));
 
         DefendantValidationFailed defendantValidationFailed = (DefendantValidationFailed) eventStream.get(0);
-        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(2);
+        MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending = (MigratedCaseValidatedCreationPending) eventStream.get(7);
         List<Problem> problems = defendantValidationFailed.getProblems();
 
         assertNotNull(migratedCaseValidatedCreationPending);
