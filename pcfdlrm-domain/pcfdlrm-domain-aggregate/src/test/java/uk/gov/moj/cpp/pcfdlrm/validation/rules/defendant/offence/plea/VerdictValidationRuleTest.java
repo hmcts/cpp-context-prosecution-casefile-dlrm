@@ -4,7 +4,7 @@ import static java.time.LocalDate.now;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
-import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_VERDICT_ID;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_VERDICT;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.VERDICT_DATE_ABSENT;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.VERDICT_DATE_CANNOT_BE_FUTURE_DATE;
 import static uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult.VALID;
@@ -145,7 +145,7 @@ class VerdictValidationRuleTest {
         ValidationResult result = verdictValidationRule.validate(defendantWithReferenceData, referenceDataQueryService);
 
         assertEquals(1, result.problems().size());
-        assertEquals(INVALID_VERDICT_ID.name(), result.problems().get(0).getCode());
+        assertEquals(INVALID_VERDICT.name(), result.problems().get(0).getCode());
     }
 
     @Test
@@ -285,7 +285,7 @@ class VerdictValidationRuleTest {
         ValidationResult result = verdictValidationRule.validate(defendantWithReferenceData, referenceDataQueryService);
 
         assertEquals(2, result.problems().size());
-        assertEquals(INVALID_VERDICT_ID.name(), result.problems().get(0).getCode());
+        assertEquals(INVALID_VERDICT.name(), result.problems().get(0).getCode());
         assertEquals(VERDICT_DATE_CANNOT_BE_FUTURE_DATE.name(), result.problems().get(1).getCode());
         assertEquals(offence2.getVerdict().getVerdictDate().toString(), result.problems().get(1).getValues().get(0).getValue());
     }

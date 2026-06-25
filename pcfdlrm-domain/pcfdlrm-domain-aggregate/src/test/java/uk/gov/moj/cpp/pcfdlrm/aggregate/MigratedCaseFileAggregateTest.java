@@ -25,6 +25,7 @@ import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID2;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURTROOM_ID_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_TIME_LIMIT_IS_MISSING;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_PLEA;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Language.E;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Language.W;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant.migratedDefendant;
@@ -101,7 +102,6 @@ class MigratedCaseFileAggregateTest {
     private static final String SHOULD_RAISE_MIGRATED_CASE_NOT_FOUND_IN_AUTOMATION = "shouldRaiseMigratedCaseNotFoundInAutomation()";
     private static final String SHOULD_RAISE_MATERIAL_READY_FOR_COURT_DOCUMENT = "shouldRaiseMaterialReadyForCourtDocument()";
     private static final String SHOULD_RAISE_EVENT_ON_MATERIAL_ADDED_POST_PROCESSING = "shouldRaiseEventOnMaterialAddedPostProcessing()";
-    public static final String INVALID_PLEA_ID = "INVALID_PLEA_ID";
     @InjectMocks
     private MigratedCaseFileAggregate migratedCaseFileAggregate;
 
@@ -626,7 +626,7 @@ class MigratedCaseFileAggregateTest {
         assertThat(eventStream.size(), is(4));
         MigratedCaseValidatedWithWarnings migratedCaseValidatedWithWarnings = (MigratedCaseValidatedWithWarnings) eventStream.get(1);
         assertThat(migratedCaseValidatedWithWarnings.getType(), is("Offence validation"));
-        assertThat(migratedCaseValidatedWithWarnings.getMessage(), containsStringIgnoringCase(INVALID_PLEA_ID));
+        assertThat(migratedCaseValidatedWithWarnings.getMessage(), containsStringIgnoringCase(INVALID_PLEA.name()));
 
     }
 

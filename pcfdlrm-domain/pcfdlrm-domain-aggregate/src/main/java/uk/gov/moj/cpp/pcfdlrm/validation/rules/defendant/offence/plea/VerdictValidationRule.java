@@ -46,7 +46,7 @@ public class VerdictValidationRule implements ValidationRule<DefendantWithRefere
         for(MigratedOffence offence:defendantWithReferenceData.getDefendant().getOffences() ) {
             final boolean hasVerdictId = Objects.nonNull(verdictdata) && Objects.nonNull(verdictdata.get(offence.getOffenceId()));
             if(!hasVerdictId && Optional.ofNullable(offence.getVerdict()).map(MigratedVerdict::getId).isPresent()){
-                final Problem problem = newProblem(ProblemCode.INVALID_VERDICT_ID, new ProblemValue(ProblemCode.INVALID_VERDICT_ID.name(), "verdict id", Optional.ofNullable(offence.getVerdict()).map(v -> v.getId().toString()).orElse("Invalid verdict id")));
+                final Problem problem = newProblem(ProblemCode.INVALID_VERDICT, new ProblemValue(ProblemCode.INVALID_VERDICT.name(), "verdict id", Optional.ofNullable(offence.getVerdict()).map(v -> v.getId().toString()).orElse("Invalid verdict id")));
                 problems.add(problem);
             }
 
