@@ -60,6 +60,7 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
         assertEquals(1, listHearingRequests.size());
         assertEquals(2, listHearingRequests.get(0).getWeekCommencingDate().getDuration());
         assertEquals(JurisdictionType.CROWN, listHearingRequests.get(0).getJurisdictionType());
+        assertEquals("C55BN00", listHearingRequests.get(0).getCourtCentre().getCourtHearingLocation());
 
     }
 

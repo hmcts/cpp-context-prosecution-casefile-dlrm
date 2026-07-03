@@ -122,6 +122,8 @@ public class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConvert
                 courtCentreBuilder.withWelshName(organisationUnitWithCourtroomReferenceData.getOucodeL3WelshName());
             }
 
+            courtCentreBuilder.withCourtHearingLocation(migratedHearing.getCourtHearingLocation());
+
             return courtCentreBuilder.build();
         }
 
