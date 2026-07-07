@@ -2,8 +2,12 @@ package uk.gov.moj.cpp.pcfdlrm.refdata.hearing;
 
 import static java.util.Objects.nonNull;
 
+import uk.gov.justice.cps.prosecution.casefile.dlrm.InitialHearing;
+import uk.gov.moj.cpp.pcfdlrm.domain.DefendantsWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.domain.MigratedHearingWithReferenceData;
+import uk.gov.moj.cpp.pcfdlrm.refdata.defendant.DefendantRefDataEnricher;
 import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OrganisationUnitWithCourtroomReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OrganisationUnitWithCourtroomsReferenceData;
 
 import java.util.HashMap;

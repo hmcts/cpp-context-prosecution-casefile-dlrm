@@ -7,6 +7,7 @@ import uk.gov.moj.cpp.pcfdlrm.domain.DefendantsWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.domain.ReferenceDataVO;
 import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ModeOfTrialReasonsReferenceData;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedOffence;
 
 import java.util.List;

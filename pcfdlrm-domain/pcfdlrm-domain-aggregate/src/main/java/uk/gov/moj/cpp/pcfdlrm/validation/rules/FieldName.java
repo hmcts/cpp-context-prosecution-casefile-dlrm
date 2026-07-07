@@ -72,7 +72,8 @@ public enum FieldName {
     MATERIALS("materials"),
     FILE_TYPE("fileType"),
     FILE_NAME("fileName"),
-    LISTED_DEFENDANTS("listedDefendants"),;
+    LISTED_DEFENDANTS("listedDefendants"),
+    COURT_ROOM_ID("courtRoomId"),;
 
 
 

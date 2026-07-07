@@ -6,7 +6,7 @@ import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_FILE_TYPE_FOR_XHIBIT;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION;
-import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.MULTIPLE_FILES_FOR_XHIBIT;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANT_COUNT;
 import static uk.gov.moj.cpp.pcfdlrm.validation.Problems.newProblem;
 import static uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult.VALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult.newValidationResult;
@@ -39,22 +39,23 @@ public class ExhibitFiileTypeValidationRule implements ValidationRule<MigratedMa
             return VALID;
         }
 
-        if (materials.size() > 1) {
-            return newValidationResult(of(newProblem(MULTIPLE_FILES_FOR_XHIBIT, 
-                FieldName.MATERIALS.getValue(), String.valueOf(materials.size()))));
+        for (MigratedMaterial material : materials) {
+            String fileName = material.getFileName();
+            if (isNull(fileName) || !fileName.toLowerCase().endsWith(PDF_EXTENSION)) {
+                return newValidationResult(of(newProblem(INVALID_FILE_TYPE_FOR_XHIBIT,
+                        FieldName.FILE_TYPE.getValue(), ofNullable(fileName).orElse(""))));
+            }
+
+            String fileType = material.getFileType();
+            if (isNull(fileType) || !EXHIBIT_FILE_TYPE.equals(fileType)) {
+                return newValidationResult(of(newProblem(INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION,
+                        FieldName.FILE_TYPE.getValue(), ofNullable(fileType).orElse(""))));
+            }
         }
 
-        MigratedMaterial material = materials.get(0);
-        String fileName = material.getFileName();
-        if (isNull(fileName) || !fileName.toLowerCase().endsWith(PDF_EXTENSION)) {
-            return newValidationResult(of(newProblem(INVALID_FILE_TYPE_FOR_XHIBIT, 
-                FieldName.FILE_TYPE.getValue(), ofNullable(fileName).orElse(""))));
-        }
-
-        String fileType = material.getFileType();
-        if (isNull(fileType) || !EXHIBIT_FILE_TYPE.equals(fileType)) {
-            return newValidationResult(of(newProblem(INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION,
-                FieldName.FILE_TYPE.getValue(), ofNullable(fileType).orElse(""))));
+        if (materials.size() > input.getDefendantCount()) {
+            return newValidationResult(of(newProblem(COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANT_COUNT,
+                    FieldName.FILE_NAME.getValue(), materials.size())));
         }
 
         return VALID;

@@ -69,7 +69,7 @@ public class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConvert
 
                 final ReferenceDataVO referenceDataVO = migratedHearingWithReferenceData.getReferenceDataVO();
 
-                if (nonNull(migratedHearing)) {
+                if (nonNull(migratedHearing) && isValidHearing(migratedHearing,referenceDataVO,caseId)) {
                     buildListHearingRequest(migratedHearing, referenceDataVO, migratedHearingWithReferenceData, caseId, paramsVO, hearingRequests);
                 }
             }
@@ -80,7 +80,10 @@ public class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConvert
 
     private static HearingType buildHearingType(final ReferenceDataVO referenceDataVO) {
         if (nonNull(referenceDataVO.getHearingType())) {
-            return HearingType.hearingType().withId(referenceDataVO.getHearingType().getId()).withDescription(referenceDataVO.getHearingType().getHearingDescription()).build();
+            return HearingType.hearingType()
+                    .withId(referenceDataVO.getHearingType().getId())
+                    .withDescription(referenceDataVO.getHearingType().getHearingDescription())
+                    .build();
         }
         return null;
     }
@@ -118,6 +121,8 @@ public class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConvert
                 courtCentreBuilder.withName(organisationUnitWithCourtroomReferenceData.getOucodeL3Name());
                 courtCentreBuilder.withWelshName(organisationUnitWithCourtroomReferenceData.getOucodeL3WelshName());
             }
+
+            courtCentreBuilder.withCourtHearingLocation(migratedHearing.getCourtHearingLocation());
 
             return courtCentreBuilder.build();
         }
@@ -227,20 +232,23 @@ public class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConvert
                 && nonNull(migratedHearing.getWeekCommencingDate().getStartDate())
                 && convertToLocalDate(migratedHearing.getWeekCommencingDate().getStartDate()).isBefore(LocalDate.now());
 
-        final Integer duration = nonNull(migratedHearing.getDurationMinutes()) ? migratedHearing.getDurationMinutes() : null;
+        final Integer hearingDuration = nonNull(migratedHearing.getDurationMinutes()) ? migratedHearing.getDurationMinutes() : null;
 
         final ListHearingRequest.Builder listhearingRequestBuilder = listHearingRequest()
                 .withCourtCentre(buildCourtCentre(referenceDataVO, migratedHearing))
                 .withHearingType(buildHearingType(referenceDataVO))
                 .withJurisdictionType(determineJurisdictionType(referenceDataVO.getOrganisationUnitWithCourtroomsReferenceData().map(OrganisationUnitWithCourtroomsReferenceData::getOucodeL1Code).orElse(null), paramsVO.getMigrationSourceSystemName()))
-                .withEstimateMinutes(nonNull(duration) ? duration : referenceDataVO.getHearingType().getDefaultDurationMin());
+                .withEstimateMinutes(nonNull(hearingDuration) && !hearingDuration.equals(0) ? hearingDuration : referenceDataVO.getHearingType().getDefaultDurationMin());
 
         final ListHearingRequest listHearingRequest = listhearingRequestBuilder
                 .withListedStartDateTime(getDateAndTimeOfHearing(migratedHearing))
                 .withListDefendantRequests(buildListDefendantRequest(migratedHearingWithReferenceData.getMigratedDefendantWithOffences(), caseId, paramsVO.getSummonsApprovedOutcome()))
                 .withWeekCommencingDate(
                         ofNullable(migratedHearing.getWeekCommencingDate())
-                                .map(e -> WeekCommencingDate.weekCommencingDate().withDuration(e.getDuration()).withStartDate(e.getStartDate()).build())
+                                .map(e -> WeekCommencingDate.weekCommencingDate()
+                                        .withDuration(e.getDuration())
+                                        .withStartDate(e.getStartDate())
+                                        .build())
                                 .orElse(null))
                 .build();
         if (!pastHearingDate && !pastWeekCommencingDate && nonNull(listHearingRequest.getCourtCentre()) &&
@@ -250,6 +258,35 @@ public class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConvert
             hearingRequests.add(listhearingRequestBuilder.build());
 
         }
+    }
+
+    private boolean isValidHearing(final MigratedHearing migratedHearing, final ReferenceDataVO referenceDataVO, final UUID caseId) {
+        if (isNull(referenceDataVO.getHearingType())) {
+            LOGGER.warn("Hearing skipped - hearing type [{}] not matched in ref data. caseId=[{}]",
+                    migratedHearing.getHearingType(), caseId);
+            return false;
+        }
+
+        if (referenceDataVO.getOrganisationUnitWithCourtroomsReferenceData().isEmpty()) {
+            LOGGER.warn("Hearing skipped - OU code not matched in ref data. caseId=[{}]", caseId);
+            return false;
+        }
+
+        if (nonNull(migratedHearing.getDateOfHearing())
+                && convertToLocalDate(migratedHearing.getDateOfHearing()).isBefore(LocalDate.now())) {
+            LOGGER.warn("Hearing skipped - past hearing date [{}]. caseId=[{}]",
+                    migratedHearing.getDateOfHearing(), caseId);
+            return false;
+        }
+
+        if (nonNull(migratedHearing.getWeekCommencingDate())
+                && nonNull(migratedHearing.getWeekCommencingDate().getStartDate())
+                && convertToLocalDate(migratedHearing.getWeekCommencingDate().getStartDate()).isBefore(LocalDate.now())) {
+            LOGGER.warn("Hearing skipped - past week commencing date [{}]. caseId=[{}]",
+                    migratedHearing.getWeekCommencingDate().getStartDate(), caseId);
+            return false;
+        }
+        return true;
     }
 
 }

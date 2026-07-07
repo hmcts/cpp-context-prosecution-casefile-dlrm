@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence;
 import static java.util.Optional.of;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.trim;
+import static uk.gov.moj.cpp.pcfdlrm.validation.Problems.newProblem;
 import static uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult.VALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult.newValidationResult;
 
@@ -19,6 +20,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedOf
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class StatementOfFactsWelshValidationRule implements ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService> {
 

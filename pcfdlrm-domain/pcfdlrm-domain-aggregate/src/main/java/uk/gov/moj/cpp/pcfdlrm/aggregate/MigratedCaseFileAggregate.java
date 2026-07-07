@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.pcfdlrm.aggregate;
 
 import static java.util.stream.Stream.builder;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.match;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.otherwiseDoNothing;
 import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
@@ -11,7 +12,18 @@ import static uk.gov.moj.cpp.pcfdlrm.ProsecutionCaseFileHelper.buildMigratedHear
 import static uk.gov.moj.cpp.pcfdlrm.ProsecutionCaseFileHelper.validateDefendantErrors;
 import static uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseValidatedCreationPending.migratedCaseValidatedCreationPending;
 import static uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseValidatedWithWarnings.migratedCaseValidatedWithWarnings;
-import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.*;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURT_LOCATION_OUCODE_INVALID;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANT_COUNT;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_FILE_TYPE_FOR_XHIBIT;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.NO_MATCHING_DEFENDANTS_FOR_HEARING;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.OFFENCE_CODE_IS_INVALID;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.PLEA_DATE_ABSENT;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.PLEA_DATE_CANNOT_BE_FUTURE_DATE;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.PROSECUTOR_OUCODE_NOT_RECOGNISED;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.RECEIPT_TYPE_IS_INVALID;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.VERDICT_DATE_ABSENT;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.VERDICT_DATE_CANNOT_BE_FUTURE_DATE;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ValidationRuleExecutor.validate;
 import static uk.gov.moj.cpp.pcfdlrm.validation.provider.CcProsecutionValidationRuleProvider.getCaseValidationRules;
 import static uk.gov.moj.cpp.pcfdlrm.validation.provider.CcProsecutionValidationRuleProvider.getMigratedHearingValidationRules;
@@ -21,7 +33,6 @@ import static uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialAdde
 import static uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialAddedPendingProcess.materialAddedPendingProcess;
 import static uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialReadyForCourtDocument.materialReadyForCourtDocument;
 import static uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialRejected.materialRejected;
-import static uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.HearingValidationFailed.hearingValidationFailed;
 import static uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseFileProcessed.migratedCaseFileProcessed;
 
 import uk.gov.justice.domain.aggregate.Aggregate;
@@ -53,6 +64,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Problem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ProblemValue;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Prosecution;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedCaseDetails;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedHearing;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendantWithProblem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedMaterial;
@@ -60,12 +72,17 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ReceiveMig
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialAdded;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialAddedPendingProcess;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialReadyForCourtDocument;
-import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.HearingValidationFailed;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseFileProcessed;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseNotFoundInAutomation;
 
 import java.io.Serial;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -81,16 +98,20 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 public class MigratedCaseFileAggregate implements Aggregate {
 
     @Serial
-    private static final long serialVersionUID = -1162577159791246068L;
+    private static final long serialVersionUID = -6786924305887766569L;
     private static final String XHIBIT = "XHIBIT";
     private static final String MIGRATED_CASE_NOT_FOUND_IN_AUTOMATION = "Migrated case not found in Automation";
     public static final String NO_MATCHING_DEFENDANTS_WITH_HEARINGS_FOUND_FOR_HEARING = "No matching defendants with hearings found for the hearing";
     public static final String OFFENCE_VALIDATION = "Offence validation";
     public static final String HEARING_VALIDATION = "Hearing validation";
-    public static final String MATERIAL_VALIDATION_FOR_XHIBIT = "Material validation for Xhibit";
     public static final String INVALID_OFFENCE_CODE = "Invalid offence code";
     public static final String MISSING_OR_INVALID_PLEA_DATE = "Missing or Invalid plea date";
     public static final String MISSING_OR_INVALID_VERDICT_DATE = "Missing or Invalid verdict date";
+    public static final String COURT_RECORD_SHEET_NOT_PDF = "Court Record Sheet must be a PDF file";
+    public static final String COURT_RECORD_SHEET_FILE_TYPE_INVALID = "Court Record Sheet file type is not valid for XHIBIT migration";
+    public static final String COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANTS = "Number of Court Record Sheets exceeds number of defendants";
+    private final List<String> offenceProblems = List.of(ProblemCode.INVALID_PLEA.name(),ProblemCode.PLEA_DATE_ABSENT.name(),ProblemCode.PLEA_DATE_CANNOT_BE_FUTURE_DATE.name(),ProblemCode.CONVICTION_DATE_ABSENT.name(),
+            ProblemCode.INVALID_VERDICT.name(), VERDICT_DATE_ABSENT.name());
 
     private UUID submissionId;
 
@@ -155,22 +176,14 @@ public class MigratedCaseFileAggregate implements Aggregate {
         final MigratedCaseDetails migratedCaseDetails = receiveMigratedCaseFile.getMigratedCaseDetails();
 
         final List<MigratedHearingWithReferenceData> migratedHearingWithReferenceDataList = new ArrayList<>();
-        final List<Problem> materialsProblems = validate(new MigratedMaterialsWithOriginatingSystem(receiveMigratedCaseFile.getMaterials(), migratedCaseDetails.getMigrationSourceSystem().getMigrationSourceSystemName(),  sections ),
+        final List<Problem> materialsProblems = validate(new MigratedMaterialsWithOriginatingSystem(receiveMigratedCaseFile.getMaterials(), migratedCaseDetails.getMigrationSourceSystem().getMigrationSourceSystemName(),  sections, migratedCaseDetails.getDefendants().size()),
                         referenceDataQueryService,
                         MaterialFileTypwWithCountValidationRuleProvider.getRejectionRules(CC));
 
 
-        boolean hasExhibitPayloadWithMaterialProblems = generateXhibitMaterialWarnings(receiveMigratedCaseFile, materialsProblems, builder, migratedCaseDetails);
-
-        final List<Problem> hearingsProblems = validateHearings(receiveMigratedCaseFile, referenceDataQueryService, migratedHearingRefDataEnrichers, migratedCaseDetails, migratedHearingWithReferenceDataList);
-        if (hasNoMatchingDefendantsForXhibitHearing(hearingsProblems, receiveMigratedCaseFile)) {
-            builder.add(hearingValidationFailed()
-                    .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
-                    .withCaseUrn(migratedCaseDetails.getCaseDetails().getProsecutorCaseReference())
-                    .withSubmissionId(receiveMigratedCaseFile.getSubmissionId())
-                    .build());
+        if (hasInvalidFileTypeForXhibit(materialsProblems)) {
             builder.add(MigratedCaseFileProcessed.migratedCaseFileProcessed()
-                    .withDescription(NO_MATCHING_DEFENDANTS_WITH_HEARINGS_FOUND_FOR_HEARING)
+                    .withDescription(COURT_RECORD_SHEET_NOT_PDF)
                     .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
                     .withSubmissionId(receiveMigratedCaseFile.getSubmissionId())
                     .withProcessingIsSuccessful(false)
@@ -178,7 +191,28 @@ public class MigratedCaseFileAggregate implements Aggregate {
                     .build());
             return apply(builder.build());
         }
-        generateXhibitHearingWarnings(receiveMigratedCaseFile, hearingsProblems, builder, migratedCaseDetails);
+
+        if (hasInvalidFileTypeForXhibitMigration(materialsProblems)) {
+            builder.add(MigratedCaseFileProcessed.migratedCaseFileProcessed()
+                    .withDescription(COURT_RECORD_SHEET_FILE_TYPE_INVALID)
+                    .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
+                    .withSubmissionId(receiveMigratedCaseFile.getSubmissionId())
+                    .withProcessingIsSuccessful(false)
+                    .withCaseUrn(migratedCaseDetails.getCaseDetails().getProsecutorCaseReference())
+                    .build());
+            return apply(builder.build());
+        }
+
+        if (hasCourtRecordSheetCountExceedsDefendantCount(materialsProblems)) {
+            builder.add(MigratedCaseFileProcessed.migratedCaseFileProcessed()
+                    .withDescription(COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANTS)
+                    .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
+                    .withSubmissionId(receiveMigratedCaseFile.getSubmissionId())
+                    .withProcessingIsSuccessful(false)
+                    .withCaseUrn(migratedCaseDetails.getCaseDetails().getProsecutorCaseReference())
+                    .build());
+            return apply(builder.build());
+        }
 
         final List<Problem> caseProblems = validate(
                 receivedProsecutionWithReferenceData,
@@ -221,7 +255,31 @@ public class MigratedCaseFileAggregate implements Aggregate {
 
                 return apply(builder.build());
             }
+        }
 
+        final HearingValidationResult hearingValidationResult = validateHearings(receiveMigratedCaseFile, referenceDataQueryService, migratedHearingRefDataEnrichers, migratedCaseDetails, migratedHearingWithReferenceDataList);
+        final List<Problem> hearingsProblems = hearingValidationResult.problems();
+
+        if (hasNoMatchingDefendantsForXhibitHearing(hearingsProblems, receiveMigratedCaseFile)) {
+            builder.add(MigratedCaseFileProcessed.migratedCaseFileProcessed()
+                    .withDescription(NO_MATCHING_DEFENDANTS_WITH_HEARINGS_FOUND_FOR_HEARING)
+                    .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
+                    .withSubmissionId(receiveMigratedCaseFile.getSubmissionId())
+                    .withProcessingIsSuccessful(false)
+                    .withCaseUrn(migratedCaseDetails.getCaseDetails().getProsecutorCaseReference())
+                    .build());
+            return apply(builder.build());
+        }
+
+        final MigratedDefendantWithProblem migratedDefendantWithProblem = validateDefendantErrors(prosecution.getCaseDetails(),
+                prosecutionChannel, defendantsWithReferenceData,
+                referenceDataQueryService, builder, false, sourceSystemName);
+
+        if (hasOffenceProblems(receiveMigratedCaseFile, migratedDefendantWithProblem, builder, migratedCaseDetails)) {
+            return apply(builder.build());
+        }
+
+        if (isNotEmpty(caseProblems) && isXhibit(receiveMigratedCaseFile)) {
             final List<MigratedCaseValidatedWithWarnings> caseValidationWarningsList = caseProblems.stream()
                     .filter(problem -> problem.getCode().equalsIgnoreCase(ProblemCode.CASE_MARKER_IS_INVALID.name()))
                     .map(problem -> migratedCaseValidatedWithWarnings()
@@ -233,23 +291,32 @@ public class MigratedCaseFileAggregate implements Aggregate {
                     .toList();
 
             caseValidationWarningsList.forEach(builder::add);
-
         }
 
-        final MigratedDefendantWithProblem migratedDefendantWithProblem = validateDefendantErrors(prosecution.getCaseDetails(),
-                prosecutionChannel, defendantsWithReferenceData,
-                referenceDataQueryService, builder, false, sourceSystemName);
+        final List<DefendantProblem> defendantProblems = migratedDefendantWithProblem.getDefendantProblems();
 
-        if (hasOffenceProblems(receiveMigratedCaseFile, migratedDefendantWithProblem, builder, migratedCaseDetails)) {
-            return apply(builder.build());
-        }
+        final List<MigratedCaseValidatedWithWarnings> defendantValidationWarningsList = defendantProblems.stream()
+                .flatMap(defendantProblem -> defendantProblem.getProblems().stream())
+                .filter(problem -> !offenceProblems.contains(problem.getCode()))
+                .map(problem -> migratedCaseValidatedWithWarnings()
+                        .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
+                        .withCaseUrn(migratedCaseDetails.getCaseDetails().getProsecutorCaseReference())
+                        .withType("Defendant validation")
+                        .withWarnings(problem.getCode() + " : " + problem.getValues().stream().map(ProblemValue::getValue).toList())
+                        .build())
+                .toList();
+
+        defendantValidationWarningsList.forEach(builder::add);
+
+        generateXhibitHearingWarnings(receiveMigratedCaseFile, hearingsProblems, builder, migratedCaseDetails);
 
         if (hasXhibitDefendantProblems(migratedDefendantWithProblem, receiveMigratedCaseFile)) {
 
             final List<MigratedCaseValidatedWithWarnings> migratedCaseValidatedWithWarningsList = generateOffenceWarnings(
                     migratedCaseDetails.getCaseDetails().getCaseId(),
                     migratedCaseDetails.getCaseDetails().getProsecutorCaseReference(),
-                    migratedDefendantWithProblem.getDefendantProblems());
+                    migratedDefendantWithProblem.getDefendantProblems(),
+                    offenceProblems);
 
             migratedCaseValidatedWithWarningsList.forEach(builder::add);
         }
@@ -260,19 +327,22 @@ public class MigratedCaseFileAggregate implements Aggregate {
         String prosecutingAuthority = getProsecutingAuthority(receiveMigratedCaseFile.getMigratedCaseDetails().getCaseDetails());
         String prosecutorDefendantId = receiveMigratedCaseFile.getMigratedCaseDetails().getDefendants().get(0).getId().toString();
 
+        final List<MigratedHearing> defaultedHearings = hearingValidationResult.hearings();
+
         receiveMigratedCaseFile = ReceiveMigratedCaseFile.receiveMigratedCaseFile()
                 .withValuesFrom(receiveMigratedCaseFile)
                 .withMigratedCaseDetails(MigratedCaseDetails.migratedCaseDetails()
                         .withValuesFrom(migratedCaseDetails)
                         .withDefendants(migratedDefendants)
+                        .withHearings(defaultedHearings)
                         .build()).build();
 
         final ReceiveMigratedCaseFile finalReceiveMigratedCaseFile = receiveMigratedCaseFile;
         Optional.ofNullable(receiveMigratedCaseFile.getMaterials())
-                .filter(materials -> !materials.isEmpty() && !hasExhibitPayloadWithMaterialProblems)
+                .filter(materials -> !materials.isEmpty())
                 .ifPresentOrElse(
                         materials -> {
-                            finalReceiveMigratedCaseFile.getMaterials()
+                            materials
                                     .forEach(migratedMaterial -> {
                                         MaterialAdded materialAdded = addMaterial(caseId, prosecutingAuthority, prosecutorDefendantId, migratedMaterial, false, ZonedDateTime.now(),
                                                 referenceDataQueryService, sections, finalReceiveMigratedCaseFile.getMigratedCaseDetails().getDefendants(), documentMetadataReferenceDataList, CC);
@@ -283,11 +353,12 @@ public class MigratedCaseFileAggregate implements Aggregate {
 
 
                             builder.add(migratedCaseValidatedCreationPending()
-                                    .withMigratedCaseSubmission( ReceiveMigratedCaseFile.receiveMigratedCaseFile()
+                                    .withMigratedCaseSubmission(ReceiveMigratedCaseFile.receiveMigratedCaseFile()
                                             .withValuesFrom(finalReceiveMigratedCaseFile)
                                             .withMigratedCaseDetails(MigratedCaseDetails.migratedCaseDetails()
                                                     .withValuesFrom(migratedCaseDetails)
                                                     .withDefendants(migratedDefendants)
+                                                    .withHearings(defaultedHearings)
                                                     .build()).build())
                                     .withProsecutionWithReferenceData(receivedProsecutionWithReferenceData)
                                     .withMigratedHearingWithReferenceData(migratedHearingWithReferenceDataList)
@@ -307,20 +378,47 @@ public class MigratedCaseFileAggregate implements Aggregate {
         return apply(builder.build());
     }
 
-    private List<Problem> validateHearings(final ReceiveMigratedCaseFile receiveMigratedCaseFile, final ReferenceDataQueryService referenceDataQueryService, final List<MigratedHearingRefDataEnricher> migratedHearingRefDataEnrichers, final MigratedCaseDetails migratedCaseDetails, final List<MigratedHearingWithReferenceData> migratedHearingWithReferenceDataList) {
-        if (isNotEmpty(migratedCaseDetails.getHearings())) {
-            migratedCaseDetails.getHearings().stream()
-                    .map(migratedHearing -> buildMigratedHearingRefData(
-                            migratedHearingRefDataEnrichers,
-                            migratedCaseDetails.getCaseDetails(),
-                            migratedHearing,
-                            receiveMigratedCaseFile.getMigratedCaseDetails().getDefendants())).forEach(migratedHearingWithReferenceDataList::add);
+    private record HearingValidationResult(List<MigratedHearing> hearings, List<Problem> problems) {}
 
-            return migratedHearingWithReferenceDataList.stream()
-                    .flatMap(e -> validate(e, referenceDataQueryService, getMigratedHearingValidationRules()).stream())
-                    .toList();
+    private HearingValidationResult validateHearings(final ReceiveMigratedCaseFile receiveMigratedCaseFile, final ReferenceDataQueryService referenceDataQueryService, final List<MigratedHearingRefDataEnricher> migratedHearingRefDataEnrichers, final MigratedCaseDetails migratedCaseDetails, final List<MigratedHearingWithReferenceData> migratedHearingWithReferenceDataList) {
+        if (isNotEmpty(migratedCaseDetails.getHearings())) {
+            final List<MigratedHearing> updatedHearings = new ArrayList<>();
+            final List<Problem> allProblems = new ArrayList<>();
+            for (final MigratedHearing hearing : migratedCaseDetails.getHearings()) {
+                final MigratedHearingWithReferenceData refData = buildMigratedHearingRefData(
+                        migratedHearingRefDataEnrichers,
+                        migratedCaseDetails.getCaseDetails(),
+                        hearing,
+                        receiveMigratedCaseFile.getMigratedCaseDetails().getDefendants());
+                final List<Problem> problems = validate(refData, referenceDataQueryService, getMigratedHearingValidationRules());
+                allProblems.addAll(problems);
+                final MigratedHearing effectiveHearing = (problems.isEmpty() && isFixedHearing(hearing) && hearing.getTimeOfHearing() == null)
+                        ? MigratedHearing.migratedHearing().withValuesFrom(hearing).withTimeOfHearing(toDefaultUtcTime(hearing.getDateOfHearing())).build()
+                        : hearing;
+                updatedHearings.add(effectiveHearing);
+                refData.setMigratedHearing(effectiveHearing);
+                migratedHearingWithReferenceDataList.add(refData);
+            }
+            return new HearingValidationResult(updatedHearings, allProblems);
         }
-        return List.of();
+        return new HearingValidationResult(migratedCaseDetails.getHearings(), List.of());
+    }
+
+    private static final ZoneId LONDON = ZoneId.of("Europe/London");
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss");
+
+    private static boolean isFixedHearing(final MigratedHearing hearing) {
+        return hearing.getWeekCommencingDate() == null
+                && isNotBlank(hearing.getDateOfHearing())
+                && hearing.getCourtRoomId() != null
+                && hearing.getCourtRoomId() > 0;
+    }
+
+    private static String toDefaultUtcTime(final String dateOfHearing) {
+        return LocalDateTime.of(LocalDate.parse(dateOfHearing), LocalTime.of(10, 0))
+                .atZone(LONDON)
+                .withZoneSameInstant(ZoneOffset.UTC)
+                .format(TIME_FORMAT);
     }
 
     private void generateXhibitHearingWarnings(final ReceiveMigratedCaseFile receiveMigratedCaseFile, final List<Problem> hearingsProblems, final Stream.Builder<Object> builder, final MigratedCaseDetails migratedCaseDetails) {
@@ -331,19 +429,6 @@ public class MigratedCaseFileAggregate implements Aggregate {
                     hearingsProblems);
             migratedCaseValidatedWithWarningsList.forEach(builder::add);
         }
-    }
-
-    private boolean generateXhibitMaterialWarnings(final ReceiveMigratedCaseFile receiveMigratedCaseFile, final List<Problem> materialsProblems, final Stream.Builder<Object> builder, final MigratedCaseDetails migratedCaseDetails) {
-        if (isNotEmpty(materialsProblems) && isXhibit(receiveMigratedCaseFile)) {
-            materialsProblems.stream().map(problem -> migratedCaseValidatedWithWarnings()
-                    .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
-                    .withCaseUrn(migratedCaseDetails.getCaseDetails().getProsecutorCaseReference())
-                    .withType(MATERIAL_VALIDATION_FOR_XHIBIT)
-                    .withWarnings(problem.getCode() + " : " + problem.getValues().stream().map(ProblemValue::getValue).toList())
-                    .build()).forEach(builder::add);
-            return true;
-        }
-        return false;
     }
 
     private boolean hasOffenceProblems(final ReceiveMigratedCaseFile receiveMigratedCaseFile, final MigratedDefendantWithProblem migratedDefendantWithProblem, final Stream.Builder<Object> builder, final MigratedCaseDetails migratedCaseDetails) {
@@ -402,9 +487,7 @@ public class MigratedCaseFileAggregate implements Aggregate {
     }
 
 
-    private List<MigratedCaseValidatedWithWarnings> generateOffenceWarnings(UUID caseId, String caseUrn, final List<DefendantProblem> defendantProblems) {
-       List<String> problemsToRaise = List.of(ProblemCode.INVALID_PLEA_ID.name(),ProblemCode.PLEA_DATE_ABSENT.name(),ProblemCode.PLEA_DATE_CANNOT_BE_FUTURE_DATE.name(),ProblemCode.CONVICTION_DATE_ABSENT.name(),
-               ProblemCode.INVALID_VERDICT_ID.name(), VERDICT_DATE_ABSENT.name());
+    private List<MigratedCaseValidatedWithWarnings> generateOffenceWarnings(UUID caseId, String caseUrn, final List<DefendantProblem> defendantProblems, List<String> problemsToRaise) {
         List< Problem> problems = defendantProblems.stream().flatMap(e->e.getProblems().stream()).filter(e-> problemsToRaise.contains(e.getCode())).toList();
 
         return problems.stream()
@@ -455,6 +538,18 @@ public class MigratedCaseFileAggregate implements Aggregate {
 
     private boolean hasInvalidReceiptTypes(final List<Problem> caseProblems) {
         return caseProblems.stream().anyMatch(e -> e.getCode().equals(RECEIPT_TYPE_IS_INVALID.name()));
+    }
+
+    private boolean hasInvalidFileTypeForXhibit(final List<Problem> materialsProblems) {
+        return materialsProblems.stream().anyMatch(e -> e.getCode().equals(INVALID_FILE_TYPE_FOR_XHIBIT.name()));
+    }
+
+    private boolean hasInvalidFileTypeForXhibitMigration(final List<Problem> materialsProblems) {
+        return materialsProblems.stream().anyMatch(e -> e.getCode().equals(INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION.name()));
+    }
+
+    private boolean hasCourtRecordSheetCountExceedsDefendantCount(final List<Problem> materialsProblems) {
+        return materialsProblems.stream().anyMatch(e -> e.getCode().equals(COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANT_COUNT.name()));
     }
 
     private boolean hasNoMatchingDefendantsForXhibitHearing(final List<Problem> hearingsProblems, final ReceiveMigratedCaseFile receiveMigratedCaseFile) {

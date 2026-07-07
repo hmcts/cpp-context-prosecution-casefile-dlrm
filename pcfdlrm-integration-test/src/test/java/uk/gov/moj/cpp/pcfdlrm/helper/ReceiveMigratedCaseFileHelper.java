@@ -8,6 +8,9 @@ import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.Is.is;
 import static uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClientProvider.newPrivateJmsMessageConsumerClientProvider;
@@ -16,6 +19,7 @@ import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetad
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payload;
 import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MATERIAL_ADDED_EVENT;
 import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_FILE_PROCESSED;
+import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_FILE_RECEIVED;
 import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_VALIDATED_CREATION_PENDING;
 
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
@@ -37,6 +41,7 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
     private final JmsMessageConsumerClient materialAddedEventProcessConsumer = newPrivateJmsMessageConsumerClientProvider(CONTEXT_NAME).withEventNames(MATERIAL_ADDED_EVENT).getMessageConsumerClient();
     private final JmsMessageConsumerClient migratedCaseValidatedCreationPendingConsumer = newPrivateJmsMessageConsumerClientProvider(CONTEXT_NAME).withEventNames(MIGRATED_CASE_VALIDATED_CREATION_PENDING).getMessageConsumerClient();
     private final JmsMessageConsumerClient migratedCaseFileProcessedConsumer = newPrivateJmsMessageConsumerClientProvider(CONTEXT_NAME).withEventNames(MIGRATED_CASE_FILE_PROCESSED).getMessageConsumerClient();
+    private final JmsMessageConsumerClient migratedCaseFileReceivedConsumer = newPrivateJmsMessageConsumerClientProvider(CONTEXT_NAME).withEventNames(MIGRATED_CASE_FILE_RECEIVED).getMessageConsumerClient();
 
     public void receiveMigratedCaseFile(final String payload) {
         makePostCall(getWriteUrl("/receive-migrated-case-file"),
@@ -81,6 +86,10 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
     }
 
     public void verifyReceiveMigratedCaseFileForMultipleMaterial(AddMaterialHelper addMaterialHelper, String submissionId, String[] filepathIndexOne, final String fileType) {
+        verifyReceiveMigratedCaseFileForMultipleMaterial(addMaterialHelper, submissionId, filepathIndexOne, fileType, null);
+    }
+
+    public void verifyReceiveMigratedCaseFileForMultipleMaterial(AddMaterialHelper addMaterialHelper, String submissionId, String[] filepathIndexOne, final String fileType, final String expectedDefaultedHearingTime) {
 
         await()
                 .untilAsserted(() -> {
@@ -96,14 +105,20 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
             addMaterialHelper.verifyUploadMaterialCalled("http://inazure/secrets/" + filepathIndexOne[1]);
         }
 
-
         await()
                 .atMost(5, TimeUnit.SECONDS)
                 .untilAsserted(() -> {
                     final JsonEnvelope migratedCaseValidatedCreationPendingEvent = addMaterialHelper.verifyInMessagingQueue(migratedCaseValidatedCreationPendingConsumer);
-                    assertThat(migratedCaseValidatedCreationPendingEvent, jsonEnvelope(metadata().withName(MIGRATED_CASE_VALIDATED_CREATION_PENDING), payload().isJson(allOf(
-                            withJsonPath("receiveMigratedCaseFile.submissionId", is(submissionId))
-                    ))));
+                    if (expectedDefaultedHearingTime != null) {
+                        assertThat(migratedCaseValidatedCreationPendingEvent, jsonEnvelope(metadata().withName(MIGRATED_CASE_VALIDATED_CREATION_PENDING), payload().isJson(allOf(
+                                withJsonPath("receiveMigratedCaseFile.submissionId", is(submissionId)),
+                                withJsonPath("migratedHearingWithReferenceDataList[0].migratedHearing.timeOfHearing", is(expectedDefaultedHearingTime))
+                        ))));
+                    } else {
+                        assertThat(migratedCaseValidatedCreationPendingEvent, jsonEnvelope(metadata().withName(MIGRATED_CASE_VALIDATED_CREATION_PENDING), payload().isJson(allOf(
+                                withJsonPath("receiveMigratedCaseFile.submissionId", is(submissionId))
+                        ))));
+                    }
                 });
     }
 
@@ -153,6 +168,34 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
                                     .withName(PROGRESSION_INITIATE_COURT_PROCEEDINGS),
                             payload().isJson(allOf(withJsonPath("initiateCourtProceedings.prosecutionCases[0].defendants[0].offences[0].allocationDecision.motReasonId", is(motReasonId))))));
         }
+    }
+
+    public void verifyMigratedCaseFileReceivedWithDefaultedHearingTime(final AddMaterialHelper addMaterialHelper, final String expectedDefaultedUtcTime) {
+        await()
+                .atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(() -> {
+                    final JsonEnvelope event = addMaterialHelper.verifyInMessagingQueue(migratedCaseFileReceivedConsumer);
+                    assertThat(event, jsonEnvelope(metadata().withName(MIGRATED_CASE_FILE_RECEIVED), payload().isJson(allOf(
+                            withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings", hasSize(3)),
+                            withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings[0].timeOfHearing", is(expectedDefaultedUtcTime)),
+                            withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings[1].timeOfHearing", is("10:05:00")),
+                            withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings[2].timeOfHearing", is("08:30:00"))
+                    ))));
+                });
+    }
+
+    public void verifyCourtProceedingsInitiatedWithoutOffenceCustodyTimeLimit(final String caseUrn, final String offenceId) {
+
+        await()
+                .atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(() ->
+                        assertThat(findAll(postRequestedFor(urlMatching("/progression-service/command/api/rest/progression/initiatecourtproceedings"))
+                                .withRequestBody(containing(caseUrn))).size(), is(1)));
+
+        final String requestBody = getLastLoggedRequest(caseUrn);
+
+        assertThat(requestBody, containsString(offenceId));
+        assertThat(requestBody, not(containsString("custodyTimeLimit")));
     }
 
     public static String getLastLoggedRequest(final String caseUrn) {

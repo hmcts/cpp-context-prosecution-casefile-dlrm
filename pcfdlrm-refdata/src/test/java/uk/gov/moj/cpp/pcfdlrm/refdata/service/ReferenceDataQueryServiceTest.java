@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import static uk.gov.justice.services.messaging.JsonEnvelope.envelopeFrom;
 import static uk.gov.justice.services.messaging.spi.DefaultJsonMetadata.metadataBuilder;
 import static uk.gov.moj.cpp.pcfdlrm.refdata.service.ReferenceDataQueryServiceTestHelper.buildHearingTypes;
+import static uk.gov.moj.cpp.pcfdlrm.refdata.service.ReferenceDataQueryServiceTestHelper.buildOrganisationUnitWithCourtroom;
 import static uk.gov.moj.cpp.pcfdlrm.refdata.service.ReferenceDataQueryServiceTestHelper.buildSelfDefinedInformationEthnicity;
 import static uk.gov.moj.cpp.pcfdlrm.refdata.service.ReferenceDataQueryServiceTestHelper.buildVehicleCodes;
 import static uk.gov.moj.cpp.pcfdlrm.refdata.service.ReferenceDataQueryServiceTestHelper.getMockReferenceDataAlcoholLevelMethods;
@@ -61,6 +62,7 @@ import java.util.UUID;
 import uk.gov.justice.services.messaging.JsonObjects;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 
 import org.hamcrest.core.Is;
 import org.junit.jupiter.api.Test;

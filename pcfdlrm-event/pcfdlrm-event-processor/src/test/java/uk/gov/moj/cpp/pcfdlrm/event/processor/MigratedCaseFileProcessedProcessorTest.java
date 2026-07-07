@@ -6,8 +6,9 @@ import static uk.gov.justice.services.test.utils.core.messaging.MetadataBuilderF
 
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
-import uk.gov.moj.cpp.pcfdlrm.event.processor.counter.PcfMigratedCaseSuccessfullyProcessedCounter;
 import uk.gov.moj.cpp.pcfdlrm.event.processor.counter.PcfMigratedCaseFailedCounter;
+import uk.gov.moj.cpp.pcfdlrm.event.processor.counter.PcfMigratedCaseReceivedCounter;
+import uk.gov.moj.cpp.pcfdlrm.event.processor.counter.PcfMigratedCaseSuccessfullyProcessedCounter;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseFileProcessed;
 
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,9 @@ class MigratedCaseFileProcessedProcessorTest {
 
     @Mock
     private PcfMigratedCaseFailedCounter pcfMigratedCaseFailedCounter;
+
+    @Mock
+    private PcfMigratedCaseReceivedCounter pcfMigratedCaseReceivedCounter;
 
     @Captor
     private ArgumentCaptor<Envelope<?>> privateEventCaptor;
@@ -66,6 +70,7 @@ class MigratedCaseFileProcessedProcessorTest {
 
         // Then
         verify(pcfMigratedCaseFailedCounter).increment();
+        verify(pcfMigratedCaseReceivedCounter).increment();
         verify(pcfMigratedCaseSuccessfullyProcessedCounter, never()).increment();
     }
 

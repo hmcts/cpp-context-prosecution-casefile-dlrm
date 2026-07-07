@@ -20,6 +20,7 @@ public class ParamsVO {
 
     private SummonsApprovedOutcome summonsApprovedOutcome;
     private LocalDate custodyTimeLimit;
+    private String custodyStatus;
 
     public ReferenceDataVO getReferenceDataVO() {
         return referenceDataVO;
@@ -99,5 +100,13 @@ public class ParamsVO {
 
     public void setCustodyTimeLimit(final LocalDate custodyTimeLimit) {
         this.custodyTimeLimit = custodyTimeLimit;
+    }
+
+    public String getCustodyStatus() {
+        return custodyStatus;
+    }
+
+    public void setCustodyStatus(final String custodyStatus) {
+        this.custodyStatus = custodyStatus;
     }
 }

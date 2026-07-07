@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.pcfdlrm.validation.rules;
 import static java.util.Optional.of;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.collections.CollectionUtils.isEmpty;
+import static uk.gov.moj.cpp.pcfdlrm.validation.Problems.newProblem;
 import static uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult.VALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult.newValidationResult;
 
@@ -16,6 +17,9 @@ import uk.gov.moj.cpp.pcfdlrm.domain.ProsecutionWithReferenceData;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
+
+import org.apache.commons.collections.CollectionUtils;
 
 public class CaseMarkersValidationAndEnricherRule implements ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService> {
 
