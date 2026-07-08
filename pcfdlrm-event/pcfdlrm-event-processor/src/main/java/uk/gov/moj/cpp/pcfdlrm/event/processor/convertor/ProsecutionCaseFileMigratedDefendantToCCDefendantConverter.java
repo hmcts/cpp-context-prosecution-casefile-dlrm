@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.pcfdlrm.event.processor.convertor;
 
 import static java.util.Objects.nonNull;
+import static java.util.Optional.ofNullable;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.join;
@@ -55,9 +56,13 @@ public class ProsecutionCaseFileMigratedDefendantToCCDefendantConverter implemen
 
         return migratedDefendants.stream()
                 .map(defendant -> {
-                    paramsVO.setCustodyTimeLimit(Optional.ofNullable(defendant)
+                    paramsVO.setCustodyTimeLimit(ofNullable(defendant)
                             .map(MigratedDefendant::getIndividual)
                             .map(Individual::getCustodyTimeLimit)
+                            .orElse(null));
+                    paramsVO.setCustodyStatus(ofNullable(defendant)
+                            .map(MigratedDefendant::getIndividual)
+                            .map(Individual::getCustodyStatus)
                             .orElse(null));
                             final Defendant.Builder builder = defendant()
                                     .withId(defendant.getId())

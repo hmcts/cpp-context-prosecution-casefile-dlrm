@@ -41,8 +41,8 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
 
     public static Stream<Arguments> data() {
         return Stream.of(
-                Arguments.of("W","WELSH"),
-                Arguments.of("E","ENGLISH")
+                Arguments.of("W", "WELSH"),
+                Arguments.of("E", "ENGLISH")
 
         );
     }
@@ -60,6 +60,7 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
         assertEquals(1, listHearingRequests.size());
         assertEquals(2, listHearingRequests.get(0).getWeekCommencingDate().getDuration());
         assertEquals(JurisdictionType.CROWN, listHearingRequests.get(0).getJurisdictionType());
+        assertEquals("C55BN00", listHearingRequests.get(0).getCourtCentre().getCourtHearingLocation());
 
     }
 
@@ -91,7 +92,7 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
 
         assertEquals(1, listHearingRequests.size());
         assertEquals(JurisdictionType.CROWN, listHearingRequests.get(0).getJurisdictionType());
-        assertEquals("ENGLISH",listHearingRequests.get(0).getListDefendantRequests().get(0).getHearingLanguageNeeds().name());
+        assertEquals("ENGLISH", listHearingRequests.get(0).getListDefendantRequests().get(0).getHearingLanguageNeeds().name());
     }
 
     @Test
@@ -213,6 +214,81 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
     }
 
     @Test
+    void shouldNotConvertWhenHearingTypeIsNullAndDurationMinutesIsNull() {
+        MigratedHearingWithReferenceData migratedHearingWithReferenceData = getMigratedHearingWithReferenceData(true);
+        migratedHearingWithReferenceData.setMigratedHearing(MigratedHearing.migratedHearing()
+                .withCourtHearingLocation("C55BN00")
+                .withCourtRoomId(1234)
+                .withTimeOfHearing("10:05:01")
+                .withHearingType("UNKNOWN_TYPE")
+                .withDateOfHearing(now().plusDays(1).toString())
+                .withListedDefendants(List.of(listedDefendant()
+                        .withProsecutorDefendantId("a9860e1a-8695-4fd4-8046-c1c4fe6c7f80")
+                        .withListedOffences(List.of("offId11"))
+                        .build()))
+                .build());
+        migratedHearingWithReferenceData.getReferenceDataVO().setHearingType(null);
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName("XHIBIT");
+        paramsVO.setChannel(DLRM_MIGRATION);
+
+        assertEquals(0, prosecutionCaseFileMigrationInitialHearingToCCHearingRequestConverter
+                .convert(List.of(migratedHearingWithReferenceData), paramsVO).size());
+    }
+
+    @Test
+    void shouldNotConvertWhenHearingTypeIsNullAndDurationMinutesIsZero() {
+        MigratedHearingWithReferenceData migratedHearingWithReferenceData = getMigratedHearingWithReferenceData(true);
+        migratedHearingWithReferenceData.setMigratedHearing(MigratedHearing.migratedHearing()
+                .withCourtHearingLocation("C55BN00")
+                .withCourtRoomId(1234)
+                .withTimeOfHearing("10:05:01")
+                .withDurationMinutes(0)
+                .withHearingType("UNKNOWN_TYPE")
+                .withDateOfHearing(now().plusDays(1).toString())
+                .withListedDefendants(List.of(listedDefendant()
+                        .withProsecutorDefendantId("a9860e1a-8695-4fd4-8046-c1c4fe6c7f80")
+                        .withListedOffences(List.of("offId11"))
+                        .build()))
+                .build());
+        migratedHearingWithReferenceData.getReferenceDataVO().setHearingType(null);
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName("XHIBIT");
+        paramsVO.setChannel(DLRM_MIGRATION);
+
+        assertEquals(0, prosecutionCaseFileMigrationInitialHearingToCCHearingRequestConverter
+                .convert(List.of(migratedHearingWithReferenceData), paramsVO).size());
+    }
+
+    @Test
+    void shouldIncludeOnlyValidHearingWhenOneHasNullHearingTypeAndNullDuration() {
+        MigratedHearingWithReferenceData invalid = getMigratedHearingWithReferenceData(true);
+        invalid.setMigratedHearing(MigratedHearing.migratedHearing()
+                .withCourtHearingLocation("C55BN00")
+                .withCourtRoomId(1234)
+                .withTimeOfHearing("10:05:01")
+                .withHearingType("UNKNOWN_TYPE")
+                .withDateOfHearing(now().plusDays(1).toString())
+                .withListedDefendants(List.of(listedDefendant()
+                        .withProsecutorDefendantId("a9860e1a-8695-4fd4-8046-c1c4fe6c7f80")
+                        .withListedOffences(List.of("offId11"))
+                        .build()))
+                .build());
+        invalid.getReferenceDataVO().setHearingType(null);
+
+        MigratedHearingWithReferenceData valid = getMigratedHearingWithReferenceData(true);
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName("XHIBIT");
+        paramsVO.setChannel(DLRM_MIGRATION);
+
+        assertEquals(1, prosecutionCaseFileMigrationInitialHearingToCCHearingRequestConverter
+                .convert(List.of(invalid, valid), paramsVO).size());
+    }
+
+    @Test
     void shouldReturnMagistratesJurisdictionForNonXHIBIT() {
         MigratedHearingWithReferenceData migratedHearingWithReferenceData = getMigratedHearingWithReferenceData(true);
 
@@ -256,7 +332,7 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
 
     @ParameterizedTest
     @MethodSource("data")
-    void shouldHandleNullHearingLanguage(String hearingLanguage,String expectedLanguage) {
+    void shouldHandleNullHearingLanguage(String hearingLanguage, String expectedLanguage) {
         MigratedHearingWithReferenceData migratedHearingWithReferenceData = getMigratedHearingWithReferenceData(true);
         final MigratedDefendant defendant = MigratedDefendant.migratedDefendant()
                 .withHearingLanguage(hearingLanguage)
@@ -365,7 +441,7 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
         final List<ListHearingRequest> listHearingRequests = prosecutionCaseFileMigrationInitialHearingToCCHearingRequestConverter
                 .convert(List.of(migratedHearingWithReferenceData), paramsVO);
 
-       assertEquals(0,listHearingRequests.size());
+        assertEquals(0, listHearingRequests.size());
     }
 
     @Test
@@ -412,18 +488,19 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
     }
 
     @Test
-    void shouldHandleNullDurationMinutes() {
+    void shouldUseDefaultDurationWhenDurationMinutesIsNull() {
         MigratedHearingWithReferenceData migratedHearingWithReferenceData = getMigratedHearingWithReferenceData(true);
-        // Set duration minutes to null
-        MigratedHearing.Builder migratedHearingBuilder = MigratedHearing.migratedHearing()
+        migratedHearingWithReferenceData.getReferenceDataVO().setHearingType(
+                HearingType.hearingType().withId(UUID.randomUUID()).withHearingDescription("description").withDefaultDurationMin(90).build());
+
+        MigratedHearing migratedHearing = MigratedHearing.migratedHearing()
                 .withCourtHearingLocation("C55BN00")
                 .withCourtRoomId(1234)
                 .withTimeOfHearing("10:05:01")
                 .withHearingType("A")
                 .withDateOfHearing(now().plusDays(1).toString())
-                .withListedDefendants(List.of(listedDefendant().withProsecutorDefendantId("a9860e1a-8695-4fd4-8046-c1c4fe6c7f80").withListedOffences(List.of("offId11")).build()));
-        // Don't set duration minutes
-        MigratedHearing migratedHearing = migratedHearingBuilder.build();
+                .withListedDefendants(List.of(listedDefendant().withProsecutorDefendantId("a9860e1a-8695-4fd4-8046-c1c4fe6c7f80").withListedOffences(List.of("offId11")).build()))
+                .build();
         migratedHearingWithReferenceData.setMigratedHearing(migratedHearing);
 
         final ParamsVO paramsVO = new ParamsVO();
@@ -434,9 +511,42 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
                 .convert(List.of(migratedHearingWithReferenceData), paramsVO);
 
         assertEquals(1, listHearingRequests.size());
-        // Should use default duration from hearing type
-        assertEquals(migratedHearingWithReferenceData.getReferenceDataVO().getHearingType().getDefaultDurationMin(),
-                listHearingRequests.get(0).getEstimateMinutes());
+        assertEquals(90, listHearingRequests.get(0).getEstimateMinutes());
+    }
+
+    @Test
+    void shouldUseDefaultDurationWhenDurationMinutesIsZero() {
+        MigratedHearingWithReferenceData migratedHearingWithReferenceData = getMigratedHearingWithReferenceData(true);
+        migratedHearingWithReferenceData.getReferenceDataVO().setHearingType(
+                HearingType.hearingType()
+                        .withId(UUID.randomUUID())
+                        .withHearingDescription("description")
+                        .withDefaultDurationMin(90)
+                        .build());
+
+        MigratedHearing migratedHearing = MigratedHearing.migratedHearing()
+                .withCourtHearingLocation("C55BN00")
+                .withCourtRoomId(1234)
+                .withTimeOfHearing("10:05:01")
+                .withDurationMinutes(0)
+                .withHearingType("A")
+                .withDateOfHearing(now().plusDays(1).toString())
+                .withListedDefendants(List.of(listedDefendant()
+                        .withProsecutorDefendantId("a9860e1a-8695-4fd4-8046-c1c4fe6c7f80")
+                        .withListedOffences(List.of("offId11"))
+                        .build()))
+                .build();
+        migratedHearingWithReferenceData.setMigratedHearing(migratedHearing);
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName("XHIBIT");
+        paramsVO.setChannel(DLRM_MIGRATION);
+
+        final List<ListHearingRequest> listHearingRequests = prosecutionCaseFileMigrationInitialHearingToCCHearingRequestConverter
+                .convert(List.of(migratedHearingWithReferenceData), paramsVO);
+
+        assertEquals(1, listHearingRequests.size());
+        assertEquals(90, listHearingRequests.get(0).getEstimateMinutes());
     }
 
     @Test
@@ -752,7 +862,7 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
                         .withOucodeL3Code("L3-02")
                         .withOucodeL3Name("District Courts")
                         .withOucodeL3WelshName("Llys Dosbarth")
-                        .withCourtrooms (List.of(CourtRoom.courtRoom().withId(UUID.randomUUID().toString()).withCourtroomId(1234).withCourtroomName("courtRoom").build()))
+                        .withCourtrooms(List.of(CourtRoom.courtRoom().withId(UUID.randomUUID().toString()).withCourtroomId(1234).withCourtroomName("courtRoom").build()))
                         .build();
         referenceDataVO.setOrganisationUnitWithCourtroomsReferenceData(organisationUnit);
         referenceDataVO.setHearingType(HearingType.hearingType().withId(caseId).withHearingDescription("description").build());

@@ -1333,4 +1333,64 @@ class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest {
         assertNull(offence.getOffenceFacts());
     }
 
+    @Test
+    void shouldNotSetOffenceCustodyTimeLimitWhenCustodyStatusIsNotCAndCustodyTimeLimitIsNotNull() {
+        final UUID offenceId = randomUUID();
+        final ReferenceDataVO referenceDataVO = buildReferenceDataWithNotGuiltyPlea(EITHER_WAY, randomUUID().toString(), offenceId.toString());
+
+        final List<MigratedOffence> offences = of(migratedOffence()
+                .withOffenceId(offenceId)
+                .withOffenceCode(OFFENCE_CODE_TVL_ABC)
+                .withOffenceCommittedDate(LocalDate.now())
+                .withPlea(migratedPlea()
+                        .withId(randomUUID())
+                        .build())
+                .build());
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName(XHIBIT);
+        paramsVO.setReferenceDataVO(referenceDataVO);
+        paramsVO.setChannel(MCC);
+        paramsVO.setInitiationCode(InitiationCode.S.name());
+        paramsVO.setCustodyStatus("U");
+        paramsVO.setCustodyTimeLimit(LocalDate.now());
+
+        final List<uk.gov.justice.core.courts.Offence> coreOffences = converter.convert(offences, paramsVO);
+
+        final uk.gov.justice.core.courts.Offence offence = coreOffences.get(0);
+        assertThat(offence.getId(), is(offenceId));
+        assertNull(offence.getCustodyTimeLimit());
+    }
+
+    @Test
+    void shouldSetOffenceCustodyTimeLimitWhenCustodyStatusIsCAndCustodyTimeLimitIsNotNull() {
+        final UUID offenceId = randomUUID();
+        final ReferenceDataVO referenceDataVO = buildReferenceDataWithNotGuiltyPlea(EITHER_WAY, randomUUID().toString(), offenceId.toString());
+        final LocalDate custodyTimeLimit = LocalDate.now();
+
+        final List<MigratedOffence> offences = of(migratedOffence()
+                .withOffenceId(offenceId)
+                .withOffenceCode(OFFENCE_CODE_TVL_ABC)
+                .withOffenceCommittedDate(LocalDate.now())
+                .withPlea(migratedPlea()
+                        .withId(randomUUID())
+                        .build())
+                .build());
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName(XHIBIT);
+        paramsVO.setReferenceDataVO(referenceDataVO);
+        paramsVO.setChannel(MCC);
+        paramsVO.setInitiationCode(InitiationCode.S.name());
+        paramsVO.setCustodyStatus("C");
+        paramsVO.setCustodyTimeLimit(custodyTimeLimit);
+
+        final List<uk.gov.justice.core.courts.Offence> coreOffences = converter.convert(offences, paramsVO);
+
+        final uk.gov.justice.core.courts.Offence offence = coreOffences.get(0);
+        assertThat(offence.getId(), is(offenceId));
+        assertNotNull(offence.getCustodyTimeLimit());
+        assertThat(offence.getCustodyTimeLimit().getTimeLimit(), is(custodyTimeLimit.toString()));
+    }
+
 }

@@ -4,7 +4,7 @@ import static java.time.LocalDate.now;
 import static java.util.UUID.randomUUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
-import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_PLEA_ID;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_PLEA;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.PLEA_DATE_CANNOT_BE_FUTURE_DATE;
 import static uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult.VALID;
 
@@ -310,7 +310,7 @@ class PleaValidationRuleTest {
         ValidationResult result = pleaValidationRule.validate(defendantWithReferenceData, referenceDataQueryService);
 
         assertEquals(1, result.problems().size());
-        assertEquals(INVALID_PLEA_ID.name(), result.problems().get(0).getCode());
+        assertEquals(INVALID_PLEA.name(), result.problems().get(0).getCode());
     }
 
     @Test
@@ -335,7 +335,7 @@ class PleaValidationRuleTest {
         ValidationResult result = pleaValidationRule.validate(defendantWithReferenceData, referenceDataQueryService);
 
         assertEquals(1, result.problems().size());
-        assertEquals(INVALID_PLEA_ID.name(), result.problems().get(0).getCode());
+        assertEquals(INVALID_PLEA.name(), result.problems().get(0).getCode());
     }
 
     @Test

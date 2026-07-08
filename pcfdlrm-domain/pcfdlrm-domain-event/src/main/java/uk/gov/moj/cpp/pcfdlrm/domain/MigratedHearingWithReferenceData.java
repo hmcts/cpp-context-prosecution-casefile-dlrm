@@ -1,10 +1,12 @@
 package uk.gov.moj.cpp.pcfdlrm.domain;
 
+import uk.gov.justice.core.courts.CourtReferral;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedHearing;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;

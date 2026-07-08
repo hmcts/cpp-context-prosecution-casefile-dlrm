@@ -16,12 +16,14 @@ public class MigratedMaterialsWithOriginatingSystem {
     final private List<MigratedMaterial> materials;
     final private String migrationSourceSystemName;
     final private Map<String, ImmutablePair<String, String>> sections;
+    final private int defendantCount;
 
 
-    public MigratedMaterialsWithOriginatingSystem(final List<MigratedMaterial> materials, final String migrationSourceSystemName, final Map<String, ImmutablePair<String, String>> sections) {
+    public MigratedMaterialsWithOriginatingSystem(final List<MigratedMaterial> materials, final String migrationSourceSystemName, final Map<String, ImmutablePair<String, String>> sections, final int defendantCount) {
         this.materials = materials;
         this.migrationSourceSystemName = migrationSourceSystemName;
         this.sections = sections;
+        this.defendantCount = defendantCount;
     }
 
     public List<MigratedMaterial> getMaterials() {
@@ -34,5 +36,9 @@ public class MigratedMaterialsWithOriginatingSystem {
 
     public Map<String, ImmutablePair<String, String>> getSections() {
         return sections;
+    }
+
+    public int getDefendantCount() {
+        return defendantCount;
     }
 }

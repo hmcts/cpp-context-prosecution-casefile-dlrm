@@ -6,7 +6,7 @@ import static java.util.Objects.nonNull;
 import static uk.gov.justice.core.courts.Gender.NOT_KNOWN;
 import static uk.gov.moj.cpp.json.schemas.prosecution.casefile.dlrm.events.DefendantValidationPassed.defendantValidationPassed;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_STATUS_INVALID;
-import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_TIME_LIMIT_REQUIRED;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_TIME_LIMIT_IS_MISSING;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_GENDER_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_NATIONALITY_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_OBSERVED_ETHNICITY_INVALID;
@@ -59,6 +59,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.base.Strings;
+import org.apache.commons.collections.CollectionUtils;
 
 @SuppressWarnings({"squid:S1188", "squid:S3776"})
 public class ProsecutionCaseFileHelper {
@@ -69,6 +70,7 @@ public class ProsecutionCaseFileHelper {
     private static final String HEARING_LANGUAGE = "defendant.hearingLanguage";
     private static final String PARENTGUARDIAN_NOT_PROVIDED = "PARENTGUARDIAN_NOT_PROVIDED";
     private static final String DEFENDANT_SELFINFO_NOT_PROVIDED = "DEFENDANT_SELFINFO_NOT_PROVIDED";
+    private static final String IN_CUSTODY="C";
 
     private ProsecutionCaseFileHelper() {
     }
@@ -97,7 +99,7 @@ public class ProsecutionCaseFileHelper {
             validateGenderAndLanguage(defendant, defendantProblemList);
             validateCustodyTimeLimit(defendant, defendantProblemList);
 
-            if (!defendantProblemList.isEmpty()) {
+            if (CollectionUtils.isNotEmpty(defendantProblemList)) {
                 defendantErrors.add(defendantProblem()
                         .withProblems(defendantProblemList)
                         .withProsecutorDefendantReference(Strings.isNullOrEmpty(defendant.getProsecutorDefendantReference()) ?
@@ -238,13 +240,13 @@ public class ProsecutionCaseFileHelper {
             buildMigratedDefendant(migratedDefendantBuilder,
                     migratedDefendantBuilder.build().getIndividual().getSelfDefinedInformation().getNationality(),
                     migratedDefendantBuilder.build().getIndividual().getSelfDefinedInformation().getEthnicity(),
-                    null,
+                    migratedDefendantBuilder.build().getIndividual().getPersonalInformation().getObservedEthnicity(),
                     "U");
 
             Optional<BailStatusReferenceData> bailStatusReferenceDataOpt = referenceDataQueryService.retrieveBailStatuses().stream()
                     .filter(custodyStatusReferenceData -> "U".equals(custodyStatusReferenceData.getStatusCode()))
                     .findAny();
-            bailStatusReferenceDataOpt.ifPresent(bailStatus -> defendantWithReferenceData.getReferenceDataVO().addBailStatusReferenceData(bailStatusReferenceDataOpt.get()));
+            bailStatusReferenceDataOpt.ifPresent(bailStatus -> defendantWithReferenceData.getReferenceDataVO().addBailStatusReferenceData(bailStatus));
         }
 
         migratedDefendantBuilder.build();
@@ -364,9 +366,9 @@ public class ProsecutionCaseFileHelper {
 
     private static void validateCustodyTimeLimit(final MigratedDefendant defendant, final List<Problem> defendantProblemList) {
         if (nonNull(defendant.getIndividual()) && nonNull(defendant.getIndividual().getCustodyStatus()) &&
-                "C".equals(defendant.getIndividual().getCustodyStatus())) {
+                IN_CUSTODY.equalsIgnoreCase(defendant.getIndividual().getCustodyStatus())) {
             if (isNull(defendant.getIndividual().getCustodyTimeLimit())) {
-                defendantProblemList.add(getProblem(DEFENDANT_CUSTODY_TIME_LIMIT_REQUIRED, "defendant.individual.custodyTimeLimit", DEFENDANT_CUSTODY_TIME_LIMIT_REQUIRED.name()));
+                defendantProblemList.add(getProblem(DEFENDANT_CUSTODY_TIME_LIMIT_IS_MISSING, "defendant.individual.custodyTimeLimit", DEFENDANT_CUSTODY_TIME_LIMIT_IS_MISSING.name()));
             }
         }
     }

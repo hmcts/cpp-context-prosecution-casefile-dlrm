@@ -60,7 +60,7 @@ class ReceiptTypeValidationRuleTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"Bring back" ,"Commital after breach", "Commital for sentence", "Commital for sentence includes a breach"})
+    @CsvSource({"Either way case", "Transfer", "Voluntary bill", "Indictable"})
     public void shouldReturnEmptyProblemListWhenReceiptTypesContainsValidTypeCode(String receiptType) {
 
         ProsecutionWithReferenceData prosecutionWithReferenceData = getProsecutionWithReferenceData(receiptType);

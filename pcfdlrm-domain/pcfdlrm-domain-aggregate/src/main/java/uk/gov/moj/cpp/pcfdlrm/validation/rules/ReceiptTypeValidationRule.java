@@ -18,10 +18,10 @@ import java.util.function.Predicate;
 public class ReceiptTypeValidationRule implements ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService> {
 
     private static final List<String> RECEIPT_TYPES = List.of(
-            "Bring back",
-            "Commital after breach",
-            "Commital for sentence",
-            "Commital for sentence includes a breach");
+            "Either way case",
+            "Transfer",
+            "Voluntary bill",
+            "Indictable");
 
     @Override
     public ValidationResult validate(final ProsecutionWithReferenceData prosecutionWithReferenceData, final ReferenceDataQueryService referenceDataQueryService) {

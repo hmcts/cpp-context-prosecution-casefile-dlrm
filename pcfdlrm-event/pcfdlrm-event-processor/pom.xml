@@ -4,7 +4,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.pcfdlrm</groupId>
         <artifactId>pcfdlrm-event</artifactId>
-        <version>17.103.27-SNAPSHOT</version>
+        <version>17.104.21-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>

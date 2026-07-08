@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.pcfdlrm.builder;
 
+import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_XHIBIT;

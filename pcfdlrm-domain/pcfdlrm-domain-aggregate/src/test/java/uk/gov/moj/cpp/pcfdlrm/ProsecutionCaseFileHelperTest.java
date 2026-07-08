@@ -1,17 +1,30 @@
 package uk.gov.moj.cpp.pcfdlrm;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
+import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.BailStatusReferenceData.bailStatusReferenceData;
+import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel.DLRM_MIGRATION;
+import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ObservedEthnicityReferenceData.observedEthnicityReferenceData;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant.migratedDefendant;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedOffence.migratedOffence;
 
+import uk.gov.moj.cpp.pcfdlrm.domain.DefendantsWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.domain.MigratedDefendantWithOffences;
 import uk.gov.moj.cpp.pcfdlrm.domain.MigratedHearingWithReferenceData;
+import uk.gov.moj.cpp.pcfdlrm.domain.ReferenceDataVO;
 import uk.gov.moj.cpp.pcfdlrm.refdata.hearing.MigratedHearingRefDataEnricher;
+import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseDetails;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Individual;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.PersonalInformation;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.SelfDefinedInformation;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendantWithProblem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedHearing;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedOffence;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ListedDefendant;
@@ -20,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +46,9 @@ class ProsecutionCaseFileHelperTest {
 
     @Mock
     private List<MigratedHearingRefDataEnricher> enrichers;
+
+    @Mock
+    private ReferenceDataQueryService referenceDataQueryService;
 
     @Test
     void buildMigratedHearingRefData() {
@@ -149,6 +166,83 @@ class ProsecutionCaseFileHelperTest {
                 .buildMigratedHearingRefData(enrichers, caseDetails, migratedHearing, migratedDefendants);
 
         assertTrue(result.getMigratedDefendantWithOffences().isEmpty());
+    }
+
+    @Test
+    void shouldValidateDefendantErrorsWhenCustodyStatusInvalidOnXhibitSetsStatusToUAndPreservesObservedEthnicity() {
+        final Integer observedEthnicityCode = 12;
+
+        final MigratedDefendant defendant = migratedDefendant()
+                .withDocumentationLanguage("E")
+                .withHearingLanguage("E")
+                .withIndividual(Individual.individual()
+                        .withCustodyStatus("INVALID_STATUS")
+                        .withPersonalInformation(PersonalInformation.personalInformation()
+                                .withObservedEthnicity(observedEthnicityCode)
+                                .build())
+                        .withSelfDefinedInformation(SelfDefinedInformation.selfDefinedInformation()
+                                .withGender("MALE")
+                                .build())
+                        .build())
+                .build();
+
+        final ReferenceDataVO referenceDataVO = new ReferenceDataVO();
+        referenceDataVO.setObservedEthnicityReferenceData(List.of(
+                observedEthnicityReferenceData()
+                        .withEthnicityCode(String.valueOf(observedEthnicityCode))
+                        .withId(UUID.randomUUID())
+                        .withEthnicityDescription("description")
+                        .build()
+        ));
+
+        final CaseDetails caseDetails = CaseDetails.caseDetails().withCaseId(UUID.randomUUID()).build();
+        final DefendantsWithReferenceData defendantsWithReferenceData = new DefendantsWithReferenceData(List.of(defendant));
+        defendantsWithReferenceData.setReferenceDataVO(referenceDataVO);
+        defendantsWithReferenceData.setCaseDetails(caseDetails);
+
+        when(referenceDataQueryService.retrieveBailStatuses()).thenReturn(List.of(
+                bailStatusReferenceData().withStatusCode("U").build()
+        ));
+
+        final MigratedDefendantWithProblem result = ProsecutionCaseFileHelper.validateDefendantErrors(
+                caseDetails, DLRM_MIGRATION, defendantsWithReferenceData, referenceDataQueryService,
+                Stream.builder(), false, "XHIBIT");
+
+        final MigratedDefendant resultDefendant = result.getMigratedDefendants().get(0);
+        assertThat(resultDefendant.getIndividual().getCustodyStatus(), is("U"));
+        assertThat(resultDefendant.getIndividual().getPersonalInformation().getObservedEthnicity(), is(observedEthnicityCode));
+    }
+
+    @Test
+    void shouldValidateDefendantErrorsWhenCustodyStatusInvalidOnXhibitAndUStatusFoundAddsUBailStatusToReferenceDataVO() {
+        final MigratedDefendant defendant = migratedDefendant()
+                .withDocumentationLanguage("E")
+                .withHearingLanguage("E")
+                .withIndividual(Individual.individual()
+                        .withCustodyStatus("INVALID_STATUS")
+                        .withPersonalInformation(PersonalInformation.personalInformation().build())
+                        .withSelfDefinedInformation(SelfDefinedInformation.selfDefinedInformation()
+                                .withGender("MALE")
+                                .build())
+                        .build())
+                .build();
+
+        final ReferenceDataVO referenceDataVO = new ReferenceDataVO();
+        final CaseDetails caseDetails = CaseDetails.caseDetails().withCaseId(UUID.randomUUID()).build();
+        final DefendantsWithReferenceData defendantsWithReferenceData = new DefendantsWithReferenceData(List.of(defendant));
+        defendantsWithReferenceData.setReferenceDataVO(referenceDataVO);
+        defendantsWithReferenceData.setCaseDetails(caseDetails);
+
+        when(referenceDataQueryService.retrieveBailStatuses()).thenReturn(List.of(
+                bailStatusReferenceData().withStatusCode("U").build()
+        ));
+
+        ProsecutionCaseFileHelper.validateDefendantErrors(
+                caseDetails, DLRM_MIGRATION, defendantsWithReferenceData, referenceDataQueryService,
+                Stream.builder(), false, "XHIBIT");
+
+        assertThat(referenceDataVO.getBailStatusReferenceData().size(), is(1));
+        assertThat(referenceDataVO.getBailStatusReferenceData().get(0).getStatusCode(), is("U"));
     }
 
     private MigratedOffence buildMigratedOffence(final UUID offenceID, final String prosecutionOffenceId){

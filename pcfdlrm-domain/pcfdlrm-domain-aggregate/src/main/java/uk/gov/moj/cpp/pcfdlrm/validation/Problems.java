@@ -18,7 +18,7 @@ public class Problems {
     }
 
     public static Problem newProblem(final ProblemCode code, final String valueKey, final Object value) {
-        return new Problem(code.name(), asList(new ProblemValue(null, valueKey, value.toString())));
+        return new Problem(code.name(), List.of(new ProblemValue(null, valueKey, value.toString())));
     }
 
     public static Problem newProblem(final ProblemCode code, final List<ProblemValue> values) {

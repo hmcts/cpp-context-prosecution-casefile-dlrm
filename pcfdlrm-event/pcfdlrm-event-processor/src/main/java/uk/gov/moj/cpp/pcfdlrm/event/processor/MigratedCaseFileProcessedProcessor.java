@@ -8,6 +8,7 @@ import uk.gov.justice.services.core.annotation.ServiceComponent;
 import uk.gov.justice.services.core.sender.Sender;
 import uk.gov.justice.services.messaging.Envelope;
 import uk.gov.justice.services.messaging.Metadata;
+import uk.gov.moj.cpp.pcfdlrm.event.processor.counter.PcfMigratedCaseReceivedCounter;
 import uk.gov.moj.cpp.pcfdlrm.event.processor.counter.PcfMigratedCaseSuccessfullyProcessedCounter;
 import uk.gov.moj.cpp.pcfdlrm.event.processor.counter.PcfMigratedCaseFailedCounter;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseFileProcessed;
@@ -23,6 +24,8 @@ public class MigratedCaseFileProcessedProcessor {
     private PcfMigratedCaseSuccessfullyProcessedCounter pcfMigratedCaseSuccessfullyProcessedCounter;
     @Inject
     private PcfMigratedCaseFailedCounter pcfMigratedCaseFailedCounter;
+    @Inject
+    private PcfMigratedCaseReceivedCounter pcfMigratedCaseReceivedCounter;
 
 
     public static final String PUBLIC_PCFDLRM_MIGRATED_CASE_FILE_PROCESSED = "public.pcfdlrm.migrated-case-file-processed";
@@ -43,6 +46,7 @@ public class MigratedCaseFileProcessedProcessor {
         if (event.getProcessingIsSuccessful()) {
             pcfMigratedCaseSuccessfullyProcessedCounter.increment();
         } else {
+            pcfMigratedCaseReceivedCounter.increment();
             pcfMigratedCaseFailedCounter.increment();
         }
     }
