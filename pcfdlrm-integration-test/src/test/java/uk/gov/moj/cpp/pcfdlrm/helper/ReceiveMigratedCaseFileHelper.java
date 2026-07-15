@@ -176,10 +176,11 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
                 .untilAsserted(() -> {
                     final JsonEnvelope event = addMaterialHelper.verifyInMessagingQueue(migratedCaseFileReceivedConsumer);
                     assertThat(event, jsonEnvelope(metadata().withName(MIGRATED_CASE_FILE_RECEIVED), payload().isJson(allOf(
-                            withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings", hasSize(3)),
+                            withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings", hasSize(4)),
                             withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings[0].timeOfHearing", is(expectedDefaultedUtcTime)),
-                            withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings[1].timeOfHearing", is("10:05:00")),
-                            withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings[2].timeOfHearing", is("08:30:00"))
+                            withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings[1].timeOfHearing", is(expectedDefaultedUtcTime)),
+                            withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings[2].timeOfHearing", is("10:05:00")),
+                            withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings[3].timeOfHearing", is("08:30:00"))
                     ))));
                 });
     }

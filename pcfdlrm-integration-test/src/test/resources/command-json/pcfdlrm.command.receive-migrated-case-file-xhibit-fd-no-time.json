@@ -34,6 +34,20 @@
       },
       {
         "courtHearingLocation": "C55BN01",
+        "dateOfHearing": "HEARING_DATE",
+        "durationMinutes": 60,
+        "hearingType": "FHG",
+        "listedDefendants": [
+          {
+            "prosecutorDefendantId": "a9860e1a-8695-4fd4-8046-c1c4fe6c7f80",
+            "listedOffences": [
+              "XHIBIT-offence-id-1"
+            ]
+          }
+        ]
+      },
+      {
+        "courtHearingLocation": "C55BN01",
         "courtRoomId": 2330,
         "dateOfHearing": "HEARING_DATE",
         "timeOfHearing": "10:05:00",
