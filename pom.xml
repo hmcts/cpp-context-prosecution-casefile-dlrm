@@ -25,14 +25,14 @@
         <coredomain.version>17.104.4</coredomain.version>
         <cpp.structure.version>2.0.335</cpp.structure.version>
         <referencedata.version>17.104.136</referencedata.version>
-        <referencedata.offences.version>17.104.48</referencedata.offences.version>
+        <referencedata.offences.version>17.104.49</referencedata.offences.version>
         <system.enterprise-id.version>0.0.3</system.enterprise-id.version>
         <resulting.version>17.0.50</resulting.version>
-        <progression.version>17.0.269</progression.version>
-        <defence.version>17.104.101</defence.version>
+        <progression.version>17.0.279</progression.version>
+        <defence.version>17.104.102</defence.version>
         <material.version>17.0.85</material.version>
         <notification.notify.version>17.0.38</notification.notify.version>
-        <sjp.version>17.104.180</sjp.version>
+        <sjp.version>17.104.181</sjp.version>
         <criminal-court-public-model.version>${coredomain.version}</criminal-court-public-model.version>
         <commons-text.version>1.10.0</commons-text.version>
         <awaility.version>1.7.0</awaility.version>
