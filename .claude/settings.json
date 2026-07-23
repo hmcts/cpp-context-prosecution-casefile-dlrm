@@ -1,0 +1,5 @@
+{
+  "enabledPlugins": {
+    "hmcts-sdlc-orchestrator@agentic-plugins-marketplace": true
+  }
+}

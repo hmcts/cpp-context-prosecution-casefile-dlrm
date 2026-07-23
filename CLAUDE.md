@@ -68,6 +68,10 @@ Azure DevOps (`azure-pipelines.yaml`):
 
 ## Architecture — the three layers you must reason across
 
+For a full source-cited trace of the end-to-end migration flow (stagingdlrm → pcfdlrm →
+progression → listing), the validation rule set, material-upload mechanics, cross-context
+dependencies, and known edge cases, see `docs/architecture/pcfdlrm-flow-reference.md`.
+
 Every change touching events needs to be reasoned about across **three layers**. Breaking one without the others produces silent data drift:
 
 1. **Command side** — RAML‑declared commands hit `@Handles`-annotated handler classes (`MigratedCaseFileHandler`, `AddMaterialHandler`) which load the `MigratedCaseFileAggregate`, run validation rules under `pcfdlrm-domain/pcfdlrm-domain-aggregate/.../validation/`, and apply domain events.
@@ -132,11 +136,32 @@ For public events: also update `public-publications-descriptor.yaml`. The proces
 
 When bumping any upstream interface version in `pom.xml` (`coredomain`, `progression`, `resulting`, `sjp`, `defence`, `referencedata`, `referencedata.offences`, `material`, `stream-transformation-tool`, `service-parent-pom`), also check the matching schema/RAML classifier dep is on the same version — otherwise schema validation fails at runtime. The `RequireLatestMojInterfaceRule` enforcer in CI will block stale interface versions.
 
+## SDLC Orchestrator (hmcts-sdlc-orchestrator plugin)
+
+This repo uses the `hmcts-sdlc-orchestrator` plugin exclusively for AI-assisted SDLC work —
+its 8-stage pipeline (Requirements → Architecture & Design → User Story → Test Specs → Code →
+Code Review → Build & Test → Deploy Sandbox) and agents are reused as-is. This repo's
+Java/Maven CQRS/WildFly modules match the plugin's legacy context-service assumptions, so no
+local agent/rule/skill overrides are maintained here.
+
+- **Reuse from the plugin as-is:** `requirements-analyst`, `architecture-designer`,
+  `story-writer`, `test-engineer`, `implementation`, `code-reviewer`, `ci-orchestrator`,
+  `deployer`, `context-scaffold`, `context-service-guide`, `api-contract-check`,
+  `dependency-audit`, `review-pr`, `event-flow-mapper`, `doc-generator`,
+  `migration-reviewer`, `rbac-auditor`, the security hooks (`block-secrets`, `block-pii`,
+  `guard-bash`, `guard-paths`).
+- **Do NOT use:** `springboot-service-from-template`, `springboot-api-from-template`,
+  `terraform-validate`, `helm-config-validator` — no Spring Boot, Terraform, or Helm chart
+  in this repo.
+- No local Spec-Kit installation, custom agents, or rule files — a previous
+  `.claude/agents/` + `.claude/rules/` + `.specify/` Spec-Kit setup was installed here but
+  never actually driven (no `specs/` output ever existed) and has been removed in favour of
+  the plugin.
+- Pipeline artefacts go to `docs/pipeline/<JIRA-TICKET>-<slug>/` (created on first use, no
+  pre-scaffolding required): `00-input-brief.md` → `01-requirements.md` → `02-design.md` →
+  `03-stories.md`, plus a shared `docs/pipeline/adrs/` for any architecturally-significant
+  decision.
+
 ## Java style
 
 No wildcard imports. Always use explicit per‑class imports.
-
-<!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
-<!-- SPECKIT END -->
