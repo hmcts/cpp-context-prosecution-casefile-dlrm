@@ -319,6 +319,9 @@ class ReceiveMigratedCaseFileIT {
 
         receiveMigratedCaseFileHelper.receiveMigratedCaseFile(payload);
 
+        // DD-42991 AC-001/AC-002: fixture also carries two unallocated (no courtRoomId) hearings —
+        // one with no time (must default the same as index 0) and one with time provided (must not
+        // be overwritten) — asserted as hearings[3] and hearings[4] inside this same verify call.
         receiveMigratedCaseFileHelper.verifyMigratedCaseFileReceivedWithDefaultedHearingTime(addMaterialHelper, expectedUtcTime);
     }
 
