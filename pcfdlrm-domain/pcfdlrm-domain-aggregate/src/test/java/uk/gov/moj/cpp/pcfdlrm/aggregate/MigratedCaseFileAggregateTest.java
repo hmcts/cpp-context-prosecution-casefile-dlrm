@@ -1431,6 +1431,169 @@ class MigratedCaseFileAggregateTest {
         );
     }
 
+    // DD-42991 AC-001: unallocated hearing (no courtroom) with no time — should default to 10am.
+    // Currently RED: isFixedHearing() requires courtRoomId > 0, so an unallocated hearing is never
+    // defaulted today. This test encodes the story's intent, not the current implementation.
+    @Test
+    void shouldDefaultHearingTimeTo10amForUnallocatedHearingWhenTimeNotProvided() {
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedDefendant defendant = migratedDefendant()
+                .withValuesFrom(migCaseDetails.getDefendants().get(0))
+                .withProsecutorDefendantId("DEF-001")
+                .withOffences(List.of())
+                .build();
+        final MigratedCaseDetails migCaseDetailsWithHearing = MigratedCaseDetails.migratedCaseDetails()
+                .withValuesFrom(migCaseDetails)
+                .withDefendants(List.of(defendant))
+                .withHearings(List.of(
+                        MigratedHearing.migratedHearing()
+                                .withCourtHearingLocation("C50EX00")
+                                .withHearingType("SIT")
+                                .withDateOfHearing("2027-01-15")
+                                .withListedDefendants(List.of(
+                                        ListedDefendant.listedDefendant()
+                                                .withProsecutorDefendantId("DEF-001")
+                                                .withListedOffences(List.of())
+                                                .build()))
+                                .build()))
+                .build();
+
+        final Prosecution amendedProsecution = buildProsecution(prosecution, migCaseDetailsWithHearing);
+        final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetailsWithHearing, null);
+
+        when(prosecutionWithReferenceData.getProsecution()).thenReturn(amendedProsecution);
+        when(referenceDataQueryService.retrieveOrganisationUnitWithCourtrooms("C50EX00"))
+                .thenReturn(Optional.of(OrganisationUnitWithCourtroomsReferenceData.organisationUnitWithCourtroomsReferenceData()
+                        .withCourtrooms(List.of())
+                        .build()));
+        when(referenceDataQueryService.retrieveHearingTypes())
+                .thenReturn(HearingTypes.hearingTypes()
+                        .withHearingtypes(List.of(HearingType.hearingType().withHearingCode("SIT").build()))
+                        .build());
+
+        migratedCaseFileAggregate.receiveMigratedCaseFile(new CaseProcessingArgs(
+                receiveMigratedCase, prosecutionWithReferenceData,
+                List.of(caseRefDataEnricher), List.of(defendantRefDataEnricher),
+                referenceDataQueryService, getSections(),
+                getDocumentMetadataReferenceDataList(), List.of(migratedHearingRefDataEnricher)
+        ));
+
+        assertThat("AC-001: unallocated hearing (no courtroom, no time) should default timeOfHearing to 10am",
+                migratedCaseFileAggregate.getReceiveMigratedCaseFile()
+                        .getMigratedCaseDetails().getHearings().get(0).getTimeOfHearing(), is("10:00:00"));
+    }
+
+    // DD-42991 AC-002: unallocated hearing (no courtroom) with time already provided — time must
+    // not be overwritten. This should already pass today (regression guard), since defaulting only
+    // ever applies when timeOfHearing is null.
+    @Test
+    void shouldNotOverwriteHearingTimeForUnallocatedHearingWhenTimeProvided() {
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedDefendant defendant = migratedDefendant()
+                .withValuesFrom(migCaseDetails.getDefendants().get(0))
+                .withProsecutorDefendantId("DEF-001")
+                .withOffences(List.of())
+                .build();
+        final MigratedCaseDetails migCaseDetailsWithHearing = MigratedCaseDetails.migratedCaseDetails()
+                .withValuesFrom(migCaseDetails)
+                .withDefendants(List.of(defendant))
+                .withHearings(List.of(
+                        MigratedHearing.migratedHearing()
+                                .withCourtHearingLocation("C50EX00")
+                                .withHearingType("SIT")
+                                .withDateOfHearing("2027-01-15")
+                                .withTimeOfHearing("09:30")
+                                .withListedDefendants(List.of(
+                                        ListedDefendant.listedDefendant()
+                                                .withProsecutorDefendantId("DEF-001")
+                                                .withListedOffences(List.of())
+                                                .build()))
+                                .build()))
+                .build();
+
+        final Prosecution amendedProsecution = buildProsecution(prosecution, migCaseDetailsWithHearing);
+        final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetailsWithHearing, null);
+
+        when(prosecutionWithReferenceData.getProsecution()).thenReturn(amendedProsecution);
+        when(referenceDataQueryService.retrieveOrganisationUnitWithCourtrooms("C50EX00"))
+                .thenReturn(Optional.of(OrganisationUnitWithCourtroomsReferenceData.organisationUnitWithCourtroomsReferenceData()
+                        .withCourtrooms(List.of())
+                        .build()));
+        when(referenceDataQueryService.retrieveHearingTypes())
+                .thenReturn(HearingTypes.hearingTypes()
+                        .withHearingtypes(List.of(HearingType.hearingType().withHearingCode("SIT").build()))
+                        .build());
+
+        migratedCaseFileAggregate.receiveMigratedCaseFile(new CaseProcessingArgs(
+                receiveMigratedCase, prosecutionWithReferenceData,
+                List.of(caseRefDataEnricher), List.of(defendantRefDataEnricher),
+                referenceDataQueryService, getSections(),
+                getDocumentMetadataReferenceDataList(), List.of(migratedHearingRefDataEnricher)
+        ));
+
+        assertThat("AC-002: unallocated hearing with time already provided should keep that time",
+                migratedCaseFileAggregate.getReceiveMigratedCaseFile()
+                        .getMigratedCaseDetails().getHearings().get(0).getTimeOfHearing(), is("09:30"));
+    }
+
+    // QA coverage gap (DD-42991): the fix removed the ENTIRE
+    // "courtRoomId != null && courtRoomId > 0" clause from isFixedHearing(), not just the
+    // null-courtroom case AC-001/AC-002 describe. That also widens defaulting to hearings carrying
+    // an explicit non-positive courtRoomId (0 or negative) — a combination no test previously
+    // pinned down together with a present dateOfHearing/absent timeOfHearing. This test documents
+    // and locks in that widened (but arguably correct, per the story's "courtroom absent or invalid"
+    // intent) behaviour so a future refactor of isFixedHearing() cannot silently narrow it back.
+    @ParameterizedTest
+    @ValueSource(ints = {0, -1})
+    void shouldDefaultHearingTimeTo10amForNonPositiveCourtRoomIdWhenTimeNotProvided(final int courtRoomId) {
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedDefendant defendant = migratedDefendant()
+                .withValuesFrom(migCaseDetails.getDefendants().get(0))
+                .withProsecutorDefendantId("DEF-001")
+                .withOffences(List.of())
+                .build();
+        final MigratedCaseDetails migCaseDetailsWithHearing = MigratedCaseDetails.migratedCaseDetails()
+                .withValuesFrom(migCaseDetails)
+                .withDefendants(List.of(defendant))
+                .withHearings(List.of(
+                        MigratedHearing.migratedHearing()
+                                .withCourtHearingLocation("C50EX00")
+                                .withCourtRoomId(courtRoomId)
+                                .withHearingType("SIT")
+                                .withDateOfHearing("2027-01-15")
+                                .withListedDefendants(List.of(
+                                        ListedDefendant.listedDefendant()
+                                                .withProsecutorDefendantId("DEF-001")
+                                                .withListedOffences(List.of())
+                                                .build()))
+                                .build()))
+                .build();
+
+        final Prosecution amendedProsecution = buildProsecution(prosecution, migCaseDetailsWithHearing);
+        final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetailsWithHearing, null);
+
+        when(prosecutionWithReferenceData.getProsecution()).thenReturn(amendedProsecution);
+        when(referenceDataQueryService.retrieveOrganisationUnitWithCourtrooms("C50EX00"))
+                .thenReturn(Optional.of(OrganisationUnitWithCourtroomsReferenceData.organisationUnitWithCourtroomsReferenceData()
+                        .withCourtrooms(List.of())
+                        .build()));
+        when(referenceDataQueryService.retrieveHearingTypes())
+                .thenReturn(HearingTypes.hearingTypes()
+                        .withHearingtypes(List.of(HearingType.hearingType().withHearingCode("SIT").build()))
+                        .build());
+
+        migratedCaseFileAggregate.receiveMigratedCaseFile(new CaseProcessingArgs(
+                receiveMigratedCase, prosecutionWithReferenceData,
+                List.of(caseRefDataEnricher), List.of(defendantRefDataEnricher),
+                referenceDataQueryService, getSections(),
+                getDocumentMetadataReferenceDataList(), List.of(migratedHearingRefDataEnricher)
+        ));
+
+        assertThat("non-positive courtRoomId (" + courtRoomId + ") with no time provided should default timeOfHearing to 10am",
+                migratedCaseFileAggregate.getReceiveMigratedCaseFile()
+                        .getMigratedCaseDetails().getHearings().get(0).getTimeOfHearing(), is("10:00:00"));
+    }
+
     private MigratedCaseDetails buildCaseDetailsWithHearing(final Integer courtRoomId) {
         final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
 

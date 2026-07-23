@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.pcfdlrm.event.processor.convertor;
 import static java.time.LocalDate.now;
 import static java.util.Objects.nonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel.DLRM_MIGRATION;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ListedDefendant.listedDefendant;
@@ -426,6 +427,10 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
 
         assertEquals(1, listHearingRequests.size());
         assertNull(listHearingRequests.get(0).getCourtCentre().getRoomName());
+        // DD-42991: an unallocated hearing (no courtroom) must still carry its time through to
+        // progression's listedStartDateTime — getDateAndTimeOfHearing() only depends on date+time,
+        // not courtRoomId, but nothing previously asserted that here.
+        assertNotNull(listHearingRequests.get(0).getListedStartDateTime());
     }
 
     @Test

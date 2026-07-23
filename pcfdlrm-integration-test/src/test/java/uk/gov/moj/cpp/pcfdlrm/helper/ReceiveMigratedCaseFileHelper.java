@@ -176,10 +176,14 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
                 .untilAsserted(() -> {
                     final JsonEnvelope event = addMaterialHelper.verifyInMessagingQueue(migratedCaseFileReceivedConsumer);
                     assertThat(event, jsonEnvelope(metadata().withName(MIGRATED_CASE_FILE_RECEIVED), payload().isJson(allOf(
-                            withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings", hasSize(3)),
+                            withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings", hasSize(5)),
                             withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings[0].timeOfHearing", is(expectedDefaultedUtcTime)),
                             withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings[1].timeOfHearing", is("10:05:00")),
-                            withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings[2].timeOfHearing", is("08:30:00"))
+                            withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings[2].timeOfHearing", is("08:30:00")),
+                            // DD-42991 AC-001: unallocated hearing (no courtRoomId), no time provided — defaults the same as index 0.
+                            withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings[3].timeOfHearing", is(expectedDefaultedUtcTime)),
+                            // DD-42991 AC-002: unallocated hearing (no courtRoomId), time provided — must not be overwritten.
+                            withJsonPath("receiveMigratedCaseFile.migratedCaseDetails.hearings[4].timeOfHearing", is("09:30:00"))
                     ))));
                 });
     }
