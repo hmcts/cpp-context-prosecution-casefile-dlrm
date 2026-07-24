@@ -1431,9 +1431,6 @@ class MigratedCaseFileAggregateTest {
         );
     }
 
-    // DD-42991 AC-001: unallocated hearing (no courtroom) with no time — should default to 10am.
-    // Currently RED: isFixedHearing() requires courtRoomId > 0, so an unallocated hearing is never
-    // defaulted today. This test encodes the story's intent, not the current implementation.
     @Test
     void shouldDefaultHearingTimeTo10amForUnallocatedHearingWhenTimeNotProvided() {
         final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
@@ -1483,9 +1480,6 @@ class MigratedCaseFileAggregateTest {
                         .getMigratedCaseDetails().getHearings().get(0).getTimeOfHearing(), is("10:00:00"));
     }
 
-    // DD-42991 AC-002: unallocated hearing (no courtroom) with time already provided — time must
-    // not be overwritten. This should already pass today (regression guard), since defaulting only
-    // ever applies when timeOfHearing is null.
     @Test
     void shouldNotOverwriteHearingTimeForUnallocatedHearingWhenTimeProvided() {
         final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
@@ -1536,13 +1530,6 @@ class MigratedCaseFileAggregateTest {
                         .getMigratedCaseDetails().getHearings().get(0).getTimeOfHearing(), is("09:30"));
     }
 
-    // QA coverage gap (DD-42991): the fix removed the ENTIRE
-    // "courtRoomId != null && courtRoomId > 0" clause from isFixedHearing(), not just the
-    // null-courtroom case AC-001/AC-002 describe. That also widens defaulting to hearings carrying
-    // an explicit non-positive courtRoomId (0 or negative) — a combination no test previously
-    // pinned down together with a present dateOfHearing/absent timeOfHearing. This test documents
-    // and locks in that widened (but arguably correct, per the story's "courtroom absent or invalid"
-    // intent) behaviour so a future refactor of isFixedHearing() cannot silently narrow it back.
     @ParameterizedTest
     @ValueSource(ints = {0, -1})
     void shouldDefaultHearingTimeTo10amForNonPositiveCourtRoomIdWhenTimeNotProvided(final int courtRoomId) {

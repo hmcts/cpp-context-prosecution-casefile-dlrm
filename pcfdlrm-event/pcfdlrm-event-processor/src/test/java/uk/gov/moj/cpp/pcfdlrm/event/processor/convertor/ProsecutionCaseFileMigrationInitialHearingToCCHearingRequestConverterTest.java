@@ -427,9 +427,6 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
 
         assertEquals(1, listHearingRequests.size());
         assertNull(listHearingRequests.get(0).getCourtCentre().getRoomName());
-        // DD-42991: an unallocated hearing (no courtroom) must still carry its time through to
-        // progression's listedStartDateTime — getDateAndTimeOfHearing() only depends on date+time,
-        // not courtRoomId, but nothing previously asserted that here.
         assertNotNull(listHearingRequests.get(0).getListedStartDateTime());
     }
 
