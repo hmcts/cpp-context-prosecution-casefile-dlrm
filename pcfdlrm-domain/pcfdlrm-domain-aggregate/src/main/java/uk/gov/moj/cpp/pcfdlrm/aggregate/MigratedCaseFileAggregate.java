@@ -409,9 +409,7 @@ public class MigratedCaseFileAggregate implements Aggregate {
 
     private static boolean isFixedHearing(final MigratedHearing hearing) {
         return hearing.getWeekCommencingDate() == null
-                && isNotBlank(hearing.getDateOfHearing())
-                && hearing.getCourtRoomId() != null
-                && hearing.getCourtRoomId() > 0;
+                && isNotBlank(hearing.getDateOfHearing());
     }
 
     private static String toDefaultUtcTime(final String dateOfHearing) {
