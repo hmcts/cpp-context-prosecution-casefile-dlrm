@@ -322,6 +322,35 @@ class ReceiveMigratedCaseFileIT {
         receiveMigratedCaseFileHelper.verifyMigratedCaseFileReceivedWithDefaultedHearingTime(addMaterialHelper, expectedUtcTime);
     }
 
+    @Test
+    void shouldMarkMigratedCaseAsProcessedWhenAcceptingAPreviouslyReceivedCase() {
+        final String submissionId = UUID.randomUUID().toString();
+        final String caseId = UUID.randomUUID().toString();
+        final String caseUrn = randomAlphanumeric(10);
+
+        final String receivePayload = getStringFromResource("command-json/pcfdlrm.command.receive-migrated-case-file-xhibit-no-material.json")
+                .replace("SUBMISSION_ID", submissionId)
+                .replace("CASE_ID", caseId)
+                .replace("CASE_URN", caseUrn)
+                .replace("HEARING_DATE", LocalDate.now().plusDays(1).toString());
+
+        receiveMigratedCaseFileHelper.receiveMigratedCaseFile(receivePayload);
+        receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiated(caseUrn, false, 3);
+
+        receiveMigratedCaseFileHelper.triggerAcceptMigratedCase(caseId);
+
+        receiveMigratedCaseFileHelper.verifyMigratedCaseAccepted(addMaterialHelper, submissionId, caseId, caseUrn);
+    }
+
+    @Test
+    void shouldRaiseMigratedCaseNotFoundInAutomationWhenAcceptingAnUnknownCase() {
+        final String caseId = UUID.randomUUID().toString();
+
+        receiveMigratedCaseFileHelper.triggerAcceptMigratedCase(caseId);
+
+        receiveMigratedCaseFileHelper.verifyMigratedCaseNotFoundInAutomation(addMaterialHelper);
+    }
+
     private JsonEnvelope createMaterialAddedPayload(final String materialId, final String caseId, final String defendantId) {
 
         final Metadata metadata = JsonEnvelope

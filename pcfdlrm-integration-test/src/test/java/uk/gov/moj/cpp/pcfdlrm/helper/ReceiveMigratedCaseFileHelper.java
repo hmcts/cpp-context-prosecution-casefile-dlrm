@@ -5,6 +5,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.findAll;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
+import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -20,16 +21,19 @@ import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePaylo
 import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MATERIAL_ADDED_EVENT;
 import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_FILE_PROCESSED;
 import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_FILE_RECEIVED;
+import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_NOT_FOUND_IN_AUTOMATION;
 import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_VALIDATED_CREATION_PENDING;
 
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.justice.services.messaging.DefaultJsonObjectEnvelopeConverter;
 import uk.gov.justice.services.messaging.JsonEnvelope;
+import uk.gov.justice.services.messaging.Metadata;
 
 import java.io.StringReader;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
@@ -38,15 +42,61 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
 
     private static final String PROGRESSION_INITIATE_COURT_PROCEEDINGS = "progression.initiate-court-proceedings";
+    private static final String PROSECUTION_CASE_CREATED_PUBLIC_EVENT = "public.progression.prosecution-case-created";
     private final JmsMessageConsumerClient materialAddedEventProcessConsumer = newPrivateJmsMessageConsumerClientProvider(CONTEXT_NAME).withEventNames(MATERIAL_ADDED_EVENT).getMessageConsumerClient();
     private final JmsMessageConsumerClient migratedCaseValidatedCreationPendingConsumer = newPrivateJmsMessageConsumerClientProvider(CONTEXT_NAME).withEventNames(MIGRATED_CASE_VALIDATED_CREATION_PENDING).getMessageConsumerClient();
     private final JmsMessageConsumerClient migratedCaseFileProcessedConsumer = newPrivateJmsMessageConsumerClientProvider(CONTEXT_NAME).withEventNames(MIGRATED_CASE_FILE_PROCESSED).getMessageConsumerClient();
     private final JmsMessageConsumerClient migratedCaseFileReceivedConsumer = newPrivateJmsMessageConsumerClientProvider(CONTEXT_NAME).withEventNames(MIGRATED_CASE_FILE_RECEIVED).getMessageConsumerClient();
+    private final JmsMessageConsumerClient migratedCaseNotFoundInAutomationConsumer = newPrivateJmsMessageConsumerClientProvider(CONTEXT_NAME).withEventNames(MIGRATED_CASE_NOT_FOUND_IN_AUTOMATION).getMessageConsumerClient();
 
     public void receiveMigratedCaseFile(final String payload) {
         makePostCall(getWriteUrl("/receive-migrated-case-file"),
                 "application/vnd.pcfdlrm.receive-migrated-case-file+json",
                 payload);
+    }
+
+    // accept-migrated-case has no REST resource, so it's triggered the way it is in production: via ProgressionPublicEventProcessor reacting to this public event.
+    public void triggerAcceptMigratedCase(final String caseId) {
+        final Metadata metadata = JsonEnvelope.metadataBuilder()
+                .withId(randomUUID())
+                .withName(PROSECUTION_CASE_CREATED_PUBLIC_EVENT)
+                .build();
+
+        final JsonObject payload = Json.createObjectBuilder()
+                .add("prosecutionCase", Json.createObjectBuilder()
+                        .add("id", caseId)
+                        .add("defendants", Json.createArrayBuilder())
+                        .add("migrationSourceSystem", Json.createObjectBuilder()
+                                .add("migrationSourceSystemName", "LIBRA")
+                                .add("migrationSourceSystemCaseIdentifier", caseId)))
+                .build();
+
+        sendMessage(PROSECUTION_CASE_CREATED_PUBLIC_EVENT, JsonEnvelope.envelopeFrom(metadata, payload));
+    }
+
+    public void verifyMigratedCaseAccepted(final AddMaterialHelper addMaterialHelper, final String submissionId, final String caseId, final String caseUrn) {
+        await()
+                .untilAsserted(() -> {
+                    final JsonEnvelope event = addMaterialHelper.verifyInMessagingQueue(migratedCaseFileProcessedConsumer);
+
+                    assertThat(event, jsonEnvelope(metadata().withName(MIGRATED_CASE_FILE_PROCESSED), payload().isJson(allOf(
+                            withJsonPath("submissionId", is(submissionId)),
+                            withJsonPath("caseId", is(caseId)),
+                            withJsonPath("caseUrn", is(caseUrn)),
+                            withJsonPath("processingIsSuccessful", is(true))
+                    ))));
+                });
+    }
+
+    public void verifyMigratedCaseNotFoundInAutomation(final AddMaterialHelper addMaterialHelper) {
+        await()
+                .untilAsserted(() -> {
+                    final JsonEnvelope event = addMaterialHelper.verifyInMessagingQueue(migratedCaseNotFoundInAutomationConsumer);
+
+                    assertThat(event, jsonEnvelope(metadata().withName(MIGRATED_CASE_NOT_FOUND_IN_AUTOMATION), payload().isJson(
+                            withJsonPath("description", is("Migrated case not found in Automation"))
+                    )));
+                });
     }
 
     public void verifyCaseProcessed(AddMaterialHelper addMaterialHelper, String submissionId, String description) {
