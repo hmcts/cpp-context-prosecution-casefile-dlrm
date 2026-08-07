@@ -157,10 +157,23 @@ local agent/rule/skill overrides are maintained here.
   `.claude/agents/` + `.claude/rules/` + `.specify/` Spec-Kit setup was installed here but
   never actually driven (no `specs/` output ever existed) and has been removed in favour of
   the plugin.
-- Pipeline artefacts go to `docs/pipeline/<JIRA-TICKET>-<slug>/` (created on first use, no
-  pre-scaffolding required): `00-input-brief.md` → `01-requirements.md` → `02-design.md` →
-  `03-stories.md`, plus a shared `docs/pipeline/adrs/` for any architecturally-significant
-  decision.
+- Pipeline artefacts go to one directory **per story**, named
+  `docs/pipeline/<EPIC-KEY>-<STORY-KEY>-<slug>/` (created on first use, no pre-scaffolding
+  required): `00-input-brief.md` → `01-requirements.md` → `02-design.md` → `03-stories.md`,
+  plus a shared `docs/pipeline/adrs/` for any architecturally-significant decision. Both Jira
+  keys sit in the directory name, so an epic's stories sort together and either key is greppable
+  without opening a file — e.g. `DD-43067-DD-43099-pcfdlrm-test-hardening/`. A ticket with no
+  parent epic keeps the single-key form, and existing directories are not renamed retroactively.
+- **Each story directory is self-contained.** An SDLC stage run against one story must not need
+  another story's files — epic-level framing (the epic's goal, cross-cutting design decisions,
+  links to supporting analysis) is repeated in that story's `00-input-brief.md`. There is no
+  epic-level artefact directory.
+- **A story belongs to exactly one repo.** Stage 7 (CI) is per-repo, so a change needing work in
+  two repos is two stories, one per repo — DD-43099 here and DD-43078 in
+  `cpp-context-stagingdlrm` are the two halves of the same epic-level test hardening. When two
+  such stories share a decision, the ADR lives in **one** repo and the other links to it by URL
+  from its design doc and PR description. It is never copied: the copies drift the moment the
+  decision changes, and nobody can tell which is current.
 
 ## Java style
 
