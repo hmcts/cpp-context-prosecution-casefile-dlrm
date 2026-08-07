@@ -1,161 +1,175 @@
 # Requirements — LIBRA enabler: PCFDLRM test hardening
 
-> Stage 1 artefact (requirements). Source: [`00-input-brief.md`](./00-input-brief.md).
-> Requirements altitude — nothing here prescribes a class layout. Implementation **tasks** come
-> from the design stage.
-
-## Story
-
-**[DD-43099](https://tools.hmcts.net/jira/browse/DD-43099) — Pin PCFDLRM's XHIBIT behaviour and
-make its test suite LIBRA-extensible**
+> Stage 1 artefact. Source: [`00-input-brief.md`](./00-input-brief.md).
+> Requirements altitude — nothing here prescribes a class layout. Tasks come from
+> [`02-design.md`](./02-design.md).
 
 | | |
 |---|---|
+| Story | [DD-43099](https://tools.hmcts.net/jira/browse/DD-43099) |
 | Epic | [DD-43067](https://tools.hmcts.net/jira/browse/DD-43067) — LIBRA enabler |
-| Size | M |
 | Repo | `cpp-context-prosecution-casefile-dlrm` |
-| Depends on | ADR-001 approved before stage 5. No other blocker — can start immediately |
+| Size | M |
 | Sibling story | [DD-43078](https://github.com/hmcts/cpp-context-stagingdlrm/tree/main/docs/pipeline/DD-43067-DD-43078-test-hardening) — same hardening in stagingDLRM, independently deliverable |
+| Depends on | [ADR-001](https://github.com/hmcts/cpp-context-stagingdlrm/blob/main/docs/pipeline/adrs/001-dlrm-scenario-test-dsl.md) approved before stage 5. No other blocker |
 | Production changes | **none** — test, fixture and test-support code only |
 
-### Summary (JIRA summary line)
+**JIRA summary line:**
+`[LIBRA enabler] Pin PCFDLRM's XHIBIT behaviour with whole-payload assertions across handler/aggregate, event processor/converters and ITs`
 
-`[LIBRA enabler] Harden PCFDLRM tests: pin the three XHIBIT-only behaviours and rule-set selection, whole-payload assertions, XHIBIT-only ITs`
+## Goal
 
-### User story
+Pin what PCFDLRM does today **under XHIBIT**, so that relaxing the shared DLRM schema for LIBRA
+cannot silently change what this service sends to Progression.
 
-As a **developer about to relax the shared DLRM schema for LIBRA**,
-I want **the PCFDLRM unit suite to assert complete payloads for XHIBIT across every scenario that
-matters, the integration tests to prove the same journeys for XHIBIT only at representative depth,
-and the source system to be a scenario parameter rather than a hardcoded builder constant**,
-so that **removing schema constraints upstream cannot silently change what PCFDLRM sends to
-Progression, and LIBRA scenarios can later be added as scenario data rather than as new test
-classes**.
+Three test components carry the pins, and each asserts its output **as a complete payload** rather
+than a selection of fields:
+
+1. **Handler + aggregate** — commands accepted, and the events the aggregate emits.
+2. **Event processor + converters** — the `InitiateCourtProceedings` payload built for Progression,
+   and the `public.pcfdlrm.migrated-case-file-processed` event.
+3. **Integration tests** — the same journeys end to end, at representative depth.
 
 ## Depth model
 
 | Layer | Depth | Rationale |
 |---|---|---|
-| Unit / component | **Exhaustive.** Every scenario that matters: each rule path, each variant, each behaviour that currently branches on source system. | Fast, in `mvn test`, no environment — the right place for a scenario matrix. |
-| Integration | **Representative.** Enough journeys to prove the wiring and that the payload crossing each service boundary is whole. No scenario matrix. | Needs Docker and a running environment, so enumerating variants there is expensive and slow on every build. |
-
-## Scope
-
-- `pcfdlrm-command/pcfdlrm-command-handler` — `MigratedCaseFileHandler`
-- `pcfdlrm-domain/pcfdlrm-domain-aggregate` — `MigratedCaseFileAggregate`, `ProsecutionCaseFileHelper`
-- `pcfdlrm-domain/pcfdlrm-domain-aggregate` validation rules — `CcProsecutionValidationRuleProvider`
-  and the rule sets it selects; `ExhibitFiileTypeValidationRule`
-- `pcfdlrm-event/pcfdlrm-event-processor` — the converters and the processed-event processor
-- `pcfdlrm-integration-test` — representative depth only
+| Unit / component | **Exhaustive.** Every scenario that matters: each rule path, each variant, each XHIBIT-gated behaviour. | Fast, in `mvn test`, no environment — the right place for a scenario matrix. |
+| Integration | **Representative.** Enough journeys to prove the wiring and that the payload crossing each service boundary is whole. No scenario matrix. | Needs Docker, so enumerating variants there is slow on every build. |
 
 ## Requirements
 
-- **FR1 — XHIBIT is the explicit baseline.** Every scenario states `migrationSourceSystemName`
-  explicitly rather than relying on a fixture or builder default, and the baseline value is
-  `XHIBIT`. No scenario may pass because the field happened to be absent or defaulted.
-  **This is the single largest gap in this repo**: `builder/ObjectBuilder.java:43` sets the value
-  from `TestConstants.SOURCE_SYSTEM_XHIBIT`, so all 39 aggregate tests are XHIBIT by construction,
-  and the ten `assertThat(…getMigrationSourceSystemName(), is(XHIBIT))` assertions (lines 373, 663,
-  701, 804, 1000, 1035, 1074, 1117, 1167, 1217) assert a value the builder itself just set.
-- **FR2 — Assertions cover whole payloads.** For each command accepted, domain event appended, and
-  outbound payload produced, the expected result is asserted as a **complete payload** compared
-  against a fixture, not a selection of fields. Non-deterministic values (generated UUIDs,
-  timestamps) are excluded by an **explicit, enumerated** list, so an accidental new or dropped
-  field cannot slip through an over-broad wildcard. Applies in particular to the
-  `public.pcfdlrm.migrated-case-file-processed` event and the `initiatecourtproceedings` payload
-  built for Progression — the latter is today asserted with two `withJsonPath` spot checks
-  (`ReceiveMigratedCaseFileHelper.java:180`).
-- **FR3 — Source system is a scenario parameter.** The suite is structured so source system is
-  data, not control flow. Adding a source system later must not require a parallel test class, a
-  copied fixture tree, or an `if` on source system inside a test body. `ObjectBuilder` must accept
-  the source system as an argument rather than baking in a constant.
-- **FR4 — Adopt a scenario DSL where it earns its place.** Suites with more than a couple of
-  multi-step or multi-variant cases adopt a scenario-stream DSL per
-  [ADR-001](https://github.com/hmcts/cpp-context-stagingdlrm/blob/main/docs/pipeline/adrs/001-dlrm-scenario-test-dsl.md).
-  Simple single-assertion tests — most of the 63 `*ValidationRuleTest` classes — stay as they are;
-  the DSL is a means to FR2 and FR3, not a target.
-- **FR5 — Pin the three XHIBIT-only behaviours.** Each currently no-ops or is suppressed for
-  non-XHIBIT sources, and each is a decision point once LIBRA arrives (analysis §3.4, §5 Q6).
-  Assert current XHIBIT behaviour **and** current non-XHIBIT behaviour, so changing either is a
-  visible, deliberate test change:
-  1. `ExhibitFiileTypeValidationRule` — materials / Court Record Sheet file-type check; gated on
-     `XHIBIT.equals(input.getMigrationSourceSystemName())` and no-ops for any non-XHIBIT source.
-     Both problem codes are in scope: `INVALID_FILE_TYPE_FOR_XHIBIT` and
-     `INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION`.
-  2. `MigratedCaseFileAggregate`'s hearing/defendant-matching check — the condition is computed for
-     every case, but the problem is surfaced only for XHIBIT.
-  3. `ProsecutionCaseFileHelper.applyRuleToDefendantFields()` — defaults/normalises gender,
-     language and ethnicity codes after a validation failure, XHIBIT only.
-- **FR5a — The non-XHIBIT assertions must not be vacuous.** All three FR5 behaviours are assertions
-  of *absence* for non-XHIBIT, which is easy to write in a way that would pass even if the
-  behaviour were deleted. Each non-XHIBIT scenario asserts a concrete positive — the exact
-  unchanged payload, or an empty problem list compared whole — not `assertTrue(problems.isEmpty())`
-  alone.
-- **FR6 — Pin rule-set selection.** Assert which rule set `CcProsecutionValidationRuleProvider`
-  selects for a given `initiationCode`. Today every migrated case lands in the generic default set
-  because stagingDLRM forces `"O"`; once the enum is dropped (DD-43081), real codes will route into
-  the existing `SUMMONS`/`REQUISITION`/`SJP` sets, and that change must be observable rather than
-  incidental. The existing test asserts by `Channel` with `anyMatch` spot checks on single rule
-  classes — that is not sufficient to detect a set changing.
-- **FR7 — Cover the fields PCFDLRM must newly *accept* without mapping onward.** DD-43081 FR14a
-  resolves three LIBRA fields (`informant`, `writtenChargePostingDate`, `prosecutorCosts`) whose
-  schema parents are `additionalProperties: false`. Whichever resolution is chosen, the suite needs
-  a scenario proving a payload carrying them is **accepted**, and an XHIBIT scenario proving
-  nothing about XHIBIT's handling changed. This is the one relaxation-adjacent case where the
-  failure mode is acceptance, not rejection.
-- **FR8 — Cover the partial-officer-block rejection.** Five fields are `exists_mandatory` in
-  Progression's payload schema — `policeOfficerRank`, `policeWorkerReferenceNumber`,
-  `policeWorkerLocationCode`, officer `surname` and officer `address1`. They are mandatory *if the
-  officer block is sent at all*, so a LIBRA case with a partial block is rejected downstream. Pin
-  that as a rejection scenario when DD-43081 FR13 lands, rather than discovering it in an
-  environment.
-- **FR9 — Integration tests cover XHIBIT exclusively, at representative depth.** The IT layer
-  proves the wiring and boundary payloads; it does **not** replicate the unit matrix.
-  - Every IT journey runs with `migrationSourceSystemName = XHIBIT`. Three command fixtures
-    currently do not — `pcfdlrm.command.receive-multiple-hearing-migrated-case-file.json`,
-    `-multiple-hearing-wc-migrated-case-file.json`, `receive-with-no-hearing-migrated-case-file.json`.
-    Each is re-pointed at XHIBIT or gains an XHIBIT equivalent; convert-vs-duplicate is a design
-    decision, but LIBRA-only coverage of a journey is not an acceptable XHIBIT baseline.
-    `prosecutorOffenceId` values containing the string `LIBRA` are **not** in scope — renaming them
-    is churn with no coverage effect.
-  - Journeys kept at IT level: case file received and processed through to the public event;
-    material addition. Field-level variants and the FR5 behaviours stay at unit level.
-  - Boundary payloads are still asserted **whole** per FR2 — a thinner assertion would defeat the
-    point of the layer.
-- **NFR1 — No production code changes.** Any production defect found is raised as a separate
-  ticket, not fixed here. A new **test-scoped** module is permitted (see ADR-001 §2) since it
-  changes no `src/main` file and no deployable artefact.
-- **NFR2 — Runtime stays acceptable, per layer.** The unit suite stays in the normal `mvn test`
-  run; whole-payload comparison must not push it into a separate profile. ITs stay in their
-  existing profile and must not become materially slower — the constraint that keeps FR9
-  representative.
+### R1 — Every component asserts whole payloads
+
+For each command accepted, domain event emitted, and outbound payload produced, the expected result
+is asserted as a **complete payload** compared against a fixture.
+
+- "Whole payload" is defined by [ADR-001 §1](https://github.com/hmcts/cpp-context-stagingdlrm/blob/main/docs/pipeline/adrs/001-dlrm-scenario-test-dsl.md)
+  and is not redefined here: JSONassert STRICT, anchored enumerated exclusions, an exclusion
+  matching no path fails the test.
+- Non-deterministic values are excluded by an **explicit, enumerated** list — never a wildcard — so
+  an accidentally added or dropped field cannot slip through.
+- **Aggregate scenarios assert the events returned by the aggregate method, never aggregate state.**
+  This is a hard rule, not a preference. Each scenario calls the same method the handler calls,
+  takes the `Stream<Object>` it returns, and asserts that stream: its length, the type of each event
+  in order, and each event's payload whole. **No aggregate getter may appear in an assertion** —
+  not `getReceiveMigratedCaseFile()`, `getMaterialsAdded()`,
+  `getMaterialsAddedPostProcessing()` or `getMaterailsReadyForCourtDocuments()`.
+
+  The returned stream is the aggregate's entire production contract: all three public methods return
+  `Stream<Object>`, and both production callers consume only that stream. No production code calls
+  any aggregate getter, and two of the four are package-private — reachable solely because the test
+  shares the aggregate's package. They are a test seam, not behaviour.
+
+  Today ~25 assertions read getters instead and 13 invocations discard the returned stream entirely,
+  so they cannot observe how many events were emitted, in what order, or of what type. Three
+  consequences make state-based assertion not merely weaker but **incapable**:
+  - The XHIBIT gate at `MigratedCaseFileAggregate:368` decides whether `MigratedCaseFileReceived`
+    reaches the stream at all — R3's highest-value pin, invisible from state.
+  - `MigratedCaseValidatedWithWarnings` and `MigratedCaseNotFoundInAutomation` are emitted by
+    production but have **no arm in `apply()` and no field or getter on the aggregate**. No
+    state-based assertion can see them under any circumstances.
+  - Event *order* and *count* have no state representation at all.
+
+### R2 — Test data is deterministic and states XHIBIT explicitly
+
+- Every scenario states `migrationSourceSystemName` explicitly rather than relying on a builder
+  default, and the baseline value is `XHIBIT`. No scenario may pass because the field happened to be
+  absent or defaulted.
+- **Both** source-system fields are supplied by the caller — `migrationSourceSystemName` and
+  `migrationSourceSystemCaseIdentifier`. Parameterising only the name would let a later scenario
+  build `{name: LIBRA, caseIdentifier: "XHIBIT-123"}`: incoherent data that would pass every
+  assertion.
+- `ObjectBuilder` produces **byte-identical output for identical arguments**. It currently mints
+  five non-deterministic values per call (two relative dates, three random UUIDs). Left alone these
+  become five exclusions repeated across four suites — and two of them, `dateOfSending` and
+  `dateOfBirth`, are fields the validation rules actually read. A relative date dumped into a
+  fixture is also correct on the day it is generated and wrong afterwards. Exclusion is the
+  fallback, not the plan.
+- Source system is **data, not control flow**: adding one later must not require a parallel test
+  class, a copied fixture tree, or an `if` on source system inside a test body. This buys nothing
+  for coverage in this story — its justification is purely forward-looking, and it must not be
+  allowed to grow scope.
+
+### R3 — The XHIBIT-gated behaviours are pinned, on the XHIBIT path
+
+Each behaviour below is gated on the source system being `XHIBIT` and no-ops or is suppressed
+otherwise, and each is a decision point once LIBRA arrives. **This story asserts the XHIBIT path
+only** — see *Out of scope*.
+
+| # | Behaviour | Component |
+|---|---|---|
+| a | Seven `isXhibit()` gates in `MigratedCaseFileAggregate` — case problems, case-marker warnings, **whether `MigratedCaseFileReceived` is emitted at all**, hearing warnings, offence problems, no-matching-defendants, defendant problems | handler + aggregate |
+| b | `ExhibitFiileTypeValidationRule` — materials / Court Record Sheet file-type check. Both problem codes: `INVALID_FILE_TYPE_FOR_XHIBIT`, `INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION` | handler + aggregate |
+| c | `ProsecutionCaseFileHelper.applyRuleToDefendantFields()` — defaults/normalises gender, language and ethnicity codes after a validation failure | handler + aggregate |
+| d | Rule-set selection — which set `CcProsecutionValidationRuleProvider` returns for a given `initiationCode`, asserted as **set equality**. Today every migrated case lands in the generic default set because stagingDLRM forces `"O"`; once the enum is dropped (DD-43081) real codes will route into the existing `SUMMONS`/`REQUISITION`/`SJP` sets, and that must be observable rather than incidental | handler + aggregate |
+
+**Each assertion must fail if its gated branch is deleted.** Pinning one side of a gate is worth
+nothing if the assertion is coupled to a value the test itself supplied. The ten existing
+`assertThat(…getMigrationSourceSystemName(), is(XHIBIT))` assertions are the counter-example to
+avoid: they name the source system and assert nothing about what the gate does. Each scenario
+asserts the concrete effect — the exact problem raised, or the exact normalised field values.
+
+### R4 — No production code changes; runtime stays acceptable
+
+- No `src/main` file changes in any module. Any production defect found is raised as a separate
+  ticket, not fixed here.
+- A new **test-scoped** module is permitted (ADR-001 §2): it changes no `src/main` file and no
+  deployable artefact.
+- The unit suite stays in the normal `mvn test` run — whole-payload comparison must not push it into
+  a separate profile. ITs stay in their existing profile and must not become materially slower.
 
 ## Acceptance criteria
 
-- **AC1** Given the hardened unit suite, when it runs, then every scenario asserts at least one
-  complete payload against a fixture, with any exclusions individually listed.
-- **AC2** Given a developer adds a scenario for a different source system, when they do so, then
-  the change is confined to scenario data plus fixtures — no new test class, no change to a test
-  method body.
-- **AC3** Given `ObjectBuilder`, when a test builds a migrated case, then the source system is
-  supplied by the caller and no test relies on `TestConstants.SOURCE_SYSTEM_XHIBIT` as a default.
-- **AC4** Given each behaviour in FR5, when the suite runs, then both the XHIBIT and the
-  non-XHIBIT path are asserted explicitly, not by omission, and each non-XHIBIT assertion states a
-  concrete positive per FR5a.
-- **AC5** Given an `initiationCode` value per FR6, when a migrated case is processed, then the test
-  asserts which rule set was selected, as a set rather than a spot check.
-- **AC6** Given a deliberate experimental change that drops a field from the Progression payload or
-  the public event, when the suite runs, then at least one test fails. Demonstrated once at review;
-  the experiment is not committed.
-- **AC7** Given the IT suite, when it runs, then no journey resolves `migrationSourceSystemName` to
-  `LIBRA`, and the three fixtures named in FR9 no longer provide LIBRA-only coverage.
-- **AC8** Given `mvn clean install`, when it completes, then all unit suites pass, the ITs pass in
-  their profile without a material runtime increase, and no production source file has changed.
+- **AC1** Every scenario in the hardened suite asserts at least one complete payload against a
+  fixture, with any exclusions individually listed.
+- **AC2** Every aggregate scenario asserts the stream returned by the aggregate method — length,
+  event type in order, whole payloads — and a grep of `MigratedCaseFileAggregateTest` for
+  `getMaterialsAdded`, `getMaterialsAddedPostProcessing`, `getMaterailsReadyForCourtDocuments` and
+  `getReceiveMigratedCaseFile` returns **no assertion sites**.
+- **AC3** `ObjectBuilder` takes both source-system fields from the caller, no test relies on
+  `TestConstants.SOURCE_SYSTEM_XHIBIT` as a default, and two successive builds with identical
+  arguments produce byte-identical payloads.
+- **AC4** Each behaviour in R3 is asserted on the XHIBIT path against a complete payload, and the
+  assertion would fail if the gated branch were deleted from production code.
+- **AC5** Adding a scenario for a different source system is confined to scenario data plus
+  fixtures — no new test class, no change to a test method body.
+- **AC6** No IT journey resolves `migrationSourceSystemName` to `LIBRA`.
+- **AC7** A deliberate experimental change dropping a field from the Progression payload or the
+  public event causes at least one test to fail. Demonstrated once at the stage 6 gate; the
+  experiment is not committed.
+- **AC8** `mvn clean install` passes, the ITs pass in their profile without a material runtime
+  increase, and no production source file has changed.
 
 ## Out of scope
 
-None of the following is part of this story:
+- **The non-XHIBIT path of every source-system gate.** Deferred to the LIBRA story, not dropped.
+  **Five** production branches are left uncovered as a result: the three R3 gates, plus
+  `PleaDataRefDataEnricher` and `VerdictDataRefDataEnricher`, which resolve any non-XHIBIT source to
+  `Jurisdiction.MAGISTRATES` rather than `CROWN`. Whoever enables LIBRA must pin these; this story
+  gives them no signal.
+- **Closing the general XHIBIT coverage gaps.** *Story owner's decision, 2026-08-07: follow-up
+  ticket, not this story.* This story converts the existing scenarios and adds only what R3 requires;
+  it does not audit the aggregate for untested branches generally.
 
+  **What this actually defers is small, because R3 pulls most of it back in.** Of the six
+  `MigratedCaseFileProcessed` rejection reasons never named in the aggregate test today:
+  - `Invalid Prosecuting Authority` sits inside the `isXhibit()` gate at `:221`, and
+    `INVALID_OFFENCE_CODE`, `MISSING_OR_INVALID_PLEA_DATE` and `MISSING_OR_INVALID_VERDICT_DATE` all
+    sit inside the gate at `:433`. **All four are required by R3a** and are written in this story.
+  - `COURT_RECORD_SHEET_NOT_PDF` and `COURT_RECORD_SHEET_FILE_TYPE_INVALID` — R3b pins the *rule*
+    that raises both problem codes; the *aggregate's* fail-fast on them is what defers.
+
+  So the follow-up ticket carries: those two aggregate fail-fast scenarios, the
+  `MaterialAddedPendingProcess` event type (emitted by production, never named anywhere in the test),
+  and the two thin entry points — `acceptMigratedCase` invoked once and `materialAddedPostProcessing`
+  twice across 39 tests. None is XHIBIT-gated, which is why deferring them does not weaken the pins
+  this story exists to place. Raise the ticket when this story closes so the measurements above are
+  not lost.
+- **Coverage of the LIBRA fields DD-43081 resolves** — `informant`, `writtenChargePostingDate`,
+  `prosecutorCosts` (FR14a) and the five `exists_mandatory` officer fields (FR13). Both were
+  previously in this story and are removed: they depend on decisions that have not landed, and
+  neither pins *current* XHIBIT behaviour. Carried to DD-43081.
 - `cpp-apitests`, and any LIBRA scenario at either test layer.
 - The schema relaxation itself (DD-43081).
 - Anything in `cpp-context-stagingdlrm` — that is DD-43078.
@@ -165,32 +179,24 @@ None of the following is part of this story:
   `getDlrmDefendantValidationRules()` stub.
 - Filling the untested modules: `pcfdlrm-query` has no `src/test` at all and
   `pcfdlrm-viewstore-persistence/src/test` has no Java sources. Both are real gaps, neither is
-  LIBRA-adjacent — raise separately rather than absorbing them here.
+  LIBRA-adjacent — raise separately.
 - Turning the ITs into a scenario matrix.
 
-## Risks and notes
+## Risks
 
-- The aggregate and command handler are hard-typed to generated POJOs, so fixture-based
-  whole-payload assertions must work with generated types rather than around them.
-- `MigratedCaseFileAggregateTest` is 1,659 lines and 39 test methods. Converting it wholesale in
-  one change produces an unreviewable diff; the design should sequence it.
-- FR5 asserts absences ("no-ops for non-XHIBIT"), which is easy to write vacuously. FR5a exists
-  because of this, and it is worth explicit review attention rather than trusting the scenario name.
-- FR7 and FR8 depend on DD-43081 decisions that have not landed. They are the only externally
-  dependent part of this story; everything else can proceed without them.
+- `MigratedCaseFileAggregateTest` is 1,659 lines and 39 test methods. Converting it in one change
+  produces an unreviewable diff — the design sequences it.
+- **The aggregate test's inputs are deep-stub mocks, so no payload can be serialised until they are
+  replaced with real objects.** This is invisible from the test's surface, which reads as though it
+  already uses real POJOs, and it is the largest single item in the work. Sizing that assumes
+  "convert 39 tests to rows" will be wrong.
+- Even with the general coverage audit deferred, R3 still requires **four scenarios that do not exist
+  today** (the rejection reasons behind the `:221` and `:433` gates). "Convert the existing 39" is not
+  an accurate description of the aggregate work.
+- A one-sided pin is easy to write vacuously: an assertion that names XHIBIT but never exercises
+  what the gate does. R3's last paragraph exists because of this, and it is worth explicit review
+  attention rather than trusting the scenario name.
+- The aggregate and handler are hard-typed to generated POJOs, so fixture-based whole-payload
+  assertions must work with generated types rather than around them.
 - Defendant and case UUIDs are minted during processing. Exclusion lists must handle that without
   excluding so much that the assertion stops meaning anything.
-
-## Notes for the design stage
-
-1. **The scenario-DSL convention is already settled** — [ADR-001](https://github.com/hmcts/cpp-context-stagingdlrm/blob/main/docs/pipeline/adrs/001-dlrm-scenario-test-dsl.md).
-   Do not re-derive it or invent a local variant; link it from the PR description.
-2. **"Whole payload" needs no local definition** — ADR-001 §1 fixes it: JSONassert STRICT,
-   anchored enumerated exclusions, an unused exclusion fails the test.
-3. **Resist scope creep at the IT layer.** FR9 caps the ITs deliberately. Once they are open, the
-   temptation is to port unit scenarios into them — little gain, Docker runtime cost on every
-   build.
-4. **AC6 (the deliberate-break check) is the only real proof** that FR2 was achieved. Keep it as an
-   explicit review step rather than folding it into a task.
-5. **Sequence the aggregate conversion.** It is the largest single piece of work in the story and
-   the one most likely to stall review.
