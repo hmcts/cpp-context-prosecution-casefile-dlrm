@@ -20,9 +20,12 @@ import static uk.gov.moj.cpp.pcfdlrm.aggregate.MigratedCaseFileAggregate.NO_MATC
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildMigratedCaseDetails;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildProsecution;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildReceiveMigratedCaseFile;
+import static uk.gov.moj.cpp.pcfdlrm.builder.SourceSystem.sourceSystem;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.CASE_ID;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID2;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_XHIBIT;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_XHIBIT_IDENDIFIER;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURTROOM_ID_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_TIME_LIMIT_IS_MISSING;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_PLEA;
@@ -162,7 +165,7 @@ class MigratedCaseFileAggregateTest {
     void shouldRaiseMigratedCaseFileReceived() {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, migratedMaterials);
 
@@ -190,7 +193,7 @@ class MigratedCaseFileAggregateTest {
     @Test
     void shouldRaiseEventOnMaterialAddedPostProcessing() {
         final List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "YYYY", W.name(), null, null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "YYYY", W.name(), null, null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, migratedMaterials);
@@ -236,7 +239,7 @@ class MigratedCaseFileAggregateTest {
     @Test
     void shouldRaiseMigratedCaseFileReceivedForDefendantLevel() {
         final List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "YYYY", W.name(), null, null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "YYYY", W.name(), null, null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
 
@@ -256,7 +259,7 @@ class MigratedCaseFileAggregateTest {
     void shouldRaiseMigratedCaseFileReceivedNonPdfWithoutMaterial() {
 
         final List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "doc");
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", " MALE", W.name(), W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", " MALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, migratedMaterials);
@@ -280,7 +283,7 @@ class MigratedCaseFileAggregateTest {
                 .withFileType("18")
                 .build();
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "YYYY", W.name(), null, null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "YYYY", W.name(), null, null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         MigratedCaseDetails amendedMigCaseDetails = MigratedCaseDetails.migratedCaseDetails()
                 .withValuesFrom(migCaseDetails)
@@ -320,7 +323,7 @@ class MigratedCaseFileAggregateTest {
         );
 
         final List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "YYYY", W.name(), null, null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "YYYY", W.name(), null, null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
 
@@ -346,7 +349,7 @@ class MigratedCaseFileAggregateTest {
     @Test
     void shouldRaiseMigratedCaseFileReceivedWhenDefendantProblemsHappened() {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, null, null, null, null, null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, null, null, null, null, null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, migratedMaterials);
 
@@ -386,7 +389,7 @@ class MigratedCaseFileAggregateTest {
         ReferenceDataVO referenceDataVO = new ReferenceDataVO();
         referenceDataVO.setProsecutorsReferenceData(ProsecutorsReferenceData.prosecutorsReferenceData().build());
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, null, null, null, null, "BadOffenceCode", null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, null, null, null, null, "BadOffenceCode", null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
 
@@ -415,7 +418,7 @@ class MigratedCaseFileAggregateTest {
         List<MigratedMaterial> migratedMaterials = List.of(createMigratedMaterials(2, "pdf").get(0));
 
         final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails,
-                null, null, null, null, "998A", "G", LocalDate.now());
+                null, null, null, null, "998A", "G", LocalDate.now(), sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
 
@@ -458,7 +461,7 @@ class MigratedCaseFileAggregateTest {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
         final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails,
-                null, null, null, null, "998A", "NG", LocalDate.now());
+                null, null, null, null, "998A", "NG", LocalDate.now(), sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
 
@@ -501,7 +504,7 @@ class MigratedCaseFileAggregateTest {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
         final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails,
-                null, null, null, null, "998A", "G", null);
+                null, null, null, null, "998A", "G", null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         prepPleaDateTests(migCaseDetails, migratedMaterials);
 
@@ -547,7 +550,7 @@ class MigratedCaseFileAggregateTest {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
         final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails,
-                null, null, null, null, "998A", "G", LocalDate.now().plusDays(1));
+                null, null, null, null, "998A", "G", LocalDate.now().plusDays(1), sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         prepPleaDateTests(migCaseDetails, migratedMaterials);
 
@@ -559,7 +562,7 @@ class MigratedCaseFileAggregateTest {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
         final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails,
-                null, null, null, null, "998A", "NG", null);
+                null, null, null, null, "998A", "NG", null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
 
@@ -604,7 +607,7 @@ class MigratedCaseFileAggregateTest {
         referenceDataVO.setPleaReferenceDataMap(Map.of());
         referenceDataVO.setProsecutorsReferenceData(ProsecutorsReferenceData.prosecutorsReferenceData().build());
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, null, null, null, null, "998A", "badPlea", LocalDate.now());
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, null, null, null, null, "998A", "badPlea", LocalDate.now(), sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
 
@@ -634,7 +637,7 @@ class MigratedCaseFileAggregateTest {
     void shouldRaiseMigratedCaseFileReceivedWhenDefendantAndParenGuardianGenderProvided() {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, MALE.name(), FEMALE.name(), W.name(), null, null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, MALE.name(), FEMALE.name(), W.name(), null, null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
 
@@ -672,7 +675,7 @@ class MigratedCaseFileAggregateTest {
     void shouldRaiseMigratedCaseFileReceivedWhenDefendantAndParenGuardianGenderProvidedNotMatchInCP() {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "NOTINCP", "NOTINCP", "NOTINCP", W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "NOTINCP", "NOTINCP", "NOTINCP", W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
 
@@ -711,7 +714,7 @@ class MigratedCaseFileAggregateTest {
     void shouldRaiseSendingCourtProblemWhenInvalidCodeFound() {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "NOTINCP", "NOTINCP", "NOTINCP", W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "NOTINCP", "NOTINCP", "NOTINCP", W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
 
@@ -741,7 +744,7 @@ class MigratedCaseFileAggregateTest {
     void shouldRaiseReceivingCourtProblemWhenInvalidCodeFound() {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "NOTINCP", "NOTINCP", "NOTINCP", W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "NOTINCP", "NOTINCP", "NOTINCP", W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
 
@@ -770,7 +773,7 @@ class MigratedCaseFileAggregateTest {
     void shouldNotRaiseProblemWhenSendingAndReceivingCourtIsValid() {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", E.name(), W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", E.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
 
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, migratedMaterials);
@@ -809,7 +812,7 @@ class MigratedCaseFileAggregateTest {
     void shouldRaiseProblemWhenReceiptTypesIsNullOrEmpty(String receiptType) {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "FEMALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "FEMALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, migratedMaterials);
 
@@ -836,7 +839,7 @@ class MigratedCaseFileAggregateTest {
     void shouldRaiseProblemWhenReceiptTypeIsUnrecognised() {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "FEMALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "FEMALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, migratedMaterials);
 
@@ -862,7 +865,7 @@ class MigratedCaseFileAggregateTest {
     void shouldFailFastWhenHearingHasNoMatchingDefendants() {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
         final MigratedCaseDetails migCaseDetailsWithHearing = MigratedCaseDetails.migratedCaseDetails()
                 .withValuesFrom(migCaseDetails)
                 .withHearings(List.of(
@@ -899,7 +902,7 @@ class MigratedCaseFileAggregateTest {
     void shouldFailFastWhenHearingDefendantMatchesButNoOffencesMatch() {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         MigratedDefendant defendantWithNonMatchingOffences = migratedDefendant()
                 .withId(DEFENDANT_ID)
@@ -970,7 +973,7 @@ class MigratedCaseFileAggregateTest {
     void shouldNotRaiseProblemWhenReceiptTypesIsValid(String receiptType) {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "XXX", "YYYY", W.name(), null, null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "XXX", "YYYY", W.name(), null, null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
 
@@ -1003,7 +1006,7 @@ class MigratedCaseFileAggregateTest {
     @Test
     void shouldNotRaiseProblemWhenCaseMarkerIsInvalid() {
         final List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "YYYY", W.name(), null, null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "YYYY", W.name(), null, null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
 
@@ -1045,7 +1048,7 @@ class MigratedCaseFileAggregateTest {
     void shouldRaiseMigratedCaseFileReceivedWhenDefendantAndParenGuardianGenderProvidedButNotInCP() {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "XXX", "YYYY", W.name(), null, null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "XXX", "YYYY", W.name(), null, null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
 
@@ -1084,7 +1087,7 @@ class MigratedCaseFileAggregateTest {
     void shouldNotRaiseProblemWhenCaseMarkerIsNullOrEmpty(String markerTypeCode) {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "XXX", "YYYY", W.name(), null, null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "XXX", "YYYY", W.name(), null, null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
 
@@ -1127,7 +1130,7 @@ class MigratedCaseFileAggregateTest {
     void shouldRaiseMigratedCaseFileReceivedWhenDefendantAndParenGuardianIsNull() {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "XXX", "YYYY", W.name(), null, null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "XXX", "YYYY", W.name(), null, null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         MigratedCaseDetails amendedMigratedDetails = MigratedCaseDetails.migratedCaseDetails()
                 .withValuesFrom(migCaseDetails)
@@ -1174,7 +1177,7 @@ class MigratedCaseFileAggregateTest {
     void shouldRaiseMigratedCaseFileReceivedWhenDefendantCustodyStatusIsCandCTLIsNull() {
         List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), null, null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), null, null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         MigratedCaseDetails amendedMigratedDetails = MigratedCaseDetails.migratedCaseDetails()
                 .withValuesFrom(migCaseDetails)
@@ -1226,7 +1229,7 @@ class MigratedCaseFileAggregateTest {
     @MethodSource("provideMigratedMaterials")
     void shouldRaiseMigratedCaseFileReceivedWhenNoMaterialsPresent(List<MigratedMaterial> migratedMaterials) {
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "MALE", E.name(), W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "MALE", E.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
         final Prosecution amendedprosecution = buildProsecution(prosecution, migCaseDetails);
 
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, null);
@@ -1291,7 +1294,7 @@ class MigratedCaseFileAggregateTest {
                 .withAzureLocation("azure/ghi.pdf").withDocumentType(3)
                 .withFileName("ghi.pdf").withFileType("99").build();
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "FEMALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "FEMALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, List.of(material1, material2, material3));
 
         final List<Object> eventStream = migratedCaseFileAggregate.receiveMigratedCaseFile(new CaseProcessingArgs(
@@ -1374,7 +1377,7 @@ class MigratedCaseFileAggregateTest {
             final String expectedTimeOfHearing,
             final String scenarioName) {
 
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
         final MigratedDefendant defendant = migratedDefendant()
                 .withValuesFrom(migCaseDetails.getDefendants().get(0))
                 .withProsecutorDefendantId("DEF-001")
@@ -1433,7 +1436,7 @@ class MigratedCaseFileAggregateTest {
 
     @Test
     void shouldDefaultHearingTimeTo10amForUnallocatedHearingWhenTimeNotProvided() {
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
         final MigratedDefendant defendant = migratedDefendant()
                 .withValuesFrom(migCaseDetails.getDefendants().get(0))
                 .withProsecutorDefendantId("DEF-001")
@@ -1482,7 +1485,7 @@ class MigratedCaseFileAggregateTest {
 
     @Test
     void shouldNotOverwriteHearingTimeForUnallocatedHearingWhenTimeProvided() {
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
         final MigratedDefendant defendant = migratedDefendant()
                 .withValuesFrom(migCaseDetails.getDefendants().get(0))
                 .withProsecutorDefendantId("DEF-001")
@@ -1531,7 +1534,7 @@ class MigratedCaseFileAggregateTest {
     }
 
     private MigratedCaseDetails buildCaseDetailsWithHearing(final Integer courtRoomId) {
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
 
         final MigratedDefendant defendant = migratedDefendant()
                 .withValuesFrom(migCaseDetails.getDefendants().get(0))
@@ -1557,7 +1560,7 @@ class MigratedCaseFileAggregateTest {
 
     @Test
     void shouldNotDefaultHearingTimeForWeekCommencingHearing() {
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
         final MigratedDefendant defendant = migratedDefendant()
                 .withValuesFrom(migCaseDetails.getDefendants().get(0))
                 .withProsecutorDefendantId("DEF-001")
@@ -1604,7 +1607,7 @@ class MigratedCaseFileAggregateTest {
 
     @Test
     void shouldNotDefaultHearingTimeForUnscheduledHearing() {
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null);
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(caseDetails, "MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
         final MigratedDefendant defendant = migratedDefendant()
                 .withValuesFrom(migCaseDetails.getDefendants().get(0))
                 .withProsecutorDefendantId("DEF-001")

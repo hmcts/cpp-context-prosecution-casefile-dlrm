@@ -158,6 +158,7 @@
         </site>
     </distributionManagement>
     <modules>
+        <module>pcfdlrm-test-support</module>
         <module>pcfdlrm-viewstore</module>
         <module>pcfdlrm-command</module>
         <module>pcfdlrm-datatypes-common</module>
