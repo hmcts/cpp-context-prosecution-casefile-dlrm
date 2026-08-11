@@ -946,6 +946,16 @@ class MigratedCaseFileAggregateTest {
         return new CaseFileInput(receiveMigratedCase, new ProsecutionWithReferenceData(prosecution));
     }
 
+    /** Fixed, not {@code LocalDate.now()} — a plea date baked into a static whole-payload fixture is non-deterministic otherwise. */
+    private static final LocalDate PLEA_DATE_ANCHOR = LocalDate.of(2024, 1, 15);
+
+    /**
+     * For {@code guiltyPleaFutureDateInput()} only — that scenario needs a plea date genuinely in
+     * the future relative to the real clock (see its comment), so its two date occurrences can't
+     * be pinned to a fixed value and are excluded from the whole-payload comparison instead.
+     */
+    private static final List<String> PLEA_FUTURE_DATE_EXCLUSIONS = List.of("defendant.offences[0].plea.pleaDate", "problems[2].values[0].value");
+
     private static Stream<AggregateScenario> pleaScenarios() {
         final List<ExpectedEvent> arrestAndChargeDateNoise = List.of(
                 new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
@@ -990,7 +1000,7 @@ class MigratedCaseFileAggregateTest {
                         notGuiltyPleaWithDateInput(), notGuiltyPleaWithDateExpected),
                 new AggregateScenario("Guilty plea with a future plea date — fails fast",
                         guiltyPleaFutureDateInput(),
-                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-guilty-plea-future-date.json"),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-guilty-plea-future-date.json", PLEA_FUTURE_DATE_EXCLUSIONS),
                                 new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-missing-plea-date.json"))),
                 new AggregateScenario("Not guilty plea with a missing plea date — plea date not required for NG",
                         notGuiltyMissingDateInput(), notGuiltyMissingDateExpected),
@@ -1001,7 +1011,7 @@ class MigratedCaseFileAggregateTest {
 
     private static CaseFileInput guiltyPleaWithDateInput() {
         final List<MigratedMaterial> migratedMaterials = List.of(createMigratedMaterials(2, "pdf").get(0));
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(null, null, null, null, "998A", "G", LocalDate.now(), sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(null, null, null, null, "998A", "G", PLEA_DATE_ANCHOR, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
         final Prosecution prosecution = buildProsecution(migCaseDetails);
         final MigratedOffence offence = prosecution.getDefendants().get(0).getOffences().get(0);
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, migratedMaterials);
@@ -1017,7 +1027,7 @@ class MigratedCaseFileAggregateTest {
 
     private static CaseFileInput notGuiltyPleaWithDateInput() {
         final List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(null, null, null, null, "998A", "NG", LocalDate.now(), sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(null, null, null, null, "998A", "NG", PLEA_DATE_ANCHOR, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
         final Prosecution prosecution = buildProsecution(migCaseDetails);
         final MigratedOffence offence = prosecution.getDefendants().get(0).getOffences().get(0);
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, migratedMaterials);
@@ -1033,6 +1043,11 @@ class MigratedCaseFileAggregateTest {
 
     private static CaseFileInput guiltyPleaFutureDateInput() {
         final List<MigratedMaterial> migratedMaterials = createMigratedMaterials(1, "pdf");
+        // Genuinely LocalDate.now() here, not PLEA_DATE_ANCHOR — this scenario specifically exercises
+        // the PLEA_DATE_CANNOT_BE_FUTURE_DATE rule, which compares against the real clock at
+        // execution time. A fixed anchor date would eventually stop being "in the future" and this
+        // scenario would silently stop testing what its name says. The resulting non-deterministic
+        // date is excluded from the whole-payload comparison below (see PLEA_DATE_EXCLUSIONS).
         final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(null, null, null, null, "998A", "G", LocalDate.now().plusDays(1), sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
         final Prosecution prosecution = buildProsecution(migCaseDetails);
         final MigratedOffence offence = prosecution.getDefendants().get(0).getOffences().get(0);
@@ -1069,7 +1084,7 @@ class MigratedCaseFileAggregateTest {
         referenceDataVO.setOffenceReferenceData(List.of(OffenceReferenceData.offenceReferenceData().withCjsOffenceCode("998A").build()));
         referenceDataVO.setPleaReferenceDataMap(Map.of());
         referenceDataVO.setProsecutorsReferenceData(ProsecutorsReferenceData.prosecutorsReferenceData().build());
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(null, null, null, null, "998A", "badPlea", LocalDate.now(), sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(null, null, null, null, "998A", "badPlea", PLEA_DATE_ANCHOR, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
         final Prosecution prosecution = buildProsecution(migCaseDetails);
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, migratedMaterials);
         final ProsecutionWithReferenceData prosecutionWithReferenceData = new ProsecutionWithReferenceData(prosecution);

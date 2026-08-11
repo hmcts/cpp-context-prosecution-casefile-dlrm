@@ -11,14 +11,14 @@
         "offenceCode": "998A",
         "offenceId": "e2e2e2e2-2222-4222-8222-222222222222",
         "offenceSequenceNumber": 1,
-        "plea": { "id": "e1e1e1e1-1111-4111-8111-111111111111", "pleaDate": "2026-08-12" }
+        "plea": { "id": "e1e1e1e1-1111-4111-8111-111111111111", "pleaDate": "EXCLUDED" }
       }
     ]
   },
   "problems": [
     { "code": "DEFENDANT_SELF_DEFINED_ETHNICITY_INVALID", "values": [ { "key": "individual_selfDefinedInformation_ethnicity", "value": "British" } ] },
     { "code": "DEFENDANT_NATIONALITY_INVALID", "values": [ { "key": "individual_selfDefinedInformation_nationality", "value": "HUN" } ] },
-    { "code": "PLEA_DATE_CANNOT_BE_FUTURE_DATE", "values": [ { "id": "PLEA_DATE_CANNOT_BE_FUTURE_DATE", "key": "plea date", "value": "2026-08-12" } ] },
+    { "code": "PLEA_DATE_CANNOT_BE_FUTURE_DATE", "values": [ { "id": "PLEA_DATE_CANNOT_BE_FUTURE_DATE", "key": "plea date", "value": "EXCLUDED" } ] },
     { "code": "ARREST_DATE_IN_FUTURE", "values": [ { "id": "e2e2e2e2-2222-4222-8222-222222222222", "key": "offence_arrestDate" } ] },
     { "code": "CHARGE_DATE_IN_FUTURE", "values": [ { "id": "e2e2e2e2-2222-4222-8222-222222222222", "key": "offence_chargeDate", "value": "Charge date not provided" } ] },
     { "code": "DEFENDANT_CUSTODY_STATUS_INVALID", "values": [ { "key": "custodyStatus", "value": "" } ] },
