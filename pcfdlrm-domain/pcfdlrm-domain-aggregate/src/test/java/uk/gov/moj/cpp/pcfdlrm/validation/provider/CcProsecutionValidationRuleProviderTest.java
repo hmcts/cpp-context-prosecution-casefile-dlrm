@@ -1,7 +1,12 @@
 package uk.gov.moj.cpp.pcfdlrm.validation.provider;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static uk.gov.moj.cpp.pcfdlrm.validation.CaseType.OTHER;
+import static uk.gov.moj.cpp.pcfdlrm.validation.CaseType.REQUISITION;
+import static uk.gov.moj.cpp.pcfdlrm.validation.CaseType.SJP;
+import static uk.gov.moj.cpp.pcfdlrm.validation.CaseType.SUMMONS;
 
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.SummonsCodeValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.StatementOfFactsValidationRule;
@@ -10,7 +15,12 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel;
 import uk.gov.moj.cpp.pcfdlrm.domain.DefendantWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.domain.ProsecutionWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.CaseInitiationValidationRule;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.CaseMarkersValidationAndEnricherRule;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.PoliceForceCodeValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.ProsecutorReferenceDataValidationRule;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.ReceiptTypeValidationRule;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.ReceivingCourtValidationRules;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.SendingCourtValidationRules;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.CroNumberSpiValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.CroNumberValidationRule;
@@ -21,7 +31,9 @@ import uk.gov.moj.cpp.pcfdlrm.validation.rules.prosecutors.ProsecutorAOCPValidat
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.prosecutors.ProsecutorSJPValidationRule;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +44,6 @@ class CcProsecutionValidationRuleProviderTest {
 
     private static final String INITIATION_CODE_CHARGE_CASE = "C";
     private static final String INITIATION_CODE_FOR_SUMMONS = "S";
-    private static final String INITIATION_CODE_FOR_SJP = "J";
 
     @Test
     void shouldValidateDefendantValidateSpiRules() {
@@ -49,17 +60,72 @@ class CcProsecutionValidationRuleProviderTest {
 
 
     @Test
-    void shouldValidateSJPCaseCreationValidationRule() {
-
+    void shouldValidateCaseValidationRulesForSummons() {
         final List<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>> validationRules = CcProsecutionValidationRuleProvider
-                .getCaseValidationRules(INITIATION_CODE_FOR_SJP);
+                .getCaseValidationRules(SUMMONS.getCode());
 
-        assertTrue(validationRules.stream().map((Function<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>, ? extends Class<? extends ValidationRule>>) ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>::getClass).anyMatch(s -> s.equals(ProsecutorAOCPValidationRule.class)));
-        assertTrue(validationRules.stream().map((Function<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>, ? extends Class<? extends ValidationRule>>) ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>::getClass).anyMatch(s -> s.equals(CaseInitiationValidationRule.class)));
-        assertTrue(validationRules.stream().map((Function<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>, ? extends Class<? extends ValidationRule>>) ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>::getClass).anyMatch(s -> s.equals(SummonsCodeValidationRule.class)));
-        assertTrue(validationRules.stream().map((Function<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>, ? extends Class<? extends ValidationRule>>) ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>::getClass).anyMatch(s -> s.equals(ProsecutorReferenceDataValidationRule.class)));
-        assertTrue(validationRules.stream().map((Function<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>, ? extends Class<? extends ValidationRule>>) ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>::getClass).anyMatch(s -> s.equals(ProsecutorSJPValidationRule.class)));
+        assertEquals(Set.of(
+                SummonsCodeValidationRule.class,
+                CaseInitiationValidationRule.class,
+                ProsecutorReferenceDataValidationRule.class,
+                SendingCourtValidationRules.class,
+                ReceivingCourtValidationRules.class,
+                CaseMarkersValidationAndEnricherRule.class,
+                ReceiptTypeValidationRule.class,
+                PoliceForceCodeValidationRule.class
+        ), classesOf(validationRules));
+    }
 
+    @Test
+    void shouldValidateCaseValidationRulesForRequisition() {
+        final List<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>> validationRules = CcProsecutionValidationRuleProvider
+                .getCaseValidationRules(REQUISITION.getCode());
+
+        assertEquals(Set.of(
+                CaseInitiationValidationRule.class,
+                ProsecutorReferenceDataValidationRule.class,
+                SendingCourtValidationRules.class,
+                ReceivingCourtValidationRules.class,
+                CaseMarkersValidationAndEnricherRule.class,
+                ReceiptTypeValidationRule.class,
+                PoliceForceCodeValidationRule.class
+        ), classesOf(validationRules));
+    }
+
+    @Test
+    void shouldValidateCaseValidationRulesForSjp() {
+        final List<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>> validationRules = CcProsecutionValidationRuleProvider
+                .getCaseValidationRules(SJP.getCode());
+
+        assertEquals(Set.of(
+                ProsecutorAOCPValidationRule.class,
+                CaseInitiationValidationRule.class,
+                SummonsCodeValidationRule.class,
+                ProsecutorReferenceDataValidationRule.class,
+                SendingCourtValidationRules.class,
+                ReceivingCourtValidationRules.class,
+                ProsecutorSJPValidationRule.class
+        ), classesOf(validationRules));
+    }
+
+    @Test
+    void shouldValidateCaseValidationRulesForDefaultInitiationCode() {
+        final List<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>> validationRules = CcProsecutionValidationRuleProvider
+                .getCaseValidationRules(OTHER.getCode());
+
+        assertEquals(Set.of(
+                CaseInitiationValidationRule.class,
+                ProsecutorReferenceDataValidationRule.class,
+                SendingCourtValidationRules.class,
+                ReceivingCourtValidationRules.class,
+                CaseMarkersValidationAndEnricherRule.class,
+                ReceiptTypeValidationRule.class,
+                PoliceForceCodeValidationRule.class
+        ), classesOf(validationRules));
+    }
+
+    private static Set<Class<?>> classesOf(final List<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>> validationRules) {
+        return validationRules.stream().map(Object::getClass).collect(Collectors.toSet());
     }
 
     @Test

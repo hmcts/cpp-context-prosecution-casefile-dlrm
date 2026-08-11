@@ -1,0 +1,83 @@
+{
+  "receiveMigratedCaseFile": {
+    "channel": "DLRM_MIGRATION",
+    "materials": [
+      { "azureLocation": "azure/abc.pdf", "caseId": "a4391799-f828-4515-a355-61f1d5d9690c", "defendantId": "9824e40f-0289-4221-8854-346eb28c8f27", "documentType": 3, "fileName": "abc.pdf", "fileType": "99" }
+    ],
+    "migratedCaseDetails": {
+      "caseDetails": {
+        "caseId": "a4391799-f828-4515-a355-61f1d5d9690c",
+        "dateOfSending": "2024-01-15",
+        "receivingCourt": "C50EX00",
+        "sendingCourt": "B01LY00"
+      },
+      "defendants": [
+        {
+          "documentationLanguage": "E",
+          "hearingLanguage": "E",
+          "id": "9824e40f-0289-4221-8854-346eb28c8f27",
+          "individual": {
+            "custodyStatus": "U",
+            "parentGuardianInformation": { "dateOfBirth": "1980-06-01", "gender": "NOT_KNOWN" },
+            "personalInformation": { "firstName": "John", "lastName": "Smith", "title": "Mr" },
+            "selfDefinedInformation": { "additionalNationality": "SVK", "gender": "NOT_KNOWN" }
+          },
+          "offences": [
+            {
+              "offenceCode": "998A",
+              "offenceId": "e2e2e2e2-2222-4222-8222-222222222222",
+              "offenceSequenceNumber": 1,
+              "plea": { "id": "e1e1e1e1-1111-4111-8111-111111111111", "pleaDate": "2026-08-11" }
+            }
+          ]
+        }
+      ],
+      "migrationSourceSystem": { "migrationSourceSystemCaseIdentifier": "XHIBIT-123", "migrationSourceSystemName": "XHIBIT" }
+    },
+    "submissionId": "e3e3e3e3-3333-4333-8333-333333333333"
+  },
+  "prosecutionWithReferenceData": {
+    "prosecution": {
+      "caseDetails": { "receiptType": "Either way case" },
+      "channel": "DLRM_MIGRATION",
+      "defendants": [
+        {
+          "id": "9824e40f-0289-4221-8854-346eb28c8f27",
+          "individual": {
+            "parentGuardianInformation": { "dateOfBirth": "1980-06-01" },
+            "personalInformation": { "firstName": "John", "lastName": "Smith", "title": "Mr" },
+            "selfDefinedInformation": { "additionalNationality": "SVK", "ethnicity": "British", "nationality": "HUN" }
+          },
+          "offences": [
+            {
+              "offenceCode": "998A",
+              "offenceId": "e2e2e2e2-2222-4222-8222-222222222222",
+              "offenceSequenceNumber": 1,
+              "plea": { "id": "e1e1e1e1-1111-4111-8111-111111111111", "pleaDate": "2026-08-11" }
+            }
+          ]
+        }
+      ]
+    },
+    "referenceDataVO": {
+      "countryNationalityReferenceData": [],
+      "selfdefinedEthnicityReferenceData": [],
+      "organisationUnitReferenceData": [],
+      "initiationTypes": [],
+      "offenceReferenceData": [ { "cjsOffenceCode": "998A" } ],
+      "caseMarkers": [],
+      "observedEthnicityReferenceData": [],
+      "vehicleCodesReferenceData": [],
+      "offenderCodeReferenceData": [],
+      "bailStatusReferenceData": [],
+      "prosecutorsReferenceData": {},
+      "modeOfTrialReasonsReferenceData": [],
+      "pleaReferenceDataMap": {
+        "9824e40f-0289-4221-8854-346eb28c8f27": {
+          "e2e2e2e2-2222-4222-8222-222222222222": { "pleaTypeCode": "NG", "pleaTypeGuiltyFlag": "No", "pleaValue": "Not Guilty" }
+        }
+      }
+    }
+  },
+  "migratedHearingWithReferenceDataList": []
+}

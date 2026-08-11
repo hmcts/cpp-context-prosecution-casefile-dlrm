@@ -2,9 +2,10 @@ package uk.gov.moj.cpp.pcfdlrm.validation.rules.migratescasedetails;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_FILE_TYPE_FOR_XHIBIT;
-import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION;
+import static uk.gov.moj.cpp.pcfdlrm.test.FixtureLoader.fixture;
+import static uk.gov.moj.cpp.pcfdlrm.test.WholePayloadMatcher.matchesWholePayload;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANT_COUNT;
 import static uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult.VALID;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedMaterial.migratedMaterial;
@@ -16,9 +17,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.pcfdlrm.domain.MigratedMaterialsWithOriginatingSystem;
 import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Problem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedMaterial;
 
 import java.util.Arrays;
@@ -87,9 +91,8 @@ class ExhibitFiileTypeValidationRuleTest {
         ValidationResult result = validationRule.validate(input, referenceDataQueryService);
 
         // Then
-        assertFalse(result.problems().isEmpty());
-        assertThat(result.problems().get(0).getCode(), is(INVALID_FILE_TYPE_FOR_XHIBIT.name()));
-        assertThat(result.problems().get(0).getValues().get(0).getValue(), is("second.docx"));
+        assertThat(result.problems(), hasSize(1));
+        assertProblemMatchesFixture(result.problems().get(0), "json/exhibit-file-type-validation-rule/problem-invalid-file-type-xhibit-second-material.json");
     }
 
     @Test
@@ -104,8 +107,8 @@ class ExhibitFiileTypeValidationRuleTest {
         ValidationResult result = validationRule.validate(input, referenceDataQueryService);
 
         // Then
-        assertFalse(result.problems().isEmpty());
-        assertThat(result.problems().get(0).getCode(), is(INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION.name()));
+        assertThat(result.problems(), hasSize(1));
+        assertProblemMatchesFixture(result.problems().get(0), "json/exhibit-file-type-validation-rule/problem-invalid-file-type-xhibit-migration.json");
     }
 
     @Test
@@ -117,9 +120,8 @@ class ExhibitFiileTypeValidationRuleTest {
         ValidationResult result = validationRule.validate(input, referenceDataQueryService);
 
         // Then
-        assertFalse(result.problems().isEmpty());
-        assertThat(result.problems().get(0).getCode(), is(INVALID_FILE_TYPE_FOR_XHIBIT.name()));
-        assertThat(result.problems().get(0).getValues().get(0).getValue(), is("document.docx"));
+        assertThat(result.problems(), hasSize(1));
+        assertProblemMatchesFixture(result.problems().get(0), "json/exhibit-file-type-validation-rule/problem-invalid-file-type-xhibit.json");
     }
 
     @Test
@@ -131,8 +133,13 @@ class ExhibitFiileTypeValidationRuleTest {
         ValidationResult result = validationRule.validate(input, referenceDataQueryService);
 
         // Then
-        assertFalse(result.problems().isEmpty());
-        assertThat(result.problems().get(0).getCode(), is(INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION.name()));
+        assertThat(result.problems(), hasSize(1));
+        assertProblemMatchesFixture(result.problems().get(0), "json/exhibit-file-type-validation-rule/problem-invalid-file-type-xhibit-migration.json");
+    }
+
+    private static void assertProblemMatchesFixture(final Problem problem, final String fixturePath) {
+        final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter(new ObjectMapperProducer().objectMapper());
+        assertThat(objectToJsonObjectConverter.convert(problem).toString(), matchesWholePayload(fixture(fixturePath), List.of()));
     }
 
     @Test

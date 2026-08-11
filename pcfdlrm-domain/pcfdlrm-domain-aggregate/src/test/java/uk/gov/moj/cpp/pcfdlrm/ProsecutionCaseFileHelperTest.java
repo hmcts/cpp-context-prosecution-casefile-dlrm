@@ -7,12 +7,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
+import static uk.gov.moj.cpp.pcfdlrm.test.FixtureLoader.fixture;
+import static uk.gov.moj.cpp.pcfdlrm.test.WholePayloadMatcher.matchesWholePayload;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.BailStatusReferenceData.bailStatusReferenceData;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel.DLRM_MIGRATION;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ObservedEthnicityReferenceData.observedEthnicityReferenceData;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant.migratedDefendant;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedOffence.migratedOffence;
 
+import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.pcfdlrm.domain.DefendantsWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.domain.MigratedDefendantWithOffences;
 import uk.gov.moj.cpp.pcfdlrm.domain.MigratedHearingWithReferenceData;
@@ -21,6 +25,7 @@ import uk.gov.moj.cpp.pcfdlrm.refdata.hearing.MigratedHearingRefDataEnricher;
 import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Individual;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ParentGuardianInformation;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.PersonalInformation;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.SelfDefinedInformation;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant;
@@ -208,9 +213,43 @@ class ProsecutionCaseFileHelperTest {
                 caseDetails, DLRM_MIGRATION, defendantsWithReferenceData, referenceDataQueryService,
                 Stream.builder(), false, "XHIBIT");
 
-        final MigratedDefendant resultDefendant = result.getMigratedDefendants().get(0);
-        assertThat(resultDefendant.getIndividual().getCustodyStatus(), is("U"));
-        assertThat(resultDefendant.getIndividual().getPersonalInformation().getObservedEthnicity(), is(observedEthnicityCode));
+        assertMigratedDefendantMatchesFixture(result.getMigratedDefendants().get(0),
+                "json/prosecution-case-file-helper/migrated-defendant-custody-status-normalised.json");
+    }
+
+    @Test
+    void shouldApplyRuleToDefendantFieldsNormalisingGenderAndLanguageOnXhibitPath() {
+        final MigratedDefendant defendant = migratedDefendant()
+                .withDocumentationLanguage("ZZ")
+                .withHearingLanguage("ZZ")
+                .withIndividual(Individual.individual()
+                        .withPersonalInformation(PersonalInformation.personalInformation().build())
+                        .withSelfDefinedInformation(SelfDefinedInformation.selfDefinedInformation()
+                                .withGender("XXX")
+                                .build())
+                        .withParentGuardianInformation(ParentGuardianInformation.parentGuardianInformation()
+                                .withGender("YYY")
+                                .build())
+                        .build())
+                .build();
+
+        final ReferenceDataVO referenceDataVO = new ReferenceDataVO();
+        final CaseDetails caseDetails = CaseDetails.caseDetails().withCaseId(UUID.randomUUID()).build();
+        final DefendantsWithReferenceData defendantsWithReferenceData = new DefendantsWithReferenceData(List.of(defendant));
+        defendantsWithReferenceData.setReferenceDataVO(referenceDataVO);
+        defendantsWithReferenceData.setCaseDetails(caseDetails);
+
+        final MigratedDefendantWithProblem result = ProsecutionCaseFileHelper.validateDefendantErrors(
+                caseDetails, DLRM_MIGRATION, defendantsWithReferenceData, referenceDataQueryService,
+                Stream.builder(), false, "XHIBIT");
+
+        assertMigratedDefendantMatchesFixture(result.getMigratedDefendants().get(0),
+                "json/prosecution-case-file-helper/migrated-defendant-gender-and-language-normalised.json");
+    }
+
+    private static void assertMigratedDefendantMatchesFixture(final MigratedDefendant defendant, final String fixturePath) {
+        final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter(new ObjectMapperProducer().objectMapper());
+        assertThat(objectToJsonObjectConverter.convert(defendant).toString(), matchesWholePayload(fixture(fixturePath), List.of()));
     }
 
     @Test

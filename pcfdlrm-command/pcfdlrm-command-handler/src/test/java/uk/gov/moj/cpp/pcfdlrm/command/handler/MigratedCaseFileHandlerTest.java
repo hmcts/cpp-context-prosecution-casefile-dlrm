@@ -1,10 +1,8 @@
 package uk.gov.moj.cpp.pcfdlrm.command.handler;
 
-import static java.time.LocalDate.now;
 import static java.util.Collections.singletonList;
 import static java.util.List.of;
 import static java.util.UUID.fromString;
-import static java.util.UUID.randomUUID;
 import static java.util.stream.Stream.builder;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -16,6 +14,8 @@ import static uk.gov.justice.services.messaging.Envelope.envelopeFrom;
 import static uk.gov.justice.services.test.utils.core.matchers.HandlerMatcher.isHandler;
 import static uk.gov.justice.services.test.utils.core.matchers.HandlerMethodMatcher.method;
 import static uk.gov.moj.cpp.pcfdlrm.command.handler.utils.HandlerTestHelper.metadataFor;
+import static uk.gov.moj.cpp.pcfdlrm.test.FixtureLoader.fixture;
+import static uk.gov.moj.cpp.pcfdlrm.test.WholePayloadMatcher.matchesWholePayload;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.DocumentTypeAccessReferenceData.documentTypeAccessReferenceData;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Individual.individual;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ParentBundleSectionReferenceData.parentBundleSectionReferenceData;
@@ -24,6 +24,8 @@ import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.SelfDefinedI
 import static uk.gov.moj.cps.pcfdlrm.command.handler.AcceptMigratedCase.acceptMigratedCase;
 
 import uk.gov.justice.services.core.aggregate.AggregateService;
+import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.eventsourcing.source.core.EventSource;
 import uk.gov.justice.services.eventsourcing.source.core.EventStream;
 import uk.gov.justice.services.eventsourcing.source.core.exception.EventStreamException;
@@ -72,11 +74,12 @@ class MigratedCaseFileHandlerTest {
     private static final String PROSECUTION_ACCEPT_MIGRATED_CASE_COMMAND = "pcfdlrm.command.accept-migrated-case";
 
     private static final UUID CASE_ID_VALUE = fromString("8c74f505-d062-49bd-b2be-1f64e8da3233");
+    private static final UUID SUBMISSION_ID = fromString("e3e3e3e3-3333-4333-8333-333333333333");
     private static final UUID OFFENCE_ID = fromString("5f66994c-c8f2-458d-9828-d2923308a0ad");
     private static final String OFFENCE_CODE = "FOO";
-    private static final LocalDate OFFENCE_COMMITTED_DATE = now();
-    private static final LocalDate ARREST_DATE = now().minusMonths(3);
-    private static final LocalDate OFFENCE_CHARGE_DATE = now().minusMonths(4);
+    private static final LocalDate OFFENCE_COMMITTED_DATE = LocalDate.of(2024, 1, 15);
+    private static final LocalDate ARREST_DATE = LocalDate.of(2023, 10, 15);
+    private static final LocalDate OFFENCE_CHARGE_DATE = LocalDate.of(2023, 9, 15);
 
     @Mock
     private EventSource eventSource;
@@ -139,7 +142,7 @@ class MigratedCaseFileHandlerTest {
 
         ReceiveMigratedCaseFile receiveMigratedCaseFile = ReceiveMigratedCaseFile.receiveMigratedCaseFile()
                 .withMaterials(materialList).withMigratedCaseDetails(migratedCaseDetails)
-                .withSubmissionId(UUID.randomUUID()).build();
+                .withSubmissionId(SUBMISSION_ID).build();
 
 
         final Envelope<ReceiveMigratedCaseFile> receiveMigratedCaseFileCommand =
@@ -176,6 +179,9 @@ class MigratedCaseFileHandlerTest {
 
         assertThat(captured.getDocumentMetadataReferenceDataList(), is(getDocumentTypeAccessReferenceData()));
 
+        final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter(new ObjectMapperProducer().objectMapper());
+        assertThat(objectToJsonObjectConverter.convert(captured.getReceiveMigratedCaseFile()).toString(),
+                matchesWholePayload(fixture("json/migrated-case-file-handler/receive-migrated-case-file-captured.json"), List.of()));
 
         verify(referenceDataQueryService).getAllParentBundleSection(any(Metadata.class));
 
@@ -209,13 +215,15 @@ class MigratedCaseFileHandlerTest {
 
     private List<MigratedDefendant> getDefendantList() {
 
-        return Arrays.asList(buildDefendant("John", "Smith"), buildDefendant("Roger", "Wesley"));
+        return Arrays.asList(
+                buildDefendant(fromString("d1d1d1d1-1111-4111-8111-111111111111"), "John", "Smith"),
+                buildDefendant(fromString("d2d2d2d2-2222-4222-8222-222222222222"), "Roger", "Wesley"));
 
     }
 
-    private MigratedDefendant buildDefendant(final String firstName, final String lastName) {
+    private MigratedDefendant buildDefendant(final UUID defendantId, final String firstName, final String lastName) {
         return MigratedDefendant.migratedDefendant()
-                .withId(randomUUID())
+                .withId(defendantId)
                 .withIndividual(individual()
                         .withPersonalInformation(personalInformation()
                                 .withFirstName(firstName)
@@ -226,7 +234,6 @@ class MigratedCaseFileHandlerTest {
                         .build())
                 .withOffences(singletonList(MigratedOffence.migratedOffence()
                         .withArrestDate(ARREST_DATE)
-                        .withOffenceId(randomUUID())
                         .withOffenceCode(OFFENCE_CODE)
                         .withOffenceCommittedDate(OFFENCE_COMMITTED_DATE)
                         .withChargeDate(OFFENCE_CHARGE_DATE)

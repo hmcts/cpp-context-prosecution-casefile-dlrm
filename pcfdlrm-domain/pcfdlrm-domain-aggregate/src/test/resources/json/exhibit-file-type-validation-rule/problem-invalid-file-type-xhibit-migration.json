@@ -1,0 +1,6 @@
+{
+  "code": "INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION",
+  "values": [
+    { "key": "fileType", "value": "1" }
+  ]
+}

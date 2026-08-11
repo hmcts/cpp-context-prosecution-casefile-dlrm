@@ -1,6 +1,7 @@
 package uk.gov.moj.cpp.pcfdlrm.builder;
 
 import static java.util.UUID.fromString;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.CASE_ID;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel.DLRM_MIGRATION;
 
@@ -44,10 +45,10 @@ public class ObjectBuilder {
     private static final UUID OFFENCE_ID = fromString("e2e2e2e2-2222-4222-8222-222222222222");
     private static final UUID SUBMISSION_ID = fromString("e3e3e3e3-3333-4333-8333-333333333333");
 
-    public static MigratedCaseDetails buildMigratedCaseDetails(final CaseDetails caseDetails, final String defendantGender, final String parentGuardianGender, final String documentationLanguage, final String hearingLanguage, final String offenceCode, final String pleaCode, final LocalDate pleaDate, final SourceSystem sourceSystem) {
+    public static MigratedCaseDetails buildMigratedCaseDetails(final String defendantGender, final String parentGuardianGender, final String documentationLanguage, final String hearingLanguage, final String offenceCode, final String pleaCode, final LocalDate pleaDate, final SourceSystem sourceSystem) {
         return MigratedCaseDetails.migratedCaseDetails()
                 .withCaseDetails(CaseDetails.caseDetails()
-                        .withValuesFrom(caseDetails)
+                        .withCaseId(CASE_ID)
                         .withReceivingCourt("C50EX00")
                         .withSendingCourt("B01LY00")
                         .withDateOfSending(DATE_OF_SENDING)
@@ -111,12 +112,21 @@ public class ObjectBuilder {
         return Collections.singletonList(builder.build());
     }
 
-    public static Prosecution buildProsecution(Prosecution prosecution, MigratedCaseDetails migratedCaseDetails) {
+    public static Prosecution buildProsecution(final MigratedCaseDetails migratedCaseDetails) {
+        return buildProsecution(migratedCaseDetails, defaultProsecutionCaseDetails());
+    }
+
+    public static Prosecution buildProsecution(final MigratedCaseDetails migratedCaseDetails, final CaseDetails caseDetails) {
         return Prosecution.prosecution()
-                .withValuesFrom(prosecution)
+                .withCaseDetails(caseDetails)
                 .withDefendants(migratedCaseDetails.getDefendants())
                 .withChannel(DLRM_MIGRATION)
                 .build();
+    }
+
+    // ReceiptTypeValidationRule rejects a null receipt type, so scenarios that don't exercise that rule need a valid default here.
+    private static CaseDetails defaultProsecutionCaseDetails() {
+        return CaseDetails.caseDetails().withReceiptType("Either way case").build();
     }
 
     public static ReceiveMigratedCaseFile buildReceiveMigratedCaseFile(MigratedCaseDetails migratedCaseDetails, List<MigratedMaterial> migratedMaterials) {

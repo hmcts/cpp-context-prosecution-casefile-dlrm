@@ -1,0 +1,53 @@
+{
+  "materials": [
+    { "caseId": "8c74f505-d062-49bd-b2be-1f64e8da3233", "defendantId": "defendantId", "documentType": 8, "fileType": "8" },
+    { "caseId": "8c74f505-d062-49bd-b2be-1f64e8da3233", "defendantId": "defendantId", "documentType": 8, "fileType": "8" }
+  ],
+  "migratedCaseDetails": {
+    "caseDetails": {
+      "caseId": "8c74f505-d062-49bd-b2be-1f64e8da3233",
+      "caseMarkers": [],
+      "retrialIndicator": false
+    },
+    "defendants": [
+      {
+        "id": "d1d1d1d1-1111-4111-8111-111111111111",
+        "individual": {
+          "personalInformation": { "firstName": "John", "lastName": "Smith" },
+          "selfDefinedInformation": {}
+        },
+        "initiationCode": "C",
+        "offences": [
+          {
+            "arrestDate": "2023-10-15",
+            "chargeDate": "2023-09-15",
+            "offenceCode": "FOO",
+            "offenceCommittedDate": "2024-01-15",
+            "offenceId": "5f66994c-c8f2-458d-9828-d2923308a0ad",
+            "offenceSequenceNumber": 1
+          }
+        ]
+      },
+      {
+        "id": "d2d2d2d2-2222-4222-8222-222222222222",
+        "individual": {
+          "personalInformation": { "firstName": "Roger", "lastName": "Wesley" },
+          "selfDefinedInformation": {}
+        },
+        "initiationCode": "C",
+        "offences": [
+          {
+            "arrestDate": "2023-10-15",
+            "chargeDate": "2023-09-15",
+            "offenceCode": "FOO",
+            "offenceCommittedDate": "2024-01-15",
+            "offenceId": "5f66994c-c8f2-458d-9828-d2923308a0ad",
+            "offenceSequenceNumber": 1
+          }
+        ]
+      }
+    ],
+    "hearings": []
+  },
+  "submissionId": "e3e3e3e3-3333-4333-8333-333333333333"
+}

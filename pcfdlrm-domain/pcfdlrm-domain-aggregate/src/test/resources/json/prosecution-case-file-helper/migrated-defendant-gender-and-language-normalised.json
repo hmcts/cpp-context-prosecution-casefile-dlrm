@@ -1,0 +1,10 @@
+{
+  "documentationLanguage": "E",
+  "hearingLanguage": "E",
+  "individual": {
+    "custodyStatus": "U",
+    "parentGuardianInformation": { "gender": "NOT_KNOWN" },
+    "personalInformation": {},
+    "selfDefinedInformation": { "gender": "NOT_KNOWN" }
+  }
+}

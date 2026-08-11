@@ -1,0 +1,9 @@
+{
+  "documentationLanguage": "E",
+  "hearingLanguage": "E",
+  "individual": {
+    "custodyStatus": "U",
+    "personalInformation": { "observedEthnicity": 12 },
+    "selfDefinedInformation": { "gender": "MALE" }
+  }
+}
