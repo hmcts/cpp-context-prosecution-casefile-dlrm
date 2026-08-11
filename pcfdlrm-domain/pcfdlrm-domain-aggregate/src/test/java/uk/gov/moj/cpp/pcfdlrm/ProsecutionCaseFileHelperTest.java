@@ -214,7 +214,7 @@ class ProsecutionCaseFileHelperTest {
                 Stream.builder(), false, "XHIBIT");
 
         assertMigratedDefendantMatchesFixture(result.getMigratedDefendants().get(0),
-                "json/prosecution-case-file-helper/migrated-defendant-custody-status-normalised.json");
+                "json/xhibit/prosecution-case-file-helper/migrated-defendant-custody-status-normalised.json");
     }
 
     @Test
@@ -244,7 +244,7 @@ class ProsecutionCaseFileHelperTest {
                 Stream.builder(), false, "XHIBIT");
 
         assertMigratedDefendantMatchesFixture(result.getMigratedDefendants().get(0),
-                "json/prosecution-case-file-helper/migrated-defendant-gender-and-language-normalised.json");
+                "json/xhibit/prosecution-case-file-helper/migrated-defendant-gender-and-language-normalised.json");
     }
 
     private static void assertMigratedDefendantMatchesFixture(final MigratedDefendant defendant, final String fixturePath) {

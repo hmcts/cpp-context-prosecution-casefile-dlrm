@@ -92,7 +92,7 @@ class ExhibitFiileTypeValidationRuleTest {
 
         // Then
         assertThat(result.problems(), hasSize(1));
-        assertProblemMatchesFixture(result.problems().get(0), "json/exhibit-file-type-validation-rule/problem-invalid-file-type-xhibit-second-material.json");
+        assertProblemMatchesFixture(result.problems().get(0), "json/xhibit/exhibit-file-type-validation-rule/problem-invalid-file-type-xhibit-second-material.json");
     }
 
     @Test
@@ -108,7 +108,7 @@ class ExhibitFiileTypeValidationRuleTest {
 
         // Then
         assertThat(result.problems(), hasSize(1));
-        assertProblemMatchesFixture(result.problems().get(0), "json/exhibit-file-type-validation-rule/problem-invalid-file-type-xhibit-migration.json");
+        assertProblemMatchesFixture(result.problems().get(0), "json/xhibit/exhibit-file-type-validation-rule/problem-invalid-file-type-xhibit-migration.json");
     }
 
     @Test
@@ -121,7 +121,7 @@ class ExhibitFiileTypeValidationRuleTest {
 
         // Then
         assertThat(result.problems(), hasSize(1));
-        assertProblemMatchesFixture(result.problems().get(0), "json/exhibit-file-type-validation-rule/problem-invalid-file-type-xhibit.json");
+        assertProblemMatchesFixture(result.problems().get(0), "json/xhibit/exhibit-file-type-validation-rule/problem-invalid-file-type-xhibit.json");
     }
 
     @Test
@@ -134,7 +134,7 @@ class ExhibitFiileTypeValidationRuleTest {
 
         // Then
         assertThat(result.problems(), hasSize(1));
-        assertProblemMatchesFixture(result.problems().get(0), "json/exhibit-file-type-validation-rule/problem-invalid-file-type-xhibit-migration.json");
+        assertProblemMatchesFixture(result.problems().get(0), "json/xhibit/exhibit-file-type-validation-rule/problem-invalid-file-type-xhibit-migration.json");
     }
 
     private static void assertProblemMatchesFixture(final Problem problem, final String fixturePath) {

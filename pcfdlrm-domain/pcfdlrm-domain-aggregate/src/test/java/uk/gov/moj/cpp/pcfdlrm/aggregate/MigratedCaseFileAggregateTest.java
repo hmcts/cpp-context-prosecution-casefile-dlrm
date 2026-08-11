@@ -162,14 +162,14 @@ class MigratedCaseFileAggregateTest {
         assertThat(firstCall, hasSize(1));
         assertThat(firstCall.get(0), instanceOf(MaterialAddedPendingProcess.class));
         assertThat(objectToJsonObjectConverter.convert(firstCall.get(0)).toString(),
-                matchesWholePayload(fixture("json/aggregate/material-added-pending-process-call1.json"), List.of()));
+                matchesWholePayload(fixture("json/xhibit/aggregate/material-added-pending-process-call1.json"), List.of()));
 
         final List<Object> secondCall = migratedCaseFileAggregate.materialAddedPostProcessing(courtDocument,
                 UUID.fromString("c2c2c2c2-2222-4222-8222-222222222222")).toList();
         assertThat(secondCall, hasSize(1));
         assertThat(secondCall.get(0), instanceOf(MaterialAddedPendingProcess.class));
         assertThat(objectToJsonObjectConverter.convert(secondCall.get(0)).toString(),
-                matchesWholePayload(fixture("json/aggregate/material-added-pending-process-call2.json"), List.of()));
+                matchesWholePayload(fixture("json/xhibit/aggregate/material-added-pending-process-call2.json"), List.of()));
     }
 
     @Test
@@ -181,7 +181,7 @@ class MigratedCaseFileAggregateTest {
 
         final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter(new ObjectMapperProducer().objectMapper());
         assertThat(objectToJsonObjectConverter.convert(eventStream.get(0)).toString(),
-                matchesWholePayload(fixture("json/aggregate/migrated-case-not-found-in-automation.json"), List.of()));
+                matchesWholePayload(fixture("json/xhibit/aggregate/migrated-case-not-found-in-automation.json"), List.of()));
     }
 
     /** Fixed IDs, not {@code randomUUID()} — a MaterialAdded event carries whichever entry matched, so a random ID here made every fixture built on it non-deterministic. */
@@ -353,10 +353,10 @@ class MigratedCaseFileAggregateTest {
     }
 
     private static final List<ExpectedEvent> HEARING_DEFENDANT_VALIDATION_NOISE = List.of(
-            new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-hearing-defendant.json"),
-            new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
-            new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
-            new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"));
+            new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-hearing-defendant.json"),
+            new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
+            new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
+            new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"));
 
     @ParameterizedTest(name = "{2}")
     @MethodSource("fixedHearingTimeDefaultingScenarios")
@@ -415,17 +415,17 @@ class MigratedCaseFileAggregateTest {
 
     private static Stream<Arguments> fixedHearingTimeDefaultingScenarios() {
         final List<ExpectedEvent> pastNoWarning = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
-        pastNoWarning.add(new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-date-of-hearing-in-the-past.json"));
-        pastNoWarning.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-hearing-past-no-warning.json"));
+        pastNoWarning.add(new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-date-of-hearing-in-the-past.json"));
+        pastNoWarning.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-past-no-warning.json"));
 
         final List<ExpectedEvent> futureWithTime = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
-        futureWithTime.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-hearing-future-with-time.json"));
+        futureWithTime.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-future-with-time.json"));
 
         final List<ExpectedEvent> futureNoTimeGmt = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
-        futureNoTimeGmt.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-hearing-future-no-time-gmt.json"));
+        futureNoTimeGmt.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-future-no-time-gmt.json"));
 
         final List<ExpectedEvent> futureNoTimeBst = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
-        futureNoTimeBst.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-hearing-future-no-time-bst.json"));
+        futureNoTimeBst.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-future-no-time-bst.json"));
 
         return Stream.of(
                 Arguments.of("2026-03-05", null, "past dateOfHearing raises warning — should not default timeOfHearing", pastNoWarning),
@@ -480,7 +480,7 @@ class MigratedCaseFileAggregateTest {
         )).toList();
 
         final List<ExpectedEvent> expected = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
-        expected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-hearing-unallocated-no-time.json"));
+        expected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-unallocated-no-time.json"));
         assertEventsMatchExpected(actual, expected);
     }
 
@@ -530,7 +530,7 @@ class MigratedCaseFileAggregateTest {
         )).toList();
 
         final List<ExpectedEvent> expected = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
-        expected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-hearing-unallocated-with-time.json"));
+        expected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-unallocated-with-time.json"));
         assertEventsMatchExpected(actual, expected);
     }
 
@@ -603,8 +603,8 @@ class MigratedCaseFileAggregateTest {
         )).toList();
 
         final List<ExpectedEvent> expected = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
-        expected.add(new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-court-hearing-location-oucode-invalid.json"));
-        expected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-hearing-week-commencing.json"));
+        expected.add(new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-court-hearing-location-oucode-invalid.json"));
+        expected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-week-commencing.json"));
         assertEventsMatchExpected(actual, expected);
     }
 
@@ -648,8 +648,8 @@ class MigratedCaseFileAggregateTest {
         )).toList();
 
         final List<ExpectedEvent> expected = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
-        expected.add(new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-court-hearing-location-oucode-invalid.json"));
-        expected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-hearing-unscheduled.json"));
+        expected.add(new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-court-hearing-location-oucode-invalid.json"));
+        expected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-unscheduled.json"));
         assertEventsMatchExpected(actual, expected);
     }
 
@@ -683,16 +683,16 @@ class MigratedCaseFileAggregateTest {
 
     private static Stream<AggregateScenario> gate368Scenarios() {
         final List<ExpectedEvent> defendantValidationNoise = List.of(
-                new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-no-materials.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"));
+                new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-no-materials.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"));
 
         final List<ExpectedEvent> xhibitExpected = new ArrayList<>(defendantValidationNoise);
-        xhibitExpected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-no-materials.json"));
+        xhibitExpected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-no-materials.json"));
 
         final List<ExpectedEvent> xhibitExpectedNullMaterials = new ArrayList<>(defendantValidationNoise);
-        xhibitExpectedNullMaterials.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-no-materials-null.json"));
+        xhibitExpectedNullMaterials.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-no-materials-null.json"));
 
         return Stream.of(
                 new AggregateScenario(":368 gate open — XHIBIT satisfies isXhibit(), MigratedCaseFileReceived reaches the stream",
@@ -727,31 +727,31 @@ class MigratedCaseFileAggregateTest {
         return Stream.of(
                 new AggregateScenario("Court record sheet count exceeds defendant count",
                         courtRecordSheetCountExceedsInput(),
-                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/aggregate/migrated-case-file-processed-court-record-sheet-count-exceeds.json"))),
+                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-court-record-sheet-count-exceeds.json"))),
                 new AggregateScenario("Sending court code invalid — Either Sending or Receiving Court not found",
                         courtCodeInvalidInput(CaseDetails.caseDetails().withReceiptType("Either way case").withSendingCourt("AB00001").build()),
-                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/aggregate/migrated-case-file-processed-sending-court-invalid.json"))),
+                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-sending-court-invalid.json"))),
                 new AggregateScenario("Receiving court code invalid — Either Sending or Receiving Court not found",
                         courtCodeInvalidInput(CaseDetails.caseDetails().withReceiptType("Either way case").withReceivingCourt("AB00001").build()),
-                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/aggregate/migrated-case-file-processed-receiving-court-invalid.json"))),
+                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-receiving-court-invalid.json"))),
                 new AggregateScenario("Receipt type null — Invalid receipt types",
                         receiptTypeInput(null),
-                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/aggregate/migrated-case-file-processed-receipt-type-null.json"))),
+                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-receipt-type-null.json"))),
                 new AggregateScenario("Receipt type empty — Invalid receipt types",
                         receiptTypeInput(""),
-                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/aggregate/migrated-case-file-processed-receipt-type-empty.json"))),
+                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-receipt-type-empty.json"))),
                 new AggregateScenario("Receipt type unrecognised — Invalid receipt types",
                         receiptTypeInput("Bring back"),
-                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/aggregate/migrated-case-file-processed-receipt-type-unrecognised.json"))),
+                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-receipt-type-unrecognised.json"))),
                 new AggregateScenario("Hearing has no listed defendants — No matching defendants with hearings found for the hearing",
                         noMatchingDefendantsForHearingInput(),
-                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/aggregate/migrated-case-file-processed-no-matching-defendants-for-hearing.json"))),
+                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-no-matching-defendants-for-hearing.json"))),
                 new AggregateScenario("Hearing defendant matches but no offences match — No matching defendants with hearings found for the hearing",
                         hearingDefendantMatchesNoOffencesInput(),
-                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/aggregate/migrated-case-file-processed-hearing-defendant-matches-no-offences.json"))),
+                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-hearing-defendant-matches-no-offences.json"))),
                 new AggregateScenario("Invalid Prosecuting Authority (gate :221 — new scenario)",
                         invalidProsecutingAuthorityInput(),
-                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/aggregate/migrated-case-file-processed-invalid-prosecuting-authority.json")))
+                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-invalid-prosecuting-authority.json")))
         );
     }
 
@@ -826,16 +826,16 @@ class MigratedCaseFileAggregateTest {
         return Stream.of(
                 new AggregateScenario("Invalid offence code (gate :433 — new scenario)",
                         invalidOffenceCodeInput(),
-                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-invalid-offence-code.json"),
-                                new ExpectedEvent(MigratedCaseFileProcessed.class, "json/aggregate/migrated-case-file-processed-invalid-offence-code.json"))),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-invalid-offence-code.json"),
+                                new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-invalid-offence-code.json"))),
                 new AggregateScenario("Guilty plea missing plea date (gate :433 — new scenario)",
                         missingPleaDateInput(),
-                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-missing-plea-date.json"),
-                                new ExpectedEvent(MigratedCaseFileProcessed.class, "json/aggregate/migrated-case-file-processed-missing-plea-date.json"))),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-missing-plea-date.json"),
+                                new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-missing-plea-date.json"))),
                 new AggregateScenario("Verdict missing verdict date (gate :433 — new scenario)",
                         missingVerdictDateInput(),
-                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-missing-verdict-date.json"),
-                                new ExpectedEvent(MigratedCaseFileProcessed.class, "json/aggregate/migrated-case-file-processed-missing-verdict-date.json")))
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-missing-verdict-date.json"),
+                                new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-missing-verdict-date.json")))
         );
     }
 
@@ -899,25 +899,25 @@ class MigratedCaseFileAggregateTest {
         return Stream.of(
                 new AggregateScenario("Receive migrated case file with one PDF material — happy path",
                         receivedWithMaterialInput(),
-                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-received-with-material.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
-                                new ExpectedEvent(MaterialAdded.class, "json/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
-                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/aggregate/migrated-case-validated-creation-pending-received-with-material.json"))),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-received-with-material.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
+                                new ExpectedEvent(MaterialAdded.class, "json/xhibit/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
+                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/xhibit/aggregate/migrated-case-validated-creation-pending-received-with-material.json"))),
                 new AggregateScenario("Non-PDF material without a matching defendant — fails fast, not a PDF",
                         nonPdfWithoutMaterialInput(),
-                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/aggregate/migrated-case-file-processed-non-pdf-without-material.json"))),
+                        List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-non-pdf-without-material.json"))),
                 new AggregateScenario("Defendant-level material, no documentation language, invalid parent guardian gender",
                         defendantLevelInput(),
-                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-defendant-level.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-parent-guardian-gender.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-hearing-language.json"),
-                                new ExpectedEvent(MaterialAdded.class, "json/aggregate/material-added-defendant-level.json", MATERIAL_ADDED_EXCLUSIONS),
-                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/aggregate/migrated-case-validated-creation-pending-defendant-level.json")))
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-defendant-level.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-parent-guardian-gender.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-hearing-language.json"),
+                                new ExpectedEvent(MaterialAdded.class, "json/xhibit/aggregate/material-added-defendant-level.json", MATERIAL_ADDED_EXCLUSIONS),
+                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/xhibit/aggregate/migrated-case-validated-creation-pending-defendant-level.json")))
         );
     }
 
@@ -925,16 +925,16 @@ class MigratedCaseFileAggregateTest {
         return Stream.of(
                 new AggregateScenario("All defendant fields null — every defendant-level warning fires",
                         allNullDefendantInput(),
-                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-all-null.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-gender-null.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-parent-guardian-gender-null.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-documentation-language.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-hearing-language.json"),
-                                new ExpectedEvent(MaterialAdded.class, "json/aggregate/material-added-all-null.json", MATERIAL_ADDED_EXCLUSIONS),
-                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/aggregate/migrated-case-validated-creation-pending-all-null.json")))
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-all-null.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-gender-null.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-parent-guardian-gender-null.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-documentation-language.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-hearing-language.json"),
+                                new ExpectedEvent(MaterialAdded.class, "json/xhibit/aggregate/material-added-all-null.json", MATERIAL_ADDED_EXCLUSIONS),
+                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/xhibit/aggregate/migrated-case-validated-creation-pending-all-null.json")))
         );
     }
 
@@ -948,40 +948,40 @@ class MigratedCaseFileAggregateTest {
 
     private static Stream<AggregateScenario> pleaScenarios() {
         final List<ExpectedEvent> arrestAndChargeDateNoise = List.of(
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-arrest-date-in-future.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-charge-date-in-future.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-gender-null.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-parent-guardian-gender-null.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-documentation-language.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-hearing-language.json"));
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-arrest-date-in-future.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-charge-date-in-future.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-gender-null.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-parent-guardian-gender-null.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-documentation-language.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-hearing-language.json"));
 
         final List<ExpectedEvent> guiltyPleaWithDateExpected = new ArrayList<>();
-        guiltyPleaWithDateExpected.add(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-guilty-plea-with-date.json"));
+        guiltyPleaWithDateExpected.add(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-guilty-plea-with-date.json"));
         guiltyPleaWithDateExpected.addAll(arrestAndChargeDateNoise);
-        guiltyPleaWithDateExpected.add(new ExpectedEvent(MaterialAdded.class, "json/aggregate/material-added-guilty-plea-with-date.json", MATERIAL_ADDED_EXCLUSIONS));
-        guiltyPleaWithDateExpected.add(new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/aggregate/migrated-case-validated-creation-pending-guilty-plea-with-date.json"));
+        guiltyPleaWithDateExpected.add(new ExpectedEvent(MaterialAdded.class, "json/xhibit/aggregate/material-added-guilty-plea-with-date.json", MATERIAL_ADDED_EXCLUSIONS));
+        guiltyPleaWithDateExpected.add(new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/xhibit/aggregate/migrated-case-validated-creation-pending-guilty-plea-with-date.json"));
 
         final List<ExpectedEvent> notGuiltyPleaWithDateExpected = new ArrayList<>();
-        notGuiltyPleaWithDateExpected.add(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-not-guilty-plea-with-date.json"));
+        notGuiltyPleaWithDateExpected.add(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-not-guilty-plea-with-date.json"));
         notGuiltyPleaWithDateExpected.addAll(arrestAndChargeDateNoise);
-        notGuiltyPleaWithDateExpected.add(new ExpectedEvent(MaterialAdded.class, "json/aggregate/material-added-not-guilty-plea-with-date.json", MATERIAL_ADDED_EXCLUSIONS));
-        notGuiltyPleaWithDateExpected.add(new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/aggregate/migrated-case-validated-creation-pending-not-guilty-plea-with-date.json"));
+        notGuiltyPleaWithDateExpected.add(new ExpectedEvent(MaterialAdded.class, "json/xhibit/aggregate/material-added-not-guilty-plea-with-date.json", MATERIAL_ADDED_EXCLUSIONS));
+        notGuiltyPleaWithDateExpected.add(new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/xhibit/aggregate/migrated-case-validated-creation-pending-not-guilty-plea-with-date.json"));
 
         final List<ExpectedEvent> notGuiltyMissingDateExpected = new ArrayList<>();
-        notGuiltyMissingDateExpected.add(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-not-guilty-missing-plea-date.json"));
+        notGuiltyMissingDateExpected.add(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-not-guilty-missing-plea-date.json"));
         notGuiltyMissingDateExpected.addAll(arrestAndChargeDateNoise);
-        notGuiltyMissingDateExpected.add(new ExpectedEvent(MaterialAdded.class, "json/aggregate/material-added-not-guilty-missing-plea-date.json", MATERIAL_ADDED_EXCLUSIONS));
-        notGuiltyMissingDateExpected.add(new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/aggregate/migrated-case-validated-creation-pending-not-guilty-missing-plea-date.json"));
+        notGuiltyMissingDateExpected.add(new ExpectedEvent(MaterialAdded.class, "json/xhibit/aggregate/material-added-not-guilty-missing-plea-date.json", MATERIAL_ADDED_EXCLUSIONS));
+        notGuiltyMissingDateExpected.add(new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/xhibit/aggregate/migrated-case-validated-creation-pending-not-guilty-missing-plea-date.json"));
 
         final List<ExpectedEvent> badPleaCodeExpected = new ArrayList<>();
-        badPleaCodeExpected.add(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-bad-plea-code.json"));
+        badPleaCodeExpected.add(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-bad-plea-code.json"));
         badPleaCodeExpected.addAll(arrestAndChargeDateNoise);
-        badPleaCodeExpected.add(new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-invalid-plea.json"));
-        badPleaCodeExpected.add(new ExpectedEvent(MaterialAdded.class, "json/aggregate/material-added-bad-plea-code.json", MATERIAL_ADDED_EXCLUSIONS));
-        badPleaCodeExpected.add(new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/aggregate/migrated-case-validated-creation-pending-bad-plea-code.json"));
+        badPleaCodeExpected.add(new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-invalid-plea.json"));
+        badPleaCodeExpected.add(new ExpectedEvent(MaterialAdded.class, "json/xhibit/aggregate/material-added-bad-plea-code.json", MATERIAL_ADDED_EXCLUSIONS));
+        badPleaCodeExpected.add(new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/xhibit/aggregate/migrated-case-validated-creation-pending-bad-plea-code.json"));
 
         return Stream.of(
                 new AggregateScenario("Guilty plea with plea code and plea date — happy path",
@@ -990,8 +990,8 @@ class MigratedCaseFileAggregateTest {
                         notGuiltyPleaWithDateInput(), notGuiltyPleaWithDateExpected),
                 new AggregateScenario("Guilty plea with a future plea date — fails fast",
                         guiltyPleaFutureDateInput(),
-                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-guilty-plea-future-date.json"),
-                                new ExpectedEvent(MigratedCaseFileProcessed.class, "json/aggregate/migrated-case-file-processed-missing-plea-date.json"))),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-guilty-plea-future-date.json"),
+                                new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-missing-plea-date.json"))),
                 new AggregateScenario("Not guilty plea with a missing plea date — plea date not required for NG",
                         notGuiltyMissingDateInput(), notGuiltyMissingDateExpected),
                 new AggregateScenario("Unrecognised plea code — offence validation warning, still creation-pending",
@@ -1081,91 +1081,91 @@ class MigratedCaseFileAggregateTest {
         return Stream.of(
                 new AggregateScenario("Defendant and parent/guardian gender provided and valid in CP",
                         genderProvidedInput(),
-                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-gender-provided.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-hearing-language.json"),
-                                new ExpectedEvent(MaterialAdded.class, "json/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
-                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/aggregate/migrated-case-validated-creation-pending-gender-provided.json"))),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-gender-provided.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-hearing-language.json"),
+                                new ExpectedEvent(MaterialAdded.class, "json/xhibit/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
+                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/xhibit/aggregate/migrated-case-validated-creation-pending-gender-provided.json"))),
                 new AggregateScenario("Defendant and parent/guardian gender provided but not recognised in CP",
                         genderNotMatchInCpInput(),
-                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-gender-not-match-in-cp.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-gender-invalid-notincp.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-parent-guardian-gender-invalid-notincp.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-documentation-language-invalid-notincp.json"),
-                                new ExpectedEvent(MaterialAdded.class, "json/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
-                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/aggregate/migrated-case-validated-creation-pending-gender-not-match-in-cp.json"))),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-gender-not-match-in-cp.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-gender-invalid-notincp.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-parent-guardian-gender-invalid-notincp.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-documentation-language-invalid-notincp.json"),
+                                new ExpectedEvent(MaterialAdded.class, "json/xhibit/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
+                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/xhibit/aggregate/migrated-case-validated-creation-pending-gender-not-match-in-cp.json"))),
                 new AggregateScenario("Sending and receiving court both valid",
                         courtValidInput(),
-                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-court-valid.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
-                                new ExpectedEvent(MaterialAdded.class, "json/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
-                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/aggregate/migrated-case-validated-creation-pending-court-valid.json"))),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-court-valid.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
+                                new ExpectedEvent(MaterialAdded.class, "json/xhibit/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
+                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/xhibit/aggregate/migrated-case-validated-creation-pending-court-valid.json"))),
                 new AggregateScenario("Receipt type valid — Either way case",
-                        validReceiptTypeInput("Either way case"), receiptTypeExpected("json/aggregate/migrated-case-validated-creation-pending-receipt-type-either-way.json")),
+                        validReceiptTypeInput("Either way case"), receiptTypeExpected("json/xhibit/aggregate/migrated-case-validated-creation-pending-receipt-type-either-way.json")),
                 new AggregateScenario("Receipt type valid — Transfer",
-                        validReceiptTypeInput("Transfer"), receiptTypeExpected("json/aggregate/migrated-case-validated-creation-pending-receipt-type-transfer.json")),
+                        validReceiptTypeInput("Transfer"), receiptTypeExpected("json/xhibit/aggregate/migrated-case-validated-creation-pending-receipt-type-transfer.json")),
                 new AggregateScenario("Receipt type valid — Voluntary bill",
-                        validReceiptTypeInput("Voluntary bill"), receiptTypeExpected("json/aggregate/migrated-case-validated-creation-pending-receipt-type-voluntary-bill.json")),
+                        validReceiptTypeInput("Voluntary bill"), receiptTypeExpected("json/xhibit/aggregate/migrated-case-validated-creation-pending-receipt-type-voluntary-bill.json")),
                 new AggregateScenario("Receipt type valid — Indictable",
-                        validReceiptTypeInput("Indictable"), receiptTypeExpected("json/aggregate/migrated-case-validated-creation-pending-receipt-type-indictable.json")),
+                        validReceiptTypeInput("Indictable"), receiptTypeExpected("json/xhibit/aggregate/migrated-case-validated-creation-pending-receipt-type-indictable.json")),
                 new AggregateScenario("Case marker with an unrecognised marker type code",
                         caseMarkerInvalidInput(),
-                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-case-marker-invalid.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-case-marker-invalid-abc001.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-parent-guardian-gender.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-hearing-language.json"),
-                                new ExpectedEvent(MaterialAdded.class, "json/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
-                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/aggregate/migrated-case-validated-creation-pending-case-marker-invalid.json"))),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-case-marker-invalid.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-case-marker-invalid-abc001.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-parent-guardian-gender.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-hearing-language.json"),
+                                new ExpectedEvent(MaterialAdded.class, "json/xhibit/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
+                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/xhibit/aggregate/migrated-case-validated-creation-pending-case-marker-invalid.json"))),
                 new AggregateScenario("Defendant and parent/guardian gender provided but not recognised in CP (no case marker)",
-                        genderNotInCpInput(), genderNotInCpExpected("json/aggregate/migrated-case-validated-creation-pending-gender-not-in-cp.json")),
+                        genderNotInCpInput(), genderNotInCpExpected("json/xhibit/aggregate/migrated-case-validated-creation-pending-gender-not-in-cp.json")),
                 new AggregateScenario("Case marker with a null marker type code",
                         caseMarkerNullOrEmptyInput(null),
-                        caseMarkerNullOrEmptyExpected("json/aggregate/migrated-case-validated-with-warnings-case-marker-invalid-null.json", "json/aggregate/migrated-case-validated-creation-pending-case-marker-null.json")),
+                        caseMarkerNullOrEmptyExpected("json/xhibit/aggregate/migrated-case-validated-with-warnings-case-marker-invalid-null.json", "json/xhibit/aggregate/migrated-case-validated-creation-pending-case-marker-null.json")),
                 new AggregateScenario("Case marker with an empty marker type code",
                         caseMarkerNullOrEmptyInput(""),
-                        caseMarkerNullOrEmptyExpected("json/aggregate/migrated-case-validated-with-warnings-case-marker-invalid-empty.json", "json/aggregate/migrated-case-validated-creation-pending-case-marker-empty.json")),
+                        caseMarkerNullOrEmptyExpected("json/xhibit/aggregate/migrated-case-validated-with-warnings-case-marker-invalid-empty.json", "json/xhibit/aggregate/migrated-case-validated-creation-pending-case-marker-empty.json")),
                 new AggregateScenario("Parent/guardian information entirely null",
                         parentGuardianNullInput(),
-                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-parent-guardian-null.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-gender-invalid-xxx.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-hearing-language.json"),
-                                new ExpectedEvent(MaterialAdded.class, "json/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
-                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/aggregate/migrated-case-validated-creation-pending-parent-guardian-null.json"))),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-parent-guardian-null.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-gender-invalid-xxx.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-hearing-language.json"),
+                                new ExpectedEvent(MaterialAdded.class, "json/xhibit/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
+                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/xhibit/aggregate/migrated-case-validated-creation-pending-parent-guardian-null.json"))),
                 new AggregateScenario("Custody status C with a missing custody time limit",
                         custodyCWithMissingCtlInput(),
-                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-custody-c-ctl-null.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-custody-status-invalid-c.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-hearing-language.json"),
-                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-custody-time-limit-missing.json"),
-                                new ExpectedEvent(MaterialAdded.class, "json/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
-                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/aggregate/migrated-case-validated-creation-pending-custody-c-ctl-null.json")))
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-custody-c-ctl-null.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-custody-status-invalid-c.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-hearing-language.json"),
+                                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-custody-time-limit-missing.json"),
+                                new ExpectedEvent(MaterialAdded.class, "json/xhibit/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
+                                new ExpectedEvent(MigratedCaseValidatedCreationPending.class, "json/xhibit/aggregate/migrated-case-validated-creation-pending-custody-c-ctl-null.json")))
         );
     }
 
     private static List<ExpectedEvent> receiptTypeExpected(final String creationPendingFixture) {
-        return List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-gender-not-in-cp.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-gender-invalid-xxx.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-parent-guardian-gender.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-hearing-language.json"),
-                new ExpectedEvent(MaterialAdded.class, "json/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
+        return List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-gender-not-in-cp.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-gender-invalid-xxx.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-parent-guardian-gender.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-hearing-language.json"),
+                new ExpectedEvent(MaterialAdded.class, "json/xhibit/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
                 new ExpectedEvent(MigratedCaseValidatedCreationPending.class, creationPendingFixture));
     }
 
@@ -1174,15 +1174,15 @@ class MigratedCaseFileAggregateTest {
     }
 
     private static List<ExpectedEvent> caseMarkerNullOrEmptyExpected(final String caseMarkerWarningFixture, final String creationPendingFixture) {
-        return List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-gender-not-in-cp.json"),
+        return List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-gender-not-in-cp.json"),
                 new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, caseMarkerWarningFixture),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-gender-invalid-xxx.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-parent-guardian-gender.json"),
-                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/aggregate/migrated-case-validated-with-warnings-hearing-language.json"),
-                new ExpectedEvent(MaterialAdded.class, "json/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-nationality-no-materials.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-custody-status-no-materials.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-gender-invalid-xxx.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-parent-guardian-gender.json"),
+                new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-hearing-language.json"),
+                new ExpectedEvent(MaterialAdded.class, "json/xhibit/aggregate/material-added-received-with-material.json", MATERIAL_ADDED_EXCLUSIONS),
                 new ExpectedEvent(MigratedCaseValidatedCreationPending.class, creationPendingFixture));
     }
 
