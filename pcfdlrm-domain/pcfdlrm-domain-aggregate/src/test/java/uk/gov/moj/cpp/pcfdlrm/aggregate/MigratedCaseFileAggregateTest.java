@@ -352,6 +352,33 @@ class MigratedCaseFileAggregateTest {
         assertThat(hasCourtRoomIdWarning, is(true));
     }
 
+    /**
+     * Next future occurrence of {@code month}/{@code day}, strictly after today. Keeps the GMT
+     * (January) / BST (June) hearing-date scenarios below perpetually future — and perpetually in
+     * the same DST season — rather than baking in a fixed year that lapses into the past once the
+     * real clock catches up (2027-01-15/2027-06-15 would have started failing from 2027 onward).
+     */
+    private static String nextFutureDate(final int month, final int day) {
+        final LocalDate today = LocalDate.now();
+        LocalDate candidate = LocalDate.of(today.getYear(), month, day);
+        if (!candidate.isAfter(today)) {
+            candidate = candidate.plusYears(1);
+        }
+        return candidate.toString();
+    }
+
+    private static final String FUTURE_HEARING_DATE_GMT = nextFutureDate(1, 15);
+    private static final String FUTURE_HEARING_DATE_BST = nextFutureDate(6, 15);
+    private static final String FUTURE_WEEK_COMMENCING_START_DATE = nextFutureDate(6, 14);
+
+    private static final List<String> FUTURE_DATE_OF_HEARING_EXCLUSIONS = List.of(
+            "receiveMigratedCaseFile.migratedCaseDetails.hearings[0].dateOfHearing",
+            "migratedHearingWithReferenceDataList[0].migratedHearing.dateOfHearing");
+
+    private static final List<String> FUTURE_WEEK_COMMENCING_START_DATE_EXCLUSIONS = List.of(
+            "receiveMigratedCaseFile.migratedCaseDetails.hearings[0].weekCommencingDate.startDate",
+            "migratedHearingWithReferenceDataList[0].migratedHearing.weekCommencingDate.startDate");
+
     private static final List<ExpectedEvent> HEARING_DEFENDANT_VALIDATION_NOISE = List.of(
             new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-hearing-defendant.json"),
             new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
@@ -419,19 +446,19 @@ class MigratedCaseFileAggregateTest {
         pastNoWarning.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-past-no-warning.json"));
 
         final List<ExpectedEvent> futureWithTime = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
-        futureWithTime.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-future-with-time.json"));
+        futureWithTime.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-future-with-time.json", FUTURE_DATE_OF_HEARING_EXCLUSIONS));
 
         final List<ExpectedEvent> futureNoTimeGmt = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
-        futureNoTimeGmt.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-future-no-time-gmt.json"));
+        futureNoTimeGmt.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-future-no-time-gmt.json", FUTURE_DATE_OF_HEARING_EXCLUSIONS));
 
         final List<ExpectedEvent> futureNoTimeBst = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
-        futureNoTimeBst.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-future-no-time-bst.json"));
+        futureNoTimeBst.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-future-no-time-bst.json", FUTURE_DATE_OF_HEARING_EXCLUSIONS));
 
         return Stream.of(
                 Arguments.of("2026-03-05", null, "past dateOfHearing raises warning — should not default timeOfHearing", pastNoWarning),
-                Arguments.of("2027-01-15", "09:30", "future dateOfHearing with existing time — should not overwrite timeOfHearing", futureWithTime),
-                Arguments.of("2027-01-15", null, "GMT: future dateOfHearing with no time — should default to 10:00:00 UTC", futureNoTimeGmt),
-                Arguments.of("2027-06-15", null, "BST: future dateOfHearing with no time — should default to 09:00:00 UTC", futureNoTimeBst)
+                Arguments.of(FUTURE_HEARING_DATE_GMT, "09:30", "future dateOfHearing with existing time — should not overwrite timeOfHearing", futureWithTime),
+                Arguments.of(FUTURE_HEARING_DATE_GMT, null, "GMT: future dateOfHearing with no time — should default to 10:00:00 UTC", futureNoTimeGmt),
+                Arguments.of(FUTURE_HEARING_DATE_BST, null, "BST: future dateOfHearing with no time — should default to 09:00:00 UTC", futureNoTimeBst)
         );
     }
 
@@ -450,7 +477,7 @@ class MigratedCaseFileAggregateTest {
                         MigratedHearing.migratedHearing()
                                 .withCourtHearingLocation("C50EX00")
                                 .withHearingType("SIT")
-                                .withDateOfHearing("2027-01-15")
+                                .withDateOfHearing(FUTURE_HEARING_DATE_GMT)
                                 .withListedDefendants(List.of(
                                         ListedDefendant.listedDefendant()
                                                 .withProsecutorDefendantId("DEF-001")
@@ -480,7 +507,7 @@ class MigratedCaseFileAggregateTest {
         )).toList();
 
         final List<ExpectedEvent> expected = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
-        expected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-unallocated-no-time.json"));
+        expected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-unallocated-no-time.json", FUTURE_DATE_OF_HEARING_EXCLUSIONS));
         assertEventsMatchExpected(actual, expected);
     }
 
@@ -499,7 +526,7 @@ class MigratedCaseFileAggregateTest {
                         MigratedHearing.migratedHearing()
                                 .withCourtHearingLocation("C50EX00")
                                 .withHearingType("SIT")
-                                .withDateOfHearing("2027-01-15")
+                                .withDateOfHearing(FUTURE_HEARING_DATE_GMT)
                                 .withTimeOfHearing("09:30")
                                 .withListedDefendants(List.of(
                                         ListedDefendant.listedDefendant()
@@ -530,7 +557,7 @@ class MigratedCaseFileAggregateTest {
         )).toList();
 
         final List<ExpectedEvent> expected = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
-        expected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-unallocated-with-time.json"));
+        expected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-unallocated-with-time.json", FUTURE_DATE_OF_HEARING_EXCLUSIONS));
         assertEventsMatchExpected(actual, expected);
     }
 
@@ -575,7 +602,7 @@ class MigratedCaseFileAggregateTest {
                                 .withCourtHearingLocation("C50EX00")
                                 .withHearingType("SIT")
                                 .withWeekCommencingDate(MigratedWeekCommencingDate.migratedWeekCommencingDate()
-                                        .withStartDate("2027-06-14")
+                                        .withStartDate(FUTURE_WEEK_COMMENCING_START_DATE)
                                         .withDuration(3)
                                         .build())
                                 .withListedDefendants(List.of(
@@ -604,7 +631,7 @@ class MigratedCaseFileAggregateTest {
 
         final List<ExpectedEvent> expected = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
         expected.add(new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-court-hearing-location-oucode-invalid.json"));
-        expected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-week-commencing.json"));
+        expected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-hearing-week-commencing.json", FUTURE_WEEK_COMMENCING_START_DATE_EXCLUSIONS));
         assertEventsMatchExpected(actual, expected);
     }
 

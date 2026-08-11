@@ -26,7 +26,7 @@
       "hearings": [
         {
           "courtHearingLocation": "C50EX00",
-          "dateOfHearing": "2027-01-15",
+          "dateOfHearing": "EXCLUDED",
           "hearingType": "SIT",
           "listedDefendants": [ { "listedOffences": [], "prosecutorDefendantId": "DEF-001" } ],
           "timeOfHearing": "09:30"
@@ -74,7 +74,7 @@
       },
       "migratedHearing": {
         "courtHearingLocation": "C50EX00",
-        "dateOfHearing": "2027-01-15",
+        "dateOfHearing": "EXCLUDED",
         "hearingType": "SIT",
         "listedDefendants": [ { "listedOffences": [], "prosecutorDefendantId": "DEF-001" } ],
         "timeOfHearing": "09:30"

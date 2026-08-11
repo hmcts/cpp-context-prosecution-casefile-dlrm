@@ -28,7 +28,7 @@
           "courtHearingLocation": "C50EX00",
           "hearingType": "SIT",
           "listedDefendants": [ { "listedOffences": [], "prosecutorDefendantId": "DEF-001" } ],
-          "weekCommencingDate": { "duration": 3, "startDate": "2027-06-14" }
+          "weekCommencingDate": { "duration": 3, "startDate": "EXCLUDED" }
         }
       ],
       "migrationSourceSystem": { "migrationSourceSystemCaseIdentifier": "XHIBIT-123", "migrationSourceSystemName": "XHIBIT" }
@@ -74,7 +74,7 @@
         "courtHearingLocation": "C50EX00",
         "hearingType": "SIT",
         "listedDefendants": [ { "listedOffences": [], "prosecutorDefendantId": "DEF-001" } ],
-        "weekCommencingDate": { "duration": 3, "startDate": "2027-06-14" }
+        "weekCommencingDate": { "duration": 3, "startDate": "EXCLUDED" }
       },
       "migratedDefendantWithOffences": [
         {
