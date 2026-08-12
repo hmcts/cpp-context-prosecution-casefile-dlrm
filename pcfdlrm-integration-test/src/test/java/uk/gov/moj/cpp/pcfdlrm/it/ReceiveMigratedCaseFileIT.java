@@ -66,8 +66,8 @@ class ReceiveMigratedCaseFileIT {
     public static Stream<Arguments> data() {
         return Stream.of(
                 Arguments.of("command-json/pcfdlrm.command.receive-migrated-case-file.json", new String[]{"1"}, "99"),
-                Arguments.of("command-json/pcfdlrm.command.receive-multiple-hearing-migrated-case-file.json", new String[]{"3", "4"}, "9"),
-                Arguments.of("command-json/pcfdlrm.command.receive-multiple-hearing-wc-migrated-case-file.json", new String[]{"5", "6"},"9"),
+                Arguments.of("command-json/pcfdlrm.command.receive-multiple-hearing-migrated-case-file.json", new String[]{"3", "4"}, "99"),
+                Arguments.of("command-json/pcfdlrm.command.receive-multiple-hearing-wc-migrated-case-file.json", new String[]{"5", "6"},"99"),
                 Arguments.of("command-json/pcfdlrm.command.receive-migrated-case-file-xhibit.json", new String[]{"7"},"99"),
                 Arguments.of("command-json/pcfdlrm.command.receive-migrated-case-file-xhibit-custody.json", new String[]{"9"}, "99"),
                 Arguments.of("command-json/pcfdlrm.command.receive-multiple-hearing-migrated-complex-case-file.json", new String[]{"17"},"99"),
@@ -177,15 +177,15 @@ class ReceiveMigratedCaseFileIT {
 
         addMaterialHelper.sendMessage(materialAddedToMaterialContextPayload.metadata().name(), materialAddedToMaterialContextPayload);
 
-        receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiated(caseUrn, retrialIndicator,0);
+        receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiated(caseUrn, retrialIndicator ? "retrial-true" : "retrial-false");
     }
 
     @ParameterizedTest
-    @CsvSource({"command-json/pcfdlrm.command.receive-migrated-case-file-with-no-allocation-decision.json, 20, b8c37e33-defd-351c-b91e-1e03e51657da",
-                "command-json/pcfdlrm.command.receive-migrated-case-file-with-allocation-decision.json, 21, b8c37e33-defd-351c-b91e-1e03e51657da",
-                "command-json/pcfdlrm.command.receive-migrated-case-file-with-indictable-allocation-decision.json, 19, 5aaecac5-222b-402d-9047-84803679edac"
+    @CsvSource({"command-json/pcfdlrm.command.receive-migrated-case-file-with-no-allocation-decision.json, 20, allocation-no-decision",
+                "command-json/pcfdlrm.command.receive-migrated-case-file-with-allocation-decision.json, 21, allocation-with-decision",
+                "command-json/pcfdlrm.command.receive-migrated-case-file-with-indictable-allocation-decision.json, 19, allocation-with-indictable-decision"
     })
-    void shouldSetAllocationDecisionForDifferentScenario(String fileName, String index, String motReasonId) {
+    void shouldSetAllocationDecisionForDifferentScenario(String fileName, String index, String initiateCourtProceedingsFixture) {
 
         final String submissionId = UUID.randomUUID().toString();
 
@@ -212,7 +212,7 @@ class ReceiveMigratedCaseFileIT {
 
         addMaterialHelper.sendMessage(materialAddedToMaterialContextPayload.metadata().name(), materialAddedToMaterialContextPayload);
 
-        receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiatedWithAllocationDecision(caseUrn, motReasonId);
+        receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiatedWithAllocationDecision(caseUrn, initiateCourtProceedingsFixture);
     }
     @Test
     void shouldNotSetOffenceCustodyTimeLimitWhenCustodyStatusIsNotCustody() {
@@ -270,7 +270,7 @@ class ReceiveMigratedCaseFileIT {
                 .replace("CASE_URN", caseUrn)
                 .replace("HEARING_DATE", LocalDate.now().plusDays(1).toString());
         receiveMigratedCaseFileHelper.receiveMigratedCaseFile(staticPayLoad);
-        receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiated(caseUrn, false, 3);
+        receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiated(caseUrn, "no-material");
     }
 
 
@@ -335,7 +335,7 @@ class ReceiveMigratedCaseFileIT {
                 .replace("HEARING_DATE", LocalDate.now().plusDays(1).toString());
 
         receiveMigratedCaseFileHelper.receiveMigratedCaseFile(receivePayload);
-        receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiated(caseUrn, false, 3);
+        receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiated(caseUrn, "no-material");
 
         receiveMigratedCaseFileHelper.triggerAcceptMigratedCase(caseId);
 

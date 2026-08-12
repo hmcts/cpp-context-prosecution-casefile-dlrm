@@ -1,0 +1,185 @@
+{
+  "initiateCourtProceedings": {
+    "prosecutionCases": [
+      {
+        "committalDate": "2024-01-15",
+        "cpsOrganisation": "A30AB00",
+        "dateOfSendingCase": "2024-08-23",
+        "defendants": [
+          {
+            "associatedPersons": [
+              {
+                "person": {
+                  "dateOfBirth": "2015-04-04",
+                  "ethnicity": {
+                    "observedEthnicityCode": "1",
+                    "observedEthnicityDescription": "White - North European",
+                    "observedEthnicityId": "4aaecac5-222b-402d-9047-84803679edac",
+                    "selfDefinedEthnicityCode": "W1",
+                    "selfDefinedEthnicityDescription": "British",
+                    "selfDefinedEthnicityId": "1daefec3-2f76-8109-82d9-2e60544a6c01"
+                  },
+                  "gender": "MALE",
+                  "lastName": "Brown"
+                },
+                "role": "ParentGuardian"
+              }
+            ],
+            "courtProceedingsInitiated": "EXCLUDED",
+            "id": "EXCLUDED",
+            "masterDefendantId": "EXCLUDED",
+            "offences": [
+              {
+                "allocationDecision": {
+                  "motReasonCode": "01",
+                  "motReasonDescription": "Summary-only offence",
+                  "motReasonId": "b8c37e33-defd-351c-b91e-1e03e51657da",
+                  "offenceId": "550e8400-e29b-41d4-a716-446655440001",
+                  "sequenceNumber": 10
+                },
+                "chargeDate": "2019-01-10",
+                "convictingCourt": {
+                  "id": "f8254db1-1683-483e-afb3-b87fde5a0a23",
+                  "lja": {
+                    "ljaCode": "1080",
+                    "ljaName": "Bedfordshire Magistrates' Court",
+                    "welshLjaName": "WELSH_NAME"
+                  },
+                  "name": "Port Talbot",
+                  "welshName": "Welsh Name"
+                },
+                "convictionDate": "2024-06-09",
+                "count": 0,
+                "dvlaOffenceCode": "ABC123",
+                "endDate": "2018-10-10",
+                "id": "550e8400-e29b-41d4-a716-446655440001",
+                "maxPenalty": "Max Penalty",
+                "modeOfTrial": "Summary",
+                "offenceCode": "OFCODE12",
+                "offenceDateCode": 1,
+                "offenceDefinitionId": "04c099cc-eba2-4c80-9eed-7c1ef21d706a",
+                "offenceFacts": {
+                  "alcoholReadingAmount": 100,
+                  "alcoholReadingMethodCode": "A",
+                  "alcoholReadingMethodDescription": "Blood",
+                  "vehicleCode": "OTHER",
+                  "vehicleRegistration": "AA11 ABC"
+                },
+                "offenceTitle": "Obstruct person executing search warrant for TV receiver",
+                "orderIndex": 1,
+                "plea": {
+                  "offenceId": "550e8400-e29b-41d4-a716-446655440001",
+                  "pleaDate": "2024-06-09",
+                  "pleaValue": "GUILTY"
+                },
+                "startDate": "2018-09-10",
+                "wording": "TV Licence not paid",
+                "wordingWelsh": "TV Licence not paid"
+              },
+              {
+                "allocationDecision": {
+                  "motReasonCode": "01",
+                  "motReasonDescription": "Summary-only offence",
+                  "motReasonId": "b8c37e33-defd-351c-b91e-1e03e51657da",
+                  "offenceId": "650e8400-e29b-41d4-a716-446655440001",
+                  "sequenceNumber": 10
+                },
+                "chargeDate": "2019-01-10",
+                "convictionDate": "2024-06-09",
+                "count": 0,
+                "dvlaOffenceCode": "ABC123",
+                "endDate": "2018-10-10",
+                "id": "650e8400-e29b-41d4-a716-446655440001",
+                "maxPenalty": "Max Penalty",
+                "modeOfTrial": "Summary",
+                "offenceCode": "OFCODE12",
+                "offenceDateCode": 1,
+                "offenceDefinitionId": "04c099cc-eba2-4c80-9eed-7c1ef21d706a",
+                "offenceFacts": {
+                  "alcoholReadingAmount": 100,
+                  "alcoholReadingMethodCode": "A",
+                  "alcoholReadingMethodDescription": "Blood"
+                },
+                "offenceTitle": "Obstruct person executing search warrant for TV receiver",
+                "orderIndex": 2,
+                "plea": {
+                  "offenceId": "650e8400-e29b-41d4-a716-446655440001",
+                  "pleaDate": "2024-06-09",
+                  "pleaValue": "GUILTY"
+                },
+                "startDate": "2018-09-10",
+                "wording": "TV Licence not paid",
+                "wordingWelsh": "TV Licence not paid"
+              }
+            ],
+            "personDefendant": {
+              "personDetails": {
+                "address": {
+                  "address1": "66 Exeter Street",
+                  "address2": "line 2",
+                  "address3": "line 3",
+                  "address4": "line 4",
+                  "address5": "line 5",
+                  "postcode": "M60 1NW"
+                },
+                "contact": {
+                  "home": "020111223",
+                  "mobile": "07572222943",
+                  "primaryEmail": "scrooge.mcduck@mail.com",
+                  "secondaryEmail": "scrooge.mcduck2@mail.com",
+                  "work": "020111222"
+                },
+                "documentationLanguageNeeds": "WELSH",
+                "firstName": "John",
+                "gender": "MALE",
+                "hearingLanguageNeeds": "WELSH",
+                "lastName": "Smith",
+                "occupation": "Software Developer",
+                "occupationCode": "43",
+                "title": "Baron"
+              }
+            },
+            "prosecutionAuthorityReference": "DEFENDANT_REFERENCE1",
+            "prosecutionCaseId": "EXCLUDED"
+          }
+        ],
+        "id": "EXCLUDED",
+        "initiationCode": "Q",
+        "migrationSourceSystem": {
+          "migrationSourceSystemCaseIdentifier": "This is from Libra",
+          "migrationSourceSystemName": "XHIBIT"
+        },
+        "originatingOrganisation": "B01NM00",
+        "prosecutionCaseIdentifier": {
+          "address": {
+            "address1": "6th Floor Windsor House",
+            "address2": "42-50 Victoria Street",
+            "address3": "London",
+            "postcode": "SW1H 0TL"
+          },
+          "contact": {
+            "primaryEmail": "contact@cpp.com"
+          },
+          "majorCreditorCode": "TFL2",
+          "prosecutionAuthorityCode": "TFL",
+          "prosecutionAuthorityId": "0534ee76-88f6-40e0-ba8f-53588e146675",
+          "prosecutionAuthorityName": "Transport for London",
+          "prosecutionAuthorityOUCode": "GAFTL00",
+          "caseURN": "EXCLUDED"
+        },
+        "receiptType": "Either way case",
+        "receivingCourt": {
+          "id": "f8254db1-1683-483e-afb3-b87fde5a0a23",
+          "name": "Port Talbot",
+          "welshName": "Welsh Name"
+        },
+        "retrialIndicator": true,
+        "sendingCourt": {
+          "id": "f8254db1-1683-483e-afb3-b87fde5a0a23",
+          "name": "Port Talbot",
+          "welshName": "Welsh Name"
+        }
+      }
+    ]
+  }
+}

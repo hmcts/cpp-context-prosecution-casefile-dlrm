@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- claude-artifact: created=2026-08-12 project=cpp-context-prosecution-casefile-dlrm kind=report -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T4 IT XHIBIT Fixtures Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#071210; --panel:#0c1c19; --panel-2:#103029; --edge:#1d4038;
+    --txt:#9fc7bd; --txt-hi:#e8fff7; --muted:#5f857b;
+    --teal:#2fe6b6; --teal-dim:#179e7c; --cyan:#46d6ff; --gold:#ffce5c; --done:#2fe6b6; --rose:#ff6b8a;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:radial-gradient(1000px 500px at 90% -10%,rgba(47,230,182,.07),transparent),var(--bg);
+    color:var(--txt);font-family:'Manrope',system-ui,sans-serif;font-size:15px;line-height:1.65}
+  .wrap{max-width:940px;margin:0 auto;padding:44px 24px 110px}
+  .mono{font-family:'JetBrains Mono',monospace}
+
+  header{margin-bottom:40px}
+  .kicker{font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:3px;text-transform:uppercase;color:var(--teal-dim)}
+  h1{color:var(--txt-hi);font-size:clamp(26px,4.4vw,40px);font-weight:800;letter-spacing:-.5px;margin:12px 0 8px}
+  .sub{color:var(--muted);max-width:68ch}
+
+  .overall{margin-top:24px;background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:16px 20px}
+  .overall .top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:10px}
+  .overall .top b{color:var(--txt-hi)}
+  .track{height:10px;border-radius:6px;background:#0a1714;overflow:hidden;border:1px solid var(--edge)}
+  .fill{height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--teal-dim),var(--teal));
+    box-shadow:0 0 14px rgba(47,230,182,.5);animation:grow 1.4s ease forwards}
+  @keyframes grow{to{width:var(--w,0%)}}
+
+  .phase{position:relative;padding:0 0 14px 46px;margin-bottom:8px}
+  .phase::before{content:"";position:absolute;left:15px;top:6px;bottom:-8px;width:2px;background:var(--edge)}
+  .phase:last-child::before{display:none}
+  .phase>.pin{position:absolute;left:0;top:2px;width:32px;height:32px;border-radius:50%;background:var(--panel-2);
+    border:2px solid var(--teal-dim);display:grid;place-items:center;font:700 13px 'JetBrains Mono',monospace;color:var(--teal);z-index:2}
+  .phase.done>.pin{background:var(--teal);border-color:var(--teal);color:var(--bg)}
+  .phase.active>.pin{border-color:var(--teal);box-shadow:0 0 0 4px rgba(47,230,182,.15);animation:beat 2s infinite}
+  @keyframes beat{50%{box-shadow:0 0 0 8px rgba(47,230,182,.05)}}
+  .phase .card{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:18px 20px;margin-left:4px}
+  .phase.active .card{border-color:var(--teal-dim)}
+  .ph-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .ph-head h3{font-size:17px;color:var(--txt-hi);font-weight:700}
+  .tag{font:600 10.5px/1 'JetBrains Mono',monospace;letter-spacing:.5px;padding:5px 9px;border-radius:20px;border:1px solid currentColor}
+  .tag.t{color:var(--cyan)} .tag.o{color:var(--gold)} .tag.d{color:var(--done)} .tag.now{color:var(--teal);background:rgba(47,230,182,.1)}
+  .ph-desc{color:var(--txt);font-size:14px;margin-bottom:14px}
+
+  ul.tasks{list-style:none;margin:6px 0 14px}
+  ul.tasks li{display:flex;align-items:flex-start;gap:10px;padding:6px 0;font-size:14px}
+  ul.tasks .box{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--edge);flex-shrink:0;margin-top:2px;position:relative}
+  ul.tasks li.x .box{background:var(--teal);border-color:var(--teal)}
+  ul.tasks li.x .box::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:var(--bg);font-size:12px;font-weight:800}
+  ul.tasks li.x{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--teal-dim)}
+  ul.tasks li.doing .box{border-color:var(--teal);box-shadow:0 0 0 3px rgba(47,230,182,.12)}
+
+  .gantt{margin-top:14px;border-top:1px dashed var(--edge);padding-top:14px}
+  .gantt .row{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:14px;margin:7px 0;font-size:12.5px}
+  .gantt .lbl{color:var(--muted);font-family:'JetBrains Mono',monospace;text-align:right}
+  .gantt .bar{height:18px;border-radius:5px;background:linear-gradient(90deg,var(--teal-dim),var(--cyan));
+    display:flex;align-items:center;padding:0 8px;font:600 11px 'JetBrains Mono',monospace;color:var(--bg)}
+  .gantt .bar.warn{background:linear-gradient(90deg,#8a6a1f,var(--gold))}
+
+  .milestone{display:inline-flex;align-items:center;gap:8px;margin-top:8px;color:var(--gold);font-size:13px;font-weight:600}
+  .milestone::before{content:"◆";color:var(--gold)}
+
+  .acbox{margin-top:18px;background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:16px 20px}
+  .acbox h4{color:var(--txt-hi);font-size:14px;margin-bottom:10px}
+  .acbox ul{list-style:none;font-size:13px}
+  .acbox li{padding:4px 0;color:var(--txt)}
+  .acbox code{color:var(--cyan)}
+
+  footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--edge);color:var(--muted);
+    font:500 12px 'JetBrains Mono',monospace;letter-spacing:1px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Implementation Plan · DD-43126 (DD-43099 / DD-43067) · T4</div>
+    <h1>IT XHIBIT fixtures + whole-payload boundary check</h1>
+    <p class="sub">Re-point the three LIBRA-only IT command fixtures to XHIBIT, and upgrade the
+      <code class="mono">initiatecourtproceedings</code> WireMock assertion from three field
+      spot-checks to a whole-payload comparison — closing the last gap AC6 forbids continuing:
+      no LIBRA journey may exist only at IT level, and no LIBRA baseline can substitute for XHIBIT
+      coverage at the wire boundary.</p>
+    <div class="overall" style="--w:0%">
+      <div class="top"><span>Overall progress</span><b>0% · not started, awaiting this gate</b></div>
+      <div class="track"><div class="fill"></div></div>
+    </div>
+  </header>
+
+  <div class="phase active">
+    <div class="pin">1</div>
+    <div class="card">
+      <div class="ph-head"><h3>Wire the matcher, land on <code>dev/43099-T2</code></h3><span class="tag now">Up next</span><span class="tag t mono">&lt;1d</span></div>
+      <div class="ph-desc">Reuse <code>pcfdlrm-test-support</code>'s <code>WholePayloadMatcher</code>
+        rather than hand-rolling a second STRICT+exclusions comparator — same pattern T2/T3 used to
+        add it to <code>pcfdlrm-command-handler</code> / <code>pcfdlrm-event-processor</code> as a
+        new test-scope consumer. No cycle risk: <code>pcfdlrm-test-support</code> has zero
+        <code>pcfdlrm-*</code> dependencies today.</div>
+      <ul class="tasks">
+        <li><span class="box"></span>Add <code>pcfdlrm-test-support</code> test-scope dependency to <code>pcfdlrm-integration-test/pom.xml</code></li>
+        <li><span class="box"></span>Confirm no reactor cycle: <code>mvn -pl pcfdlrm-integration-test -am test-compile</code></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="pin">2</div>
+    <div class="card">
+      <div class="ph-head"><h3>Re-point fixtures, rewrite the assertion</h3><span class="tag t mono">1–2d</span></div>
+      <div class="ph-desc">Flip the source-system field only — <code>prosecutorOffenceId</code>
+        values containing the literal string "LIBRA" are left alone, per the design's explicit
+        "convert, do not duplicate" decision.</div>
+      <ul class="tasks">
+        <li><span class="box"></span><code>migrationSourceSystemName</code>: <code>LIBRA</code> → <code>XHIBIT</code> in the 3 command JSONs (multiple-hearing, multiple-hearing-wc, no-hearing)</li>
+        <li><span class="box"></span>Rewrite <code>verifyCourtProceedingsForCaseCreationHasBeenInitiated</code> (2 <code>withJsonPath</code>s) to <code>WholePayloadMatcher.matchesWholePayload</code></li>
+        <li><span class="box"></span>Rewrite <code>verifyCourtProceedingsForCaseCreationHasBeenInitiatedWithAllocationDecision</code> (1 <code>withJsonPath</code>) the same way</li>
+        <li><span class="box"></span>Keep <code>withRequestBody(containing(...))</code> WireMock selector untouched — selection, not assertion</li>
+        <li><span class="box"></span>New fixtures under <code>json/xhibit/initiate-court-proceedings/</code></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="pin">3</div>
+    <div class="card">
+      <div class="ph-head"><h3>Real-execution capture &amp; canary check</h3><span class="tag t mono">1d</span><span class="tag o mono">needs Docker</span></div>
+      <div class="ph-desc">Every fixture value comes from a real captured request body, never
+        hand-typed — same discipline as T1–T3. The re-point itself is expected to be routine since
+        the base IT journey is already XHIBIT; any assertion result that changes is raised as a real
+        behavioural difference, not absorbed into the new fixture.</div>
+      <ul class="tasks">
+        <li><span class="box"></span><code>export CPP_DOCKER_DIR=... && ./runIntegrationTests.sh</code>, capture the 3 real whole-payload bodies</li>
+        <li><span class="box"></span>Diff against pre-change behaviour — flag, don't absorb, any changed result (AC-T4-4)</li>
+        <li><span class="box"></span>Confirm no material IT runtime increase (AC-T4-5) — no new journey, no scenario ported down</li>
+        <li><span class="box"></span>Whole-reactor <code>mvn clean install</code></li>
+        <li><span class="box"></span>Tick AC-T4-1..5 in <code>03-stories.md</code> with evidence; delete this artifact's scratch probes if any</li>
+      </ul>
+      <span class="milestone">T4 done — every IT journey now runs on the XHIBIT baseline</span>
+    </div>
+  </div>
+
+  <div class="acbox">
+    <h4>Acceptance criteria this closes</h4>
+    <ul>
+      <li><code>AC-T4-1</code> — none of the 3 fixtures sets <code>migrationSourceSystemName</code> to <code>LIBRA</code></li>
+      <li><code>AC-T4-2</code> — <code>prosecutorOffenceId</code> values containing "LIBRA" left unchanged</li>
+      <li><code>AC-T4-3</code> — whole-body STRICT comparison (named exclusions only) replaces the 3 <code>withJsonPath</code> checks; selector retained</li>
+      <li><code>AC-T4-4</code> — no assertion result changes as a consequence of re-pointing alone</li>
+      <li><code>AC-T4-5</code> — full IT suite passes via <code>./runIntegrationTests.sh</code>, no new journey, no runtime increase</li>
+    </ul>
+  </div>
+
+  <footer>T4 · DD-43126 · continues on dev/43099-T2 · out of scope: any new IT journey, porting unit-level scenarios into ITs, cpp-apitests</footer>
+</div>
+</body>
+</html>
