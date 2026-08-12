@@ -56,12 +56,12 @@ copies drifting. Per the story owner's 2026-08-07 gate decision, the module is a
 addition; ADR-001's duplicate-per-module fallback is not needed.
 
 #### Acceptance criteria
-- [ ] AC-T1-1 (traces to R4, AC8): Given the reactor pom(s), when `pcfdlrm-test-support` is added, then it is declared at `<scope>test</scope>` in every consuming module and no `src/main` file in any module changes.
-- [ ] AC-T1-2 (traces to ADR-001 §2, R4): Given `pcfdlrm-test-support`'s contents, when reviewed, then it contains `FixtureLoader` and `WholePayloadMatcher` only — no `Comparison` class, and no Maven dependency on `uk.gov.moj.cpp.results:test-utilities`.
-- [ ] AC-T1-3 (traces to AC3): Given two calls to `ObjectBuilder` with identical arguments, when the outputs are compared, then they are byte-identical — no relative date, no random UUID in either.
-- [ ] AC-T1-4 (traces to R2, AC3): Given a call to `ObjectBuilder`, when the source system is supplied, then **both** `migrationSourceSystemName` and `migrationSourceSystemCaseIdentifier` are taken from the caller (via a small `SourceSystem` value type, not two more positional `String`s), with **no** defaulting overload.
-- [ ] AC-T1-5 (traces to R2, AC3): Given the 37 existing `ObjectBuilder` call sites, when migrated to the new signature, then every one states `migrationSourceSystemName` explicitly (baseline `XHIBIT`) — none relies on `TestConstants.SOURCE_SYSTEM_XHIBIT` as an implicit default, and none calls a deprecated overload.
-- [ ] AC-T1-6 (traces to AC8): Given the new module and the changed call sites, when `mvn clean install` runs, then it passes with no `src/main` file changed outside the reactor pom edits that add the new module.
+- [x] AC-T1-1 (traces to R4, AC8): Given the reactor pom(s), when `pcfdlrm-test-support` is added, then it is declared at `<scope>test</scope>` in every consuming module and no `src/main` file in any module changes. Met — confirmed 2026-08-12: all four consumers (`pcfdlrm-domain-aggregate`, `pcfdlrm-command-handler`, `pcfdlrm-event-processor`, `pcfdlrm-integration-test`) declare it at `<scope>test</scope>`.
+- [~] AC-T1-2 (traces to ADR-001 §2, R4): Given `pcfdlrm-test-support`'s contents, when reviewed, then it contains `FixtureLoader` and `WholePayloadMatcher` only — no `Comparison` class, and no Maven dependency on `uk.gov.moj.cpp.results:test-utilities`. **No `Comparison` class and no forbidden dependency — met.** But the module now also contains `ReflectionFieldInjector` (added by T3, to satisfy AC-T3-1's literal requirement that the `FieldUtils` factory live in `pcfdlrm-test-support`), so "contains `FixtureLoader` and `WholePayloadMatcher` only" is no longer literally true as of T3 — a deliberate, documented scope evolution, not a defect.
+- [x] AC-T1-3 (traces to AC3): Given two calls to `ObjectBuilder` with identical arguments, when the outputs are compared, then they are byte-identical — no relative date, no random UUID in either. Met — relied on throughout T2/T3 without further incident.
+- [x] AC-T1-4 (traces to R2, AC3): Given a call to `ObjectBuilder`, when the source system is supplied, then **both** `migrationSourceSystemName` and `migrationSourceSystemCaseIdentifier` are taken from the caller (via a small `SourceSystem` value type, not two more positional `String`s), with **no** defaulting overload. Met.
+- [x] AC-T1-5 (traces to R2, AC3): Given the 37 existing `ObjectBuilder` call sites, when migrated to the new signature, then every one states `migrationSourceSystemName` explicitly (baseline `XHIBIT`) — none relies on `TestConstants.SOURCE_SYSTEM_XHIBIT` as an implicit default, and none calls a deprecated overload. Met.
+- [x] AC-T1-6 (traces to AC8): Given the new module and the changed call sites, when `mvn clean install` runs, then it passes with no `src/main` file changed outside the reactor pom edits that add the new module. Met.
 
 #### Out of scope for this story
 - Building a `Comparison` helper class (listed in ADR-001, dropped per the design decision at [`02-design.md` § Foundations](./02-design.md#foundations)).
@@ -69,12 +69,12 @@ addition; ADR-001's duplicate-per-module fallback is not needed.
 - Rewriting any *assertion* at the 37 call sites — T1 only makes them compile against the new signature with explicit XHIBIT values; converting the surrounding test's assertions is T2/T3/T4's job.
 
 #### Definition of done
-- [ ] Code reviewed and approved.
-- [ ] `mvn clean install` passes.
-- [ ] ITs pass via `./runIntegrationTests.sh` with no material runtime increase (this task does not touch IT fixtures, but the IT baseline must stay green before T2–T4 build on it).
-- [ ] No `src/main` file changed in any module, except the reactor pom(s) gaining the new `pcfdlrm-test-support` module.
-- [ ] `FixtureLoader`/`WholePayloadMatcher` implement ADR-001 §1's JSONassert STRICT / anchored-enumerated-exclusion / wildcard-rejection semantics — confirmed against the ADR, not re-derived.
-- [ ] Jira sub-task updated with test evidence once created.
+- [x] Code reviewed and approved. Merged via PR #22 (commit `070a2cb`, "DD-43121: pcfdlrm-test-support module + deterministic ObjectBuilder") into `team/libra1`.
+- [x] `mvn clean install` passes.
+- [x] ITs pass via `./runIntegrationTests.sh` with no material runtime increase (this task does not touch IT fixtures, but the IT baseline must stay green before T2–T4 build on it).
+- [x] No `src/main` file changed in any module, except the reactor pom(s) gaining the new `pcfdlrm-test-support` module.
+- [x] `FixtureLoader`/`WholePayloadMatcher` implement ADR-001 §1's JSONassert STRICT / anchored-enumerated-exclusion / wildcard-rejection semantics — confirmed against the ADR, not re-derived.
+- [ ] Jira sub-task updated with test evidence once created. (Not verified from this session — no Jira access.)
 
 #### NFR links
 - None. Test-scoped code only; no user-facing surface, no accessibility, performance or security implications.
@@ -124,8 +124,8 @@ only for genuine collaborators (`ReferenceDataQueryService`, the three enrichers
 changes in this PR — its output (what the emitted events actually contain once the mocks are gone)
 decides the fixture shape for PR2 and PR3.
 
-- [ ] AC-PR1-1: Given the existing 39 test methods, when the deep-stub mocks are replaced with real POJOs, then every test still compiles, still passes, and asserts exactly what it asserted before this PR (no assertion rewritten).
-- [ ] AC-PR1-2: Given the de-mocked inputs, when an aggregate method's returned events are serialised via the framework `ObjectToJsonObjectConverter`, then serialisation succeeds — proving the inputs are real data, not further mocks.
+- [x] AC-PR1-1: Given the existing 39 test methods, when the deep-stub mocks are replaced with real POJOs, then every test still compiles, still passes, and asserts exactly what it asserted before this PR (no assertion rewritten). Met — committed as part of `9a1676a`.
+- [x] AC-PR1-2: Given the de-mocked inputs, when an aggregate method's returned events are serialised via the framework `ObjectToJsonObjectConverter`, then serialisation succeeds — proving the inputs are real data, not further mocks. Met.
 
 #### PR2 — Row harness, proven on the `:368` gate only
 Introduce the `@ParameterizedTest`/`@MethodSource` row shape and the one shared assertion block
@@ -133,8 +133,8 @@ Introduce the `@ParameterizedTest`/`@MethodSource` row shape and the one shared 
 exactly one gate: whether `MigratedCaseFileReceived` reaches the stream at all (`:368`) — R3's
 highest-value pin, invisible from state.
 
-- [ ] AC-PR2-1 (traces to AC1, AC2): Given the `:368` gate exercised both ways (source system that satisfies `isXhibit()` vs. one that does not), when the harness runs, then it asserts the returned `Stream<Object>`'s length, the type of each event in order, and each event's payload whole — with no aggregate getter (`getReceiveMigratedCaseFile`, `getMaterialsAdded`, `getMaterialsAddedPostProcessing`, `getMaterailsReadyForCourtDocuments`) appearing in the new assertion.
-- [ ] AC-PR2-2 (traces to AC4): Given the `:368` scenario, when the gate is deleted from production locally as a one-off check (not committed), then the new assertion fails — demonstrated in review, guarding against the vacuous-pin failure mode the design calls out.
+- [x] AC-PR2-1 (traces to AC1, AC2): Given the `:368` gate exercised both ways (source system that satisfies `isXhibit()` vs. one that does not), when the harness runs, then it asserts the returned `Stream<Object>`'s length, the type of each event in order, and each event's payload whole — with no aggregate getter (`getReceiveMigratedCaseFile`, `getMaterialsAdded`, `getMaterialsAddedPostProcessing`, `getMaterailsReadyForCourtDocuments`) appearing in the new assertion. Met — the row/harness shape this introduced is what PR3 then extended to the full suite.
+- [ ] AC-PR2-2 (traces to AC4): Given the `:368` scenario, when the gate is deleted from production locally as a one-off check (not committed), then the new assertion fails — demonstrated in review, guarding against the vacuous-pin failure mode the design calls out. **Not confirmed from available session records** — this is a live Stage-6 review-step demonstration, not something a commit or memory snapshot would capture; flag for the reviewer to re-confirm or explicitly waive rather than assumed done.
 
 #### PR3 — Remaining six gates, R3a's four new scenarios, R3b/R3c/R3d, cleanup
 Convert the rest of the suite to rows through the shared harness. Fail-fast paths first — nine of the
@@ -144,14 +144,14 @@ the right place to settle the fixture convention before the main path at `:378`.
 scenario blocks, deleting the ten vacuous `is(XHIBIT)` assertions and the ~25 getter assertions as each
 converts; write the four missing R3a scenarios; add the handler's whole-payload assert; land R3b/R3c/R3d.
 
-- [ ] AC-PR3-1 (traces to AC2): Given the completed conversion, when `MigratedCaseFileAggregateTest` is grepped for `getMaterialsAdded`, `getMaterialsAddedPostProcessing`, `getMaterailsReadyForCourtDocuments` and `getReceiveMigratedCaseFile`, then the grep returns **no assertion sites**.
-- [ ] AC-PR3-2 (traces to R3a, AC4): Given all seven `isXhibit()` gates (`:221, 282, 368, 423, 433, 554, 562`), when each is exercised on the XHIBIT path, then each has a scenario asserting the concrete effect — the exact problem raised or the exact emitted event — including the four new scenarios (`Invalid Prosecuting Authority` at `:221`; `INVALID_OFFENCE_CODE`, `MISSING_OR_INVALID_PLEA_DATE`, `MISSING_OR_INVALID_VERDICT_DATE` at `:433`), bringing the suite to **43** scenarios.
-- [ ] AC-PR3-3 (traces to R1, AC1): Given the ten `assertThat(…getMigrationSourceSystemName(), is(XHIBIT))` assertions (`MigratedCaseFileAggregateTest:373, 663, 701, 804, 1000, 1035, 1074, 1117, 1167, 1217`), when the conversion completes, then all ten are **deleted**, not left alongside the new assertions.
-- [ ] AC-PR3-4 (traces to AC1): Given `MigratedCaseFileHandlerTest`'s captured `CaseProcessingArgs`, when the assertion runs, then `captured.getReceiveMigratedCaseFile()` is asserted **whole** against a fixture, while `getSections()` and `getDocumentMetadataReferenceDataList()` remain the value assertions they already are (not wholly serialisable — they carry a `ReferenceDataQueryService` and enricher `Instance` lists).
-- [ ] AC-PR3-5 (traces to R3b, AC4): Given `ExhibitFiileTypeValidationRuleTest`, when the XHIBIT path is exercised, then both problem codes (`INVALID_FILE_TYPE_FOR_XHIBIT`, `INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION`) are pinned whole; existing non-XHIBIT references are left as they are.
-- [ ] AC-PR3-6 (traces to R3c, AC4): Given `ProsecutionCaseFileHelperTest`, when `applyRuleToDefendantFields()` runs on the XHIBIT path, then the normalised gender, language and ethnicity values are asserted whole.
-- [ ] AC-PR3-7 (traces to R3d, AC4): Given `CcProsecutionValidationRuleProviderTest`, when `getCaseValidationRules(initiationCode)` is called for `SUMMONS`, `REQUISITION`, `SJP` and the default, then each is asserted by **set equality** on the returned rule classes, not `anyMatch`.
-- [ ] AC-PR3-8 (traces to AC5): Given a hypothetical new source system added after this story, when a scenario for it is written, then it is confined to scenario data plus a fixture — no new test class, no change to a test method body.
+- [x] AC-PR3-1 (traces to AC2): Given the completed conversion, when `MigratedCaseFileAggregateTest` is grepped for `getMaterialsAdded`, `getMaterialsAddedPostProcessing`, `getMaterailsReadyForCourtDocuments` and `getReceiveMigratedCaseFile`, then the grep returns **no assertion sites**. Met — verified via grep at zero hits.
+- [~] AC-PR3-2 (traces to R3a, AC4): Given all seven `isXhibit()` gates (`:221, 282, 368, 423, 433, 554, 562`), when each is exercised on the XHIBIT path, then each has a scenario asserting the concrete effect — the exact problem raised or the exact emitted event — including the four new scenarios (`Invalid Prosecuting Authority` at `:221`; `INVALID_OFFENCE_CODE`, `MISSING_OR_INVALID_PLEA_DATE`, `MISSING_OR_INVALID_VERDICT_DATE` at `:433`), bringing the suite to **43** scenarios. All seven gates have a concrete scenario — met. **The "43 scenarios" count is NOT met** — `aggregateScenarios()` landed at **37**, real-execution-verified, every scenario either converted or confirmed already-compliant; the ~6-scenario gap was not chased with fabricated rows since nothing in the story or code pointed to what they should cover. Flagged for whoever closes the PR3 Jira sub-task.
+- [x] AC-PR3-3 (traces to R1, AC1): Given the ten `assertThat(…getMigrationSourceSystemName(), is(XHIBIT))` assertions (`MigratedCaseFileAggregateTest:373, 663, 701, 804, 1000, 1035, 1074, 1117, 1167, 1217`), when the conversion completes, then all ten are **deleted**, not left alongside the new assertions. Met — verified via grep at zero hits.
+- [x] AC-PR3-4 (traces to AC1): Given `MigratedCaseFileHandlerTest`'s captured `CaseProcessingArgs`, when the assertion runs, then `captured.getReceiveMigratedCaseFile()` is asserted **whole** against a fixture, while `getSections()` and `getDocumentMetadataReferenceDataList()` remain the value assertions they already are (not wholly serialisable — they carry a `ReferenceDataQueryService` and enricher `Instance` lists). Met.
+- [x] AC-PR3-5 (traces to R3b, AC4): Given `ExhibitFiileTypeValidationRuleTest`, when the XHIBIT path is exercised, then both problem codes (`INVALID_FILE_TYPE_FOR_XHIBIT`, `INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION`) are pinned whole; existing non-XHIBIT references are left as they are. Met — 11/11 tests green.
+- [x] AC-PR3-6 (traces to R3c, AC4): Given `ProsecutionCaseFileHelperTest`, when `applyRuleToDefendantFields()` runs on the XHIBIT path, then the normalised gender, language and ethnicity values are asserted whole. Met — 7/7 tests green (was 6, one new test added for the gender/language branches).
+- [x] AC-PR3-7 (traces to R3d, AC4): Given `CcProsecutionValidationRuleProviderTest`, when `getCaseValidationRules(initiationCode)` is called for `SUMMONS`, `REQUISITION`, `SJP` and the default, then each is asserted by **set equality** on the returned rule classes, not `anyMatch`. Met — 10/10 tests green (was 7).
+- [x] AC-PR3-8 (traces to AC5): Given a hypothetical new source system added after this story, when a scenario for it is written, then it is confined to scenario data plus a fixture — no new test class, no change to a test method body. Met — confirmed via existing evidence, not a hypothetical: the LIBRA scenario already in `gate368Scenarios()` is exactly this shape.
 
 #### Out of scope for this story
 - The non-XHIBIT path of every R3 gate, and the two `RefDataEnricher` branches (`PleaDataRefDataEnricher`, `VerdictDataRefDataEnricher`) — deferred to the LIBRA story; this story gives them no signal.
@@ -159,12 +159,12 @@ converts; write the four missing R3a scenarios; add the handler's whole-payload 
 - Adding a source-system axis to `CcProsecutionValidationRuleProvider` — this pins today's selection, it does not change it.
 
 #### Definition of done (applies to each of the 3 PRs individually)
-- [ ] Code reviewed and approved — each PR is small enough for a reviewer to hold in their head; a 1,659-line single diff is a review failure, not a deliverable.
-- [ ] `mvn clean install` passes.
-- [ ] ITs pass via `./runIntegrationTests.sh` with no material runtime increase.
-- [ ] No `src/main` file changed.
-- [ ] For PR3 specifically: all ACs above satisfied, and the AC-PR3-1 grep result recorded as test evidence on the Jira sub-task.
-- [ ] Jira sub-task updated with test evidence per PR.
+- [x] Code reviewed and approved — each PR is small enough for a reviewer to hold in their head; a 1,659-line single diff is a review failure, not a deliverable. Stage 6 review found one blocker (B1: non-deterministic `LocalDate.now()` plea dates baked into static fixtures), fixed in `fab066e`; a related GMT/BST hearing-date time-bomb found during triage was fixed in `d4654f2`. Approved after fixes.
+- [x] `mvn clean install` passes.
+- [x] ITs pass via `./runIntegrationTests.sh` with no material runtime increase. Confirmed cumulatively — the 25/25 IT run recorded under T3 and re-confirmed under T4 both ran against a tree that includes T2's commits.
+- [x] No `src/main` file changed.
+- [~] For PR3 specifically: all ACs above satisfied, and the AC-PR3-1 grep result recorded as test evidence on the Jira sub-task. AC-PR3-1/3/4/5/6/7/8 satisfied; AC-PR3-2's scenario count is the one open gap (37 vs. 43 target, see above) — everything else met.
+- [ ] Jira sub-task updated with test evidence per PR. (Not verified from this session — no Jira access.)
 
 #### NFR links
 - None. Test-scoped code only.
@@ -236,12 +236,12 @@ payload and the renamed `progression.initiate-court-proceedings` metadata from w
 - AC7's deliberate-break demonstration (stage 6 review step, not owned by this story).
 
 #### Definition of done
-- [ ] Code reviewed and approved.
-- [ ] `mvn clean install` passes.
-- [ ] ITs pass via `./runIntegrationTests.sh` with no material runtime increase.
-- [ ] No `src/main` file changed.
-- [ ] Jacoco 100%-method-coverage measurement (converter package, per-converter tests excluded) and the fixture-vs-Progression-schema cross-check both recorded as evidence on the Jira sub-task — one-off measurements at the gate, not build gates.
-- [ ] Jira sub-task updated with test evidence.
+- [x] Code reviewed and approved. Stage 6 review found 4 blockers, all fixed and real-execution-verified: B1 (`sender.sendAsAdmin` verification silently dropped when the mocked test was rewritten around the real converter tree — also surfaced an overload-resolution gotcha, see PR notes), B2 (public event name asserted against the same production constant it should be checking — a tautology), B3 (the "100%" coverage below was a stale-`jacoco.exec` artifact), B4 (`withHearingInput()` modelled a hearing shape the aggregate can no longer produce, post-DD-42991). Approved after fixes.
+- [x] `mvn clean install` passes.
+- [x] ITs pass via `./runIntegrationTests.sh` with no material runtime increase. 25/25 (`AddMaterialIT`: 1, `ReceiveMigratedCaseFileIT`: 24).
+- [~] No `src/main` file changed. **One exception, deliberate:** `ReflectionFieldInjector.java`, new in `pcfdlrm-test-support/src/main/java/...` — added to satisfy AC-T3-1's literal requirement that the `FieldUtils` factory live in `pcfdlrm-test-support`, not in the six-converter-classes production modules. That module is never packaged into the service WAR, so this doesn't touch the deployed service, but it is technically a new `src/main` file and the AC wording should be read with that caveat.
+- [~] Jacoco 100%-method-coverage measurement (converter package, per-converter tests excluded) and the fixture-vs-Progression-schema cross-check both recorded as evidence on the Jira sub-task — one-off measurements at the gate, not build gates. Schema cross-check met. Coverage NOT 100% — see AC-T3-6's real numbers (76% methods / 45% branches), recorded rather than forced.
+- [ ] Jira sub-task updated with test evidence. (Not verified from this session — no Jira access.)
 
 #### NFR links
 - None. Test-scoped code only; the payload contract asserted is unchanged, not altered.
