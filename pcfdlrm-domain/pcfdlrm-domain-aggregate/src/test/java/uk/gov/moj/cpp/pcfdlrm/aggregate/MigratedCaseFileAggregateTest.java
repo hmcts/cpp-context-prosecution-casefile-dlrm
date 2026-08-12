@@ -184,15 +184,17 @@ class MigratedCaseFileAggregateTest {
                 matchesWholePayload(fixture("json/xhibit/aggregate/migrated-case-not-found-in-automation.json"), List.of()));
     }
 
-    /** Fixed IDs, not {@code randomUUID()} — a MaterialAdded event carries whichever entry matched, so a random ID here made every fixture built on it non-deterministic. */
+    /**
+     * Fixed ID, not {@code randomUUID()} — a {@code MaterialAdded} event carries whichever entry
+     * matched, so a random ID here made every fixture built on it non-deterministic. Every material
+     * in this test class uses {@code fileType "99"}, which {@code getSections()} maps to
+     * {@code ("PSJH", "Private section - Judges & HMCTS")} — {@code CCDocumentTypeValidationRule}
+     * matches on the {@code section} string, so this is the only entry any test can ever resolve to.
+     */
     private static List<DocumentTypeAccessReferenceData> getDocumentMetadataReferenceDataList() {
         return List.of(
-                new DocumentTypeAccessReferenceData(false, null, "Case level",
-                        UUID.fromString("d1d1d1d1-1111-4111-8111-111111111111"), "Witness Statements", "WS", null, null, null),
                 new DocumentTypeAccessReferenceData(false, null, "Defendant level",
-                        UUID.fromString("d2d2d2d2-2222-4222-8222-222222222222"), "Private section - Judges & HMCTS", "PSJH", null, null, null),
-                new DocumentTypeAccessReferenceData(false, null, "Case level",
-                        UUID.fromString("d3d3d3d3-3333-4333-8333-333333333333"), "IDPC Bundle", "IDPC", null, null, null));
+                        UUID.fromString("d2d2d2d2-2222-4222-8222-222222222222"), "Private section - Judges & HMCTS", "PSJH", null, null, null));
     }
 
 
@@ -685,8 +687,8 @@ class MigratedCaseFileAggregateTest {
      * docs/pipeline/DD-43067-DD-43099-pcfdlrm-test-hardening/03-stories.md, Aggregate scenario
      * harness). Every scenario supplies its own fully-built {@link ReceiveMigratedCaseFile} and
      * {@link ProsecutionWithReferenceData} — the harness makes no assumption about what varies
-     * between rows, so it serves the {@code :368} gate proof (PR2) and the fail-fast rows (PR3)
-     * alike. Broadening to the main path is PR3's remaining job.
+     * between rows, so it serves the {@code isXhibit()} gate proof (PR2) and the fail-fast rows
+     * (PR3) alike. Broadening to the main path is PR3's remaining job.
      */
     private record ExpectedEvent(Class<?> type, String fixture, List<String> exclusions) {
         private ExpectedEvent(final Class<?> type, final String fixture) {
@@ -704,11 +706,11 @@ class MigratedCaseFileAggregateTest {
     }
 
     private static Stream<AggregateScenario> aggregateScenarios() {
-        return Stream.of(gate368Scenarios(), failFastScenarios(), gate433OffenceProblemScenarios(), materialsMainPathScenarios(), defendantProblemsScenarios(), pleaScenarios(), genderCourtMarkerScenarios())
+        return Stream.of(isXhibitGateScenarios(), failFastScenarios(), hasOffenceProblemsGateScenarios(), materialsMainPathScenarios(), defendantProblemsScenarios(), pleaScenarios(), genderCourtMarkerScenarios())
                 .flatMap(s -> s);
     }
 
-    private static Stream<AggregateScenario> gate368Scenarios() {
+    private static Stream<AggregateScenario> isXhibitGateScenarios() {
         final List<ExpectedEvent> defendantValidationNoise = List.of(
                 new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-no-materials.json"),
                 new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, "json/xhibit/aggregate/migrated-case-validated-with-warnings-ethnicity-no-materials.json"),
@@ -722,11 +724,11 @@ class MigratedCaseFileAggregateTest {
         xhibitExpectedNullMaterials.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/xhibit/aggregate/migrated-case-file-received-no-materials-null.json"));
 
         return Stream.of(
-                new AggregateScenario(":368 gate open — XHIBIT satisfies isXhibit(), MigratedCaseFileReceived reaches the stream",
+                new AggregateScenario("isXhibit() true for XHIBIT — MigratedCaseFileReceived reaches the stream",
                         noMaterialsInput(sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER)), xhibitExpected),
-                new AggregateScenario(":368 gate closed — LIBRA fails isXhibit(), MigratedCaseFileReceived is withheld",
+                new AggregateScenario("isXhibit() false for LIBRA — MigratedCaseFileReceived is withheld",
                         noMaterialsInput(sourceSystem("LIBRA", "LIBRA-123")), defendantValidationNoise),
-                new AggregateScenario("No materials present — materials list is null rather than empty, same gate-368 outcome",
+                new AggregateScenario("No materials present — materials list is null rather than empty, same isXhibit() outcome",
                         nullMaterialsInput(), xhibitExpectedNullMaterials)
         );
     }
@@ -747,8 +749,9 @@ class MigratedCaseFileAggregateTest {
 
     /**
      * The nine cheapest, single-event fail-fast paths (03-stories.md PR3 background) — eight
-     * converted from scenarios that already existed, one ("Invalid Prosecuting Authority", gate
-     * :221) new: it did not exist before this story (02-design.md, Coverage).
+     * converted from scenarios that already existed, one ("Invalid Prosecuting Authority",
+     * {@code hasInvalidProsecutingAuthority()}) new: it did not exist before this story
+     * (02-design.md, Coverage).
      */
     private static Stream<AggregateScenario> failFastScenarios() {
         return Stream.of(
@@ -776,7 +779,7 @@ class MigratedCaseFileAggregateTest {
                 new AggregateScenario("Hearing defendant matches but no offences match — No matching defendants with hearings found for the hearing",
                         hearingDefendantMatchesNoOffencesInput(),
                         List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-hearing-defendant-matches-no-offences.json"))),
-                new AggregateScenario("Invalid Prosecuting Authority (gate :221 — new scenario)",
+                new AggregateScenario("Invalid Prosecuting Authority — hasInvalidProsecutingAuthority() (new scenario)",
                         invalidProsecutingAuthorityInput(),
                         List.of(new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-invalid-prosecuting-authority.json")))
         );
@@ -843,23 +846,23 @@ class MigratedCaseFileAggregateTest {
     }
 
     /**
-     * The three remaining R3a scenarios behind the {@code hasOffenceProblems} gate at {@code :433}
-     * — none existed before this story (02-design.md, Coverage). Each is a defendant-level offence
-     * problem the aggregate turns into a single fail-fast {@link MigratedCaseFileProcessed}, but only
-     * after {@code validateDefendantErrors} has already added one {@link DefendantValidationFailed}
-     * for the same defendant — hence two events, not one.
+     * The three remaining R3a scenarios behind the {@code hasOffenceProblems()} gate — none existed
+     * before this story (02-design.md, Coverage). Each is a defendant-level offence problem the
+     * aggregate turns into a single fail-fast {@link MigratedCaseFileProcessed}, but only after
+     * {@code validateDefendantErrors} has already added one {@link DefendantValidationFailed} for
+     * the same defendant — hence two events, not one.
      */
-    private static Stream<AggregateScenario> gate433OffenceProblemScenarios() {
+    private static Stream<AggregateScenario> hasOffenceProblemsGateScenarios() {
         return Stream.of(
-                new AggregateScenario("Invalid offence code (gate :433 — new scenario)",
+                new AggregateScenario("Invalid offence code — hasOffenceProblems()/hasInvalidOffenceCode() (new scenario)",
                         invalidOffenceCodeInput(),
                         List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-invalid-offence-code.json"),
                                 new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-invalid-offence-code.json"))),
-                new AggregateScenario("Guilty plea missing plea date (gate :433 — new scenario)",
+                new AggregateScenario("Guilty plea missing plea date — hasOffenceProblems()/hasInvalidPleaDate() (new scenario)",
                         missingPleaDateInput(),
                         List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-missing-plea-date.json"),
                                 new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-missing-plea-date.json"))),
-                new AggregateScenario("Verdict missing verdict date (gate :433 — new scenario)",
+                new AggregateScenario("Verdict missing verdict date — hasOffenceProblems()/hasInvalidVerdictDate() (new scenario)",
                         missingVerdictDateInput(),
                         List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/xhibit/aggregate/defendant-validation-failed-missing-verdict-date.json"),
                                 new ExpectedEvent(MigratedCaseFileProcessed.class, "json/xhibit/aggregate/migrated-case-file-processed-missing-verdict-date.json")))
