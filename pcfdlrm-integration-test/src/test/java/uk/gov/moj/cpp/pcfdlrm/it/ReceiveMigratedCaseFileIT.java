@@ -66,8 +66,8 @@ class ReceiveMigratedCaseFileIT {
     public static Stream<Arguments> data() {
         return Stream.of(
                 Arguments.of("command-json/pcfdlrm.command.receive-migrated-case-file.json", new String[]{"1"}, "99"),
-                Arguments.of("command-json/pcfdlrm.command.receive-multiple-hearing-migrated-case-file.json", new String[]{"3", "4"}, "99"),
-                Arguments.of("command-json/pcfdlrm.command.receive-multiple-hearing-wc-migrated-case-file.json", new String[]{"5", "6"},"99"),
+                Arguments.of("command-json/pcfdlrm.command.receive-multiple-hearing-migrated-case-file.json", new String[]{"3", "4"}, "9"),
+                Arguments.of("command-json/pcfdlrm.command.receive-multiple-hearing-wc-migrated-case-file.json", new String[]{"5", "6"},"9"),
                 Arguments.of("command-json/pcfdlrm.command.receive-migrated-case-file-xhibit.json", new String[]{"7"},"99"),
                 Arguments.of("command-json/pcfdlrm.command.receive-migrated-case-file-xhibit-custody.json", new String[]{"9"}, "99"),
                 Arguments.of("command-json/pcfdlrm.command.receive-multiple-hearing-migrated-complex-case-file.json", new String[]{"17"},"99"),

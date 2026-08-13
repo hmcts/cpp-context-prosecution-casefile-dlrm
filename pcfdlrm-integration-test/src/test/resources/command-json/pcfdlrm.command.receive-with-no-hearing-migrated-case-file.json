@@ -104,7 +104,7 @@
       }
     ],
     "migrationSourceSystem" :{
-      "migrationSourceSystemName" : "XHIBIT",
+      "migrationSourceSystemName" : "LIBRA",
       "migrationSourceSystemCaseIdentifier" : "This is from Libra"
     }
   },

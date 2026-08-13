@@ -165,6 +165,16 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
                 });
 
         if(filepathIndexOne.length > 1 ){
+            await()
+                    .untilAsserted(() -> {
+                        final JsonEnvelope secondMaterialAddedEnvelop = addMaterialHelper.verifyInMessagingQueue(materialAddedEventProcessConsumer);
+
+                        assertThat(secondMaterialAddedEnvelop, jsonEnvelope(metadata().withName(MATERIAL_ADDED_EVENT), payload().isJson(allOf(
+                                withJsonPath("material.fileCloudLocation", is("http://inazure/secrets/" + filepathIndexOne[1])),
+                                withJsonPath("material.fileType", is(fileType))
+                        ))));
+                    });
+
             addMaterialHelper.verifyUploadMaterialCalled("http://inazure/secrets/" + filepathIndexOne[1]);
         }
 

@@ -9,8 +9,7 @@
       "prosecutor": {
 
         "prosecutingAuthority": "prosAut"
-      },
-      "receiptType": "Either way case"
+      }
     },
     "hearings": [
       {
@@ -45,12 +44,6 @@
             "prosecutorDefendantId": "a9860e1a-8695-4fd4-8046-c1c4fe6c7f80",
             "listedOffences": [
               "LIBRA-offence-id-2"
-            ]
-          },
-          {
-            "prosecutorDefendantId": "a9860e1a-8695-4fd4-8046-c1c4fe6c7f81",
-            "listedOffences": [
-              "XHIBIT-offence-id-3"
             ]
           }
         ]
@@ -124,7 +117,7 @@
             }
           },
           {
-            "offenceCode": "OFCODE12",
+            "offenceCode": "OFCODE13",
             "offenceId": "550e8400-e29b-41d4-a716-446655440002",
             "prosecutorOffenceId": "LIBRA-offence-id-2",
             "offenceSequenceNumber": 1,
@@ -146,79 +139,10 @@
           }
         ],
         "postingDate": "2018-09-10"
-      },
-      {
-        "id": "9824e40f-0289-4221-8854-346eb28c8f28",
-        "prosecutorDefendantId": "a9860e1a-8695-4fd4-8046-c1c4fe6c7f81",
-        "prosecutorDefendantReference": "DEFENDANT_REFERENCE2",
-        "documentationLanguage": "W",
-        "hearingLanguage": "W",
-        "custodyStatus": "B",
-        "numPreviousConvictions": 0,
-        "individual": {
-          "personalInformation": {
-            "title": "Mr",
-            "firstName": "Jane",
-            "lastName": "Doe",
-            "occupation": "Software Developer",
-            "occupationCode": 43,
-            "address": {
-              "address1": "66 Exeter Street",
-              "address2": "line 2",
-              "address3": "line 3",
-              "address4": "line 4",
-              "address5": "line 5",
-              "postcode": "M60 1NW"
-            },
-            "contactDetails": {
-              "work": "020111222",
-              "home": "020111223",
-              "mobile": "07572222943",
-              "primaryEmail": "jane.doe@mail.com",
-              "secondaryEmail": "jane.doe2@mail.com"
-            }
-          },
-          "selfDefinedInformation": {
-            "gender": "FEMALE"
-          },
-          "parentGuardianInformation": {
-            "selfDefinedEthnicity": "W1",
-            "observedEthnicity": "1",
-            "gender": "FEMALE",
-            "dateOfBirth": "2015-04-04",
-            "personalInformation": {
-              "lastName": "Doe"
-            }
-          }
-        },
-        "offences": [
-          {
-            "offenceCode": "OFCODE12",
-            "offenceId": "550e8400-e29b-41d4-a716-446655440003",
-            "prosecutorOffenceId": "XHIBIT-offence-id-3",
-            "offenceSequenceNumber": 1,
-            "offenceCommittedDate": "2018-09-10",
-            "offenceCommittedEndDate": "2018-10-10",
-            "offenceDateCode": 1,
-            "offenceLocation": "Croydon",
-            "offenceWording": "TV Licence not paid",
-            "chargeDate": "2019-01-10",
-            "appliedCompensation": 200,
-            "alcoholRelatedOffence": {
-              "alcoholLevelMethod": "A",
-              "alcoholLevelAmount": 100
-            },
-            "vehicleRelatedOffence": {
-              "vehicleCode": "O",
-              "vehicleRegistrationMark": "AA11 ABC"
-            }
-          }
-        ],
-        "postingDate": "2018-09-10"
       }
     ],
     "migrationSourceSystem" :{
-      "migrationSourceSystemName" : "XHIBIT",
+      "migrationSourceSystemName" : "LIBRA",
       "migrationSourceSystemCaseIdentifier" : "This is from Libra"
     }
   },
@@ -227,14 +151,14 @@
       "id": "550e8400-e29b-41d4-a716-446655440001",
       "azureLocation": "http://inazure/secrets/5",
       "fileName": "abc.pdf",
-      "fileType": "99",
+      "fileType": "9",
       "documentType": 2
     },
     {
       "id": "550e8400-e29b-41d4-a716-446655440000",
       "azureLocation": "http://inazure/secrets/6",
-      "fileName": "def.pdf",
-      "fileType": "99",
+      "fileName": "PDF document",
+      "fileType": "9",
       "documentType": 9
     }
   ],

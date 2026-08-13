@@ -286,11 +286,65 @@ whole-payload comparison; the `withRequestBody(containing(...))` WireMock filter
 request stays — that is request *selection*, not assertion.
 
 #### Acceptance criteria
-- [x] AC-T4-1 (traces to AC6): Given the three command fixtures listed above, when they are inspected, then none sets `migrationSourceSystemName` to `LIBRA` — all three resolve to `XHIBIT`. Met: all three flipped. Note: `pcfdlrm.command.receive-with-no-hearing-migrated-case-file.json` turned out to be an orphan — not loaded by any IT (`ReceiveMigratedCaseFileIT` or `AddMaterialIT`) — so re-pointing it was a no-op for coverage; flagging rather than silently leaving it out, since the AC itself only requires the field value, not that the fixture be exercised.
+- [~] AC-T4-1 (traces to AC6): Given the three command fixtures listed above, when they are inspected, then none sets `migrationSourceSystemName` to `LIBRA` — all three resolve to `XHIBIT`. Met at the time: all three flipped. Note: `pcfdlrm.command.receive-with-no-hearing-migrated-case-file.json` turned out to be an orphan — not loaded by any IT (`ReceiveMigratedCaseFileIT` or `AddMaterialIT`) — so re-pointing it was a no-op for coverage; flagging rather than silently leaving it out, since the AC itself only requires the field value, not that the fixture be exercised. **Superseded 2026-08-13 — reverted, see "Post-completion reversal" below.**
 - [x] AC-T4-2 (traces to the design's explicit decision): Given the same three fixtures, when `prosecutorOffenceId` values are inspected, then any value containing the literal string `LIBRA` is left unchanged. Met — verified via grep, untouched in all three files.
 - [x] AC-T4-3 (traces to R1, AC1): Given the `initiatecourtproceedings` WireMock request captured by an IT, when the assertion runs, then it compares the **whole** captured request body against a fixture (STRICT, individually enumerated exclusions), replacing the three `withJsonPath` assertions; the `withRequestBody(containing(...))` selector is retained unchanged for request selection. Met: `ReceiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiated`/`...WithAllocationDecision` rewritten to compare `envelope.payloadAsJsonObject().toString()` against a real-execution-captured fixture via `WholePayloadMatcher` (reused from `pcfdlrm-test-support`, added as a new test-scope dependency to `pcfdlrm-integration-test`). Six fixtures under `src/test/resources/json/xhibit/initiate-court-proceedings/` (`retrial-true`, `retrial-false`, `allocation-no-decision`, `allocation-with-decision`, `allocation-with-indictable-decision`, `no-material` — the last shared by two call sites with byte-identical shape). One exclusion list, six paths, applied uniformly (single-defendant scenarios): `prosecutionCases[0].id`, `.prosecutionCaseIdentifier.caseURN`, `.defendants[0].id`, `.defendants[0].masterDefendantId`, `.defendants[0].prosecutionCaseId`, `.defendants[0].courtProceedingsInitiated` — the only genuinely non-deterministic fields (random per-test-run IDs and `ZonedDateTime.now()`); no `listHearingRequests` appeared in any of the five captured shapes, so no hearing-date exclusion was needed here (unlike T2/T3). `JsonEnvelopePayloadMatcher.isJson(...)` only accepts a JsonPath-flavoured `Matcher<? super ReadContext>`, not a plain `Matcher<String>`, so `WholePayloadMatcher` couldn't compose with it directly — metadata name is asserted separately via `envelope.metadata().name()` instead of the `jsonEnvelope(metadata(), payload())` combinator.
-- [x] AC-T4-4 (traces to the design's canary note): Given the three re-pointed ITs, when they are run, then no existing assertion result changes as a consequence of re-pointing alone; if one does, it is raised as a real behavioural difference between source systems, not absorbed into a fixture. **Real differences were found and raised, then resolved as genuine XHIBIT-validity fixes (not silently absorbed):** re-pointing `receive-multiple-hearing-migrated-case-file.json` and the `-wc-` variant (the two of the three fixtures actually exercised, by `ReceiveMigratedCaseFileIT#receiveMigratedCaseFile`) surfaced five XHIBIT-only validation gates that LIBRA had always skipped or downgraded to a warning: (1) `fileType` must be `"99"` (was `"9"`); (2) second material's `fileName` must end in `.pdf` (was `"PDF document"`); (3) `materials.size() <= defendants.size()` (2 materials, was 1 defendant — fixed by adding a second defendant with its own offence, at the user's explicit direction, after first trying and rejecting a drop-to-1-material alternative); (4) `caseDetails.receiptType` must be a valid value (was unset — added `"Either way case"`, the convention used by every other XHIBIT fixture in this module); (5) the pre-existing offence's `offenceCode: "OFCODE13"` was never actually valid against the WireMock reference-data stub (which only ever returns `"OFCODE12"`) — silently downgraded to a warning under LIBRA, fatal under XHIBIT; fixed to `"OFCODE12"`, at the user's explicit direction to reuse an existing valid XHIBIT offence code rather than register a new one. `receive-with-no-hearing-migrated-case-file.json` (the third fixture) triggers none of this — see AC-T4-1's note.
+- [~] AC-T4-4 (traces to the design's canary note): Given the three re-pointed ITs, when they are run, then no existing assertion result changes as a consequence of re-pointing alone; if one does, it is raised as a real behavioural difference between source systems, not absorbed into a fixture. **Real differences were found and raised, then resolved as genuine XHIBIT-validity fixes (not silently absorbed) — at the time:** re-pointing `receive-multiple-hearing-migrated-case-file.json` and the `-wc-` variant (the two of the three fixtures actually exercised, by `ReceiveMigratedCaseFileIT#receiveMigratedCaseFile`) surfaced five XHIBIT-only validation gates that LIBRA had always skipped or downgraded to a warning: (1) `fileType` must be `"99"` (was `"9"`); (2) second material's `fileName` must end in `.pdf` (was `"PDF document"`); (3) `materials.size() <= defendants.size()` (2 materials, was 1 defendant — fixed by adding a second defendant with its own offence, at the user's explicit direction, after first trying and rejecting a drop-to-1-material alternative); (4) `caseDetails.receiptType` must be a valid value (was unset — added `"Either way case"`, the convention used by every other XHIBIT fixture in this module); (5) the pre-existing offence's `offenceCode: "OFCODE13"` was never actually valid against the WireMock reference-data stub (which only ever returns `"OFCODE12"`) — silently downgraded to a warning under LIBRA, fatal under XHIBIT; fixed to `"OFCODE12"`, at the user's explicit direction to reuse an existing valid XHIBIT offence code rather than register a new one. `receive-with-no-hearing-migrated-case-file.json` (the third fixture) triggers none of this — see AC-T4-1's note. **Superseded 2026-08-13 — these XHIBIT-validity fixes were reverted along with the re-pointing itself, see "Post-completion reversal" below.**
 - [x] AC-T4-5 (traces to R4, AC8): Given the full IT suite, when run via `./runIntegrationTests.sh`, then it passes with **no new journey** added, **no unit-level scenario ported down**, and no material runtime increase. Met: full suite (25/25 — `AddMaterialIT`: 1, `ReceiveMigratedCaseFileIT`: 24) green, re-confirmed after every fixture fix; no new `@Test`/`@ParameterizedTest` row added anywhere, no aggregate/converter-level scenario ported down into an IT.
+
+#### Post-completion reversal (2026-08-13)
+
+After this story was marked done and reviewed, AC-T4-1 and AC-T4-4 were **reverted** at the story
+owner's explicit direction. Recorded precisely, since the ACs above still describe the pre-reversal
+state as "Met":
+
+- **What was reverted**: `pcfdlrm.command.receive-multiple-hearing-migrated-case-file.json`,
+  `pcfdlrm.command.receive-multiple-hearing-wc-migrated-case-file.json` and
+  `pcfdlrm.command.receive-with-no-hearing-migrated-case-file.json` are back to
+  `"migrationSourceSystemName": "LIBRA"`. The two XHIBIT-validity fixes AC-T4-4 made to unblock the
+  re-pointed versions — `fileType` `"9"`→`"99"`, second material `fileName` ending `.pdf`, the added
+  second defendant/offence, `caseDetails.receiptType`, and `offenceCode` `OFCODE13`→`OFCODE12` — went
+  with it. `ReceiveMigratedCaseFileIT#data()` reverted to expecting `fileType "9"` for these two
+  fixtures, i.e. back to the pre-T4 `verifyReceiveMigratedCaseFileForMultipleMaterial` partial checks.
+  AC-T4-2, AC-T4-3 and AC-T4-5 are unaffected — the whole-payload mechanism itself, and the six XHIBIT
+  `initiatecourtproceedings` fixtures/scenarios it protects (`retrial-true`, `retrial-false`,
+  `allocation-no-decision`, `allocation-with-decision`, `allocation-with-indictable-decision`,
+  `no-material`), are untouched.
+
+- **Why reverted, precisely**: these three fixtures were the IT suite's only LIBRA-sourced journeys.
+  Re-pointing them to XHIBIT did not add any incremental XHIBIT signal — the XHIBIT boundary this
+  story exists to pin was already fully covered by the five `-xhibit`-suffixed rows already in
+  `data()` plus the six `initiatecourtproceedings` whole-payload fixtures, none of which depend on
+  these three files. What re-pointing *did* do was delete the only IT-level regression coverage LIBRA
+  had, on the reasoning (AC6, the design's "convert, don't duplicate" decision) that LIBRA IT coverage
+  was out of scope for this story anyway. On review, the story owner judged that reasoning backwards:
+  an existing, working LIBRA regression test is not the same thing as "LIBRA has no coverage" — deleting
+  it to satisfy an out-of-scope declaration removed real, working coverage the team already had, for a
+  behavioural difference (XHIBIT's stricter `fileType`/`receiptType`/offence-code validation) that these
+  three fixtures were never testing for and were never meant to test for.
+
+- **Why a whole-payload LIBRA replacement was considered and rejected, not just "deferred"**: once the
+  LIBRA content was restored, the natural next question was whether to also add
+  `initiatecourtproceedings` whole-payload coverage for the two exercised LIBRA fixtures, matching
+  AC-T4-3's mechanism. Rejected for this story, for reasons distinct from "not enough time":
+  1. It is explicitly out-of-scope by this story's own design — "any LIBRA scenario at either test
+     layer" is listed under **Out of scope for this story** below, and was already true before this
+     reversal.
+  2. It would be new IT scope, not a fix — a whole-payload assertion for a multi-hearing,
+     multi-defendant shape that none of the six existing XHIBIT `initiatecourtproceedings` fixtures
+     cover (all six are single-defendant, single-hearing-or-none; AC-T4-3 notes "no `listHearingRequests`
+     appeared in any of the five captured shapes"). Building it would need `CASE_URN` templating changes
+     to fixtures that don't currently have them, a real Docker-based capture run to establish the
+     expected payload, and a new hearing-array exclusion this story never needed — none of that is
+     "finish what's half-done," it is a new capability.
+  3. This story's job is to pin the **XHIBIT** wire-level boundary (its own title: "XHIBIT-only
+     fixtures, whole-payload boundary check"). LIBRA's IT-level boundary belongs to the epic this story
+     sits under (DD-43067, "LIBRA enabler") when that work is actually picked up — not to this story,
+     retrofitted after the fact.
+  - Net effect, agreed explicitly: it is acceptable for LIBRA IT coverage to stay at its pre-existing,
+    partial-field level and to break later when LIBRA is properly brought in under its own story; it is
+    not acceptable for XHIBIT's whole-payload boundary check to regress. This reversal changes nothing
+    about the XHIBIT side.
 
 #### Out of scope for this story
 - Any new IT journey.
