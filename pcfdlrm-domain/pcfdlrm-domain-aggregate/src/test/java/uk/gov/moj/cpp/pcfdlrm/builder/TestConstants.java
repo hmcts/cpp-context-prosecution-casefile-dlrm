@@ -11,6 +11,6 @@ public class TestConstants {
     public static final String SOURCE_SYSTEM_XHIBIT = "XHIBIT";
     public static final String SOURCE_SYSTEM_XHIBIT_IDENDIFIER = "XHIBIT-123";
     public static final UUID CASE_ID = fromString("a4391799-f828-4515-a355-61f1d5d9690c");
-
+    public static final UUID SUBMISSION_ID = fromString("e3e3e3e3-3333-4333-8333-333333333333");
 
 }

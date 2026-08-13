@@ -77,7 +77,7 @@ class MigratedCaseFileProcessedProcessorTest {
 
         final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter(new ObjectMapperProducer().objectMapper());
         assertThat(objectToJsonObjectConverter.convert(sent.payload()).toString(),
-                matchesWholePayload(fixture("json/xhibit/migrated-case-file-processed-processor/public-migrated-case-file-processed.json"), of()));
+                matchesWholePayload(fixture("json/migrated-case-file-processed-processor/public-migrated-case-file-processed.json"), of()));
     }
 
     @Test

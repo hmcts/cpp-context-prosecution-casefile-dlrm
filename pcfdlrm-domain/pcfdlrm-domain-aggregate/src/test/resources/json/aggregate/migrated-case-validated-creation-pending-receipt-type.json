@@ -30,7 +30,7 @@
   },
   "prosecutionWithReferenceData": {
     "prosecution": {
-      "caseDetails": { "receiptType": "Indictable" },
+      "caseDetails": { "receiptType": "{{receiptType}}" },
       "channel": "DLRM_MIGRATION",
       "defendants": [
         {

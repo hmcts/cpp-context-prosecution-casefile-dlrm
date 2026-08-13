@@ -26,11 +26,10 @@
       "hearings": [
         {
           "courtHearingLocation": "C50EX00",
-          "courtRoomId": 235,
           "dateOfHearing": "EXCLUDED",
           "hearingType": "SIT",
           "listedDefendants": [ { "listedOffences": [], "prosecutorDefendantId": "DEF-001" } ],
-          "timeOfHearing": "09:00:00"
+          "timeOfHearing": "{{timeOfHearing}}"
         }
       ],
       "migrationSourceSystem": { "migrationSourceSystemCaseIdentifier": "XHIBIT-123", "migrationSourceSystemName": "XHIBIT" }
@@ -67,7 +66,7 @@
         "caseMarkers": [],
         "observedEthnicityReferenceData": [],
         "vehicleCodesReferenceData": [],
-        "organisationUnitWithCourtroomsReferenceData": { "courtrooms": [ { "courtroomId": 235 } ] },
+        "organisationUnitWithCourtroomsReferenceData": { "courtrooms": [] },
         "offenderCodeReferenceData": [],
         "bailStatusReferenceData": [],
         "modeOfTrialReasonsReferenceData": [],
@@ -75,11 +74,10 @@
       },
       "migratedHearing": {
         "courtHearingLocation": "C50EX00",
-        "courtRoomId": 235,
         "dateOfHearing": "EXCLUDED",
         "hearingType": "SIT",
         "listedDefendants": [ { "listedOffences": [], "prosecutorDefendantId": "DEF-001" } ],
-        "timeOfHearing": "09:00:00"
+        "timeOfHearing": "{{timeOfHearing}}"
       },
       "migratedDefendantWithOffences": [
         {
