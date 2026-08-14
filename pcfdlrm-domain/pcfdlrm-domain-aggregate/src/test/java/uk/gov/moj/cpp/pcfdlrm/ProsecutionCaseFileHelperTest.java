@@ -48,7 +48,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ProsecutionCaseFileHelperTest {
-
     @Mock
     private List<MigratedHearingRefDataEnricher> enrichers;
 
@@ -247,11 +246,6 @@ class ProsecutionCaseFileHelperTest {
                 "json/prosecution-case-file-helper/migrated-defendant-gender-and-language-normalised.json");
     }
 
-    private static void assertMigratedDefendantMatchesFixture(final MigratedDefendant defendant, final String fixturePath) {
-        final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter(new ObjectMapperProducer().objectMapper());
-        assertThat(objectToJsonObjectConverter.convert(defendant).toString(), matchesWholePayload(fixture(fixturePath), List.of()));
-    }
-
     @Test
     void shouldValidateDefendantErrorsWhenCustodyStatusInvalidOnXhibitAndUStatusFoundAddsUBailStatusToReferenceDataVO() {
         final MigratedDefendant defendant = migratedDefendant()
@@ -284,6 +278,11 @@ class ProsecutionCaseFileHelperTest {
         assertThat(referenceDataVO.getBailStatusReferenceData().get(0).getStatusCode(), is("U"));
     }
 
+    private static void assertMigratedDefendantMatchesFixture(final MigratedDefendant defendant, final String fixturePath) {
+        final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter(new ObjectMapperProducer().objectMapper());
+        assertThat(objectToJsonObjectConverter.convert(defendant).toString(), matchesWholePayload(fixture(fixturePath), List.of()));
+    }
+
     private MigratedOffence buildMigratedOffence(final UUID offenceID, final String prosecutionOffenceId){
         return migratedOffence().withOffenceId(offenceID).withProsecutorOffenceId(prosecutionOffenceId).build();
     }
@@ -295,4 +294,5 @@ class ProsecutionCaseFileHelperTest {
                 .withOffences(offences)
                 .build();
     }
+
 }

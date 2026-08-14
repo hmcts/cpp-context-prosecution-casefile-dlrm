@@ -32,7 +32,6 @@ import java.util.Map;
 
 @ExtendWith(MockitoExtension.class)
 class ExhibitFiileTypeValidationRuleTest {
-
     @Mock
     private ReferenceDataQueryService referenceDataQueryService;
 
@@ -137,11 +136,6 @@ class ExhibitFiileTypeValidationRuleTest {
         assertProblemMatchesFixture(result.problems().get(0), "json/exhibit-file-type-validation-rule/problem-invalid-file-type-xhibit-migration.json");
     }
 
-    private static void assertProblemMatchesFixture(final Problem problem, final String fixturePath) {
-        final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter(new ObjectMapperProducer().objectMapper());
-        assertThat(objectToJsonObjectConverter.convert(problem).toString(), matchesWholePayload(fixture(fixturePath), List.of()));
-    }
-
     @Test
     void shouldReturnValidForXhibitSystemWithFileType99() {
         // Given
@@ -152,29 +146,6 @@ class ExhibitFiileTypeValidationRuleTest {
 
         // Then
         assertThat(result, is(VALID));
-    }
-
-    // Simple helper method using Builder pattern
-    private MigratedMaterialsWithOriginatingSystem createInput(String fileName, String systemName) {
-        MigratedMaterial material = migratedMaterial()
-                .withFileName(fileName)
-                .withFileType("99")
-                .build();
-        return new MigratedMaterialsWithOriginatingSystem(Collections.singletonList(material), systemName, getSections(), 1);
-    }
-
-    private MigratedMaterialsWithOriginatingSystem createInputWithMultipleFiles(String systemName) {
-        MigratedMaterial material1 = migratedMaterial().withFileName("abc.pdf").withFileType("99").build();
-        MigratedMaterial material2 = migratedMaterial().withFileName("def.pdf").withFileType("99").build();
-        return new MigratedMaterialsWithOriginatingSystem(Arrays.asList(material1, material2), systemName, getSections(), 2);
-    }
-
-    private MigratedMaterialsWithOriginatingSystem createInputWithFileType(String fileName, String systemName, String fileType) {
-        MigratedMaterial material = migratedMaterial()
-                .withFileName(fileName)
-                .withFileType(fileType)
-                .build();
-        return new MigratedMaterialsWithOriginatingSystem(Collections.singletonList(material), systemName, getSections(), 1);
     }
 
     @Test
@@ -213,6 +184,34 @@ class ExhibitFiileTypeValidationRuleTest {
 
         assertFalse(result.problems().isEmpty());
         assertThat(result.problems().get(0).getCode(), is(COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANT_COUNT.name()));
+    }
+
+    private static void assertProblemMatchesFixture(final Problem problem, final String fixturePath) {
+        final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter(new ObjectMapperProducer().objectMapper());
+        assertThat(objectToJsonObjectConverter.convert(problem).toString(), matchesWholePayload(fixture(fixturePath), List.of()));
+    }
+
+    // Simple helper method using Builder pattern
+    private MigratedMaterialsWithOriginatingSystem createInput(String fileName, String systemName) {
+        MigratedMaterial material = migratedMaterial()
+                .withFileName(fileName)
+                .withFileType("99")
+                .build();
+        return new MigratedMaterialsWithOriginatingSystem(Collections.singletonList(material), systemName, getSections(), 1);
+    }
+
+    private MigratedMaterialsWithOriginatingSystem createInputWithMultipleFiles(String systemName) {
+        MigratedMaterial material1 = migratedMaterial().withFileName("abc.pdf").withFileType("99").build();
+        MigratedMaterial material2 = migratedMaterial().withFileName("def.pdf").withFileType("99").build();
+        return new MigratedMaterialsWithOriginatingSystem(Arrays.asList(material1, material2), systemName, getSections(), 2);
+    }
+
+    private MigratedMaterialsWithOriginatingSystem createInputWithFileType(String fileName, String systemName, String fileType) {
+        MigratedMaterial material = migratedMaterial()
+                .withFileName(fileName)
+                .withFileType(fileType)
+                .build();
+        return new MigratedMaterialsWithOriginatingSystem(Collections.singletonList(material), systemName, getSections(), 1);
     }
 
     private static Map<String, ImmutablePair<String, String>> getSections() {

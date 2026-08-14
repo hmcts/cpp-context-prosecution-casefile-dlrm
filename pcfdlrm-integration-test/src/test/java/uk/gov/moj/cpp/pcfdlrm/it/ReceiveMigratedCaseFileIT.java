@@ -49,11 +49,12 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class ReceiveMigratedCaseFileIT {
-
     private static final String NO_MATCHING_DEFENDANTS_WITH_HEARINGS_FOUND_FOR_HEARING = "No matching defendants with hearings found for the hearing";
+
     private static final String COURT_RECORD_SHEET_NOT_PDF = "Court Record Sheet must be a PDF file";
 
     private final ReceiveMigratedCaseFileHelper receiveMigratedCaseFileHelper = new ReceiveMigratedCaseFileHelper();
+
     private final AddMaterialHelper addMaterialHelper = new AddMaterialHelper();
 
     @BeforeAll
@@ -90,7 +91,6 @@ class ReceiveMigratedCaseFileIT {
         receiveMigratedCaseFileHelper.receiveMigratedCaseFile(staticPayLoad);
         receiveMigratedCaseFileHelper.verifyReceiveMigratedCaseFileForMultipleMaterial(addMaterialHelper, submissionId, filePathIndex, fileType);
     }
-
 
     @Test
     void receiveMigratedCaseFileWhenXhibitMaterialIsNotPdf() {
@@ -143,10 +143,6 @@ class ReceiveMigratedCaseFileIT {
         receiveMigratedCaseFileHelper.receiveMigratedCaseFile(staticPayLoad);
         receiveMigratedCaseFileHelper.verifyReceiveMigratedCaseFileForMultipleMaterial(addMaterialHelper, submissionId, filepathIndexOne, "99");
 
-    }
-
-    private static void stubWireMocks() {
-        stubGetDocumentsTypeAccess("stub-data/referencedata.get-all-document-type-access.json");
     }
 
     @ParameterizedTest
@@ -214,6 +210,7 @@ class ReceiveMigratedCaseFileIT {
 
         receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiatedWithAllocationDecision(caseUrn, initiateCourtProceedingsFixture);
     }
+
     @Test
     void shouldNotSetOffenceCustodyTimeLimitWhenCustodyStatusIsNotCustody() {
 
@@ -272,7 +269,6 @@ class ReceiveMigratedCaseFileIT {
         receiveMigratedCaseFileHelper.receiveMigratedCaseFile(staticPayLoad);
         receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiated(caseUrn, "no-material");
     }
-
 
     @Test
     void receiveMigratedCaseFileWithAllHearingsSkipped() {
@@ -351,6 +347,10 @@ class ReceiveMigratedCaseFileIT {
         receiveMigratedCaseFileHelper.verifyMigratedCaseNotFoundInAutomation(addMaterialHelper);
     }
 
+    private static void stubWireMocks() {
+        stubGetDocumentsTypeAccess("stub-data/referencedata.get-all-document-type-access.json");
+    }
+
     private JsonEnvelope createMaterialAddedPayload(final String materialId, final String caseId, final String defendantId) {
 
         final Metadata metadata = JsonEnvelope
@@ -387,4 +387,5 @@ class ReceiveMigratedCaseFileIT {
                         .add("isCpsCase", false))
                 .build();
     }
+
 }

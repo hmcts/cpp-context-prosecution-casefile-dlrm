@@ -14,7 +14,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class WholePayloadMatcherTest {
-
     private static final String EXPECTED = """
             {
               "submissionId": "S-1",
@@ -22,23 +21,6 @@ class WholePayloadMatcherTest {
               "other":       { "defendantId": "OT-1" }
             }
             """;
-
-    private static boolean matches(final String expected, final String actual,
-                                   final List<String> exclusions) {
-        return matchesWholePayload(expected, exclusions).matches(actual);
-    }
-
-    /** Asserts rejection and returns what the matcher told the reader — the {@code assertThat} path. */
-    private static String mismatchFor(final String expected, final String actual,
-                                      final List<String> exclusions) {
-        final WholePayloadMatcher matcher = matchesWholePayload(expected, exclusions);
-
-        assertFalse(matcher.matches(actual), "matcher should have rejected this payload");
-
-        final StringDescription description = new StringDescription();
-        matcher.describeMismatch(actual, description);
-        return description.toString();
-    }
 
     @Test
     @DisplayName("rejects a wildcard exclusion at construction, naming FR2")
@@ -188,4 +170,22 @@ class WholePayloadMatcherTest {
         assertTrue(mismatchFor(EXPECTED, actual, of("caseDetails.defendantId")).contains("defendantId"),
                 mismatchFor(EXPECTED, actual, of("caseDetails.defendantId")));
     }
+
+    private static boolean matches(final String expected, final String actual,
+                                   final List<String> exclusions) {
+        return matchesWholePayload(expected, exclusions).matches(actual);
+    }
+
+    /** Asserts rejection and returns what the matcher told the reader — the {@code assertThat} path. */
+    private static String mismatchFor(final String expected, final String actual,
+                                      final List<String> exclusions) {
+        final WholePayloadMatcher matcher = matchesWholePayload(expected, exclusions);
+
+        assertFalse(matcher.matches(actual), "matcher should have rejected this payload");
+
+        final StringDescription description = new StringDescription();
+        matcher.describeMismatch(actual, description);
+        return description.toString();
+    }
+
 }

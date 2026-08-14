@@ -84,7 +84,6 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -110,6 +109,8 @@ public class MigratedCaseFileAggregate implements Aggregate {
     public static final String COURT_RECORD_SHEET_NOT_PDF = "Court Record Sheet must be a PDF file";
     public static final String COURT_RECORD_SHEET_FILE_TYPE_INVALID = "Court Record Sheet file type is not valid for XHIBIT migration";
     public static final String COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANTS = "Number of Court Record Sheets exceeds number of defendants";
+    private static final ZoneId LONDON = ZoneId.of("Europe/London");
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss");
     private final List<String> offenceProblems = List.of(ProblemCode.INVALID_PLEA.name(),ProblemCode.PLEA_DATE_ABSENT.name(),ProblemCode.PLEA_DATE_CANNOT_BE_FUTURE_DATE.name(),ProblemCode.CONVICTION_DATE_ABSENT.name(),
             ProblemCode.INVALID_VERDICT.name(), VERDICT_DATE_ABSENT.name());
 
@@ -404,9 +405,6 @@ public class MigratedCaseFileAggregate implements Aggregate {
         return new HearingValidationResult(migratedCaseDetails.getHearings(), List.of());
     }
 
-    private static final ZoneId LONDON = ZoneId.of("Europe/London");
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss");
-
     private static boolean isFixedHearing(final MigratedHearing hearing) {
         return hearing.getWeekCommencingDate() == null
                 && isNotBlank(hearing.getDateOfHearing());
@@ -580,14 +578,6 @@ public class MigratedCaseFileAggregate implements Aggregate {
         return apply(builder.build());
     }
 
-    public UUID getSubmissionId() {
-        return submissionId;
-    }
-
-    public ReceiveMigratedCaseFile getReceiveMigratedCaseFile() {
-        return receiveMigratedCaseFile;
-    }
-
     @SuppressWarnings("squid:S00107")
     private MaterialAdded addMaterial(final UUID caseId, final String prosecutingAuthority,
                                       final String prosecutorDefendantId, final MigratedMaterial migratedMaterial, final Boolean isCpsCase,
@@ -682,10 +672,6 @@ public class MigratedCaseFileAggregate implements Aggregate {
         migratedCaseFileProcessed = e;
     }
 
-    public Map<UUID, CourtDocument> getMaterailsReadyForCourtDocuments() {
-        return Collections.unmodifiableMap(this.materialsReadyForCourtDocument);
-    }
-
     @SuppressWarnings("squid:S00107")
     private Object validateMaterialWithDocumentDetails(final UUID caseId, final String prosecutingAuthority, final String prosecutorDefendantId,
                                                        final Material material, final ReferenceDataQueryService referenceDataQueryService,
@@ -739,15 +725,4 @@ public class MigratedCaseFileAggregate implements Aggregate {
         }
     }
 
-    Map<UUID, CourtDocument> getMaterialsAddedPostProcessing() {
-        return materialsAddedPostProcessing;
-    }
-
-    MigratedCaseFileProcessed getMigratedCaseFileProcessed() {
-        return migratedCaseFileProcessed;
-    }
-
-    public MigratedCaseValidatedCreationPending getMigratedCaseValidatedCreationPending() {
-        return migratedCaseValidatedCreationPending;
-    }
 }

@@ -19,7 +19,6 @@ import static uk.gov.moj.cpp.pcfdlrm.test.FixtureLoader.fixture;
 import static uk.gov.moj.cpp.pcfdlrm.test.ReflectionFieldInjector.writeField;
 import static uk.gov.moj.cpp.pcfdlrm.test.WholePayloadMatcher.matchesWholePayload;
 
-import uk.gov.justice.core.courts.InitiateCourtProceedings;
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.justice.services.core.sender.Sender;
@@ -71,8 +70,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import javax.json.JsonValue;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -81,6 +78,37 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
 class MigratedCaseReceivedProcessorTest {
+    private static final UUID PERSON_DEFENDANT_ID = fromString("9824e40f-0289-4221-8854-346eb28c8f27");
+
+    private static final UUID LEGAL_ENTITY_DEFENDANT_ID = fromString("9924e40f-0289-4221-8854-346eb28c8f27");
+
+    private static final UUID GUILTY_OFFENCE_ID = fromString("e1e1e1e1-1111-4111-8111-111111111111");
+
+    private static final UUID NOT_GUILTY_OFFENCE_ID = fromString("e2e2e2e2-2222-4222-8222-222222222222");
+
+    private static final List<String> DEFENDANT_0_EXCLUSIONS = List.of(
+            "initiateCourtProceedings.prosecutionCases[0].defendants[0].courtProceedingsInitiated");
+
+    private static final List<String> MAXIMAL_EXCLUSIONS = List.of(
+            "initiateCourtProceedings.prosecutionCases[0].defendants[0].courtProceedingsInitiated",
+            "initiateCourtProceedings.prosecutionCases[0].defendants[1].courtProceedingsInitiated",
+            "initiateCourtProceedings.prosecutionCases[0].caseMarkers[0].id");
+
+    /**
+     * Maximal input: 2 defendants (person + legal entity), the person with 2 offences (one
+     * guilty — {@code PLEA_DATE_CANNOT_BE_FUTURE_DATE}-style rule nulls its verdict — one not
+     * guilty with a verdict present), and a case marker. No hearing here — hearing present/absent is
+     * its own isolated row instead of folded into the maximal case.
+     */
+    private static final UUID MOT_REASON_ID = fromString("d1d1d1d1-1111-4111-8111-111111111111");
+
+    private record ConverterScenario(String name, MigratedCaseFileReceived input, String expectedFixture,
+                                      List<String> exclusions, Map<String, String> fixtureParameters) {
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
 
     @Test
     void shouldHandleSjpProsecutionEvents() {
@@ -88,6 +116,123 @@ class MigratedCaseReceivedProcessorTest {
                 .with(method("handleMigratedCaseReceived")
                         .thatHandles("pcfdlrm.events.migrated-case-file-received"))
         );
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("converterScenarios")
+    void shouldConvertAndSendInitiateCourtProceedings(final ConverterScenario scenario) {
+        final Sender sender = mock(Sender.class);
+        final EnvelopeHelper envelopeHelper = mock(EnvelopeHelper.class);
+        final PcfMigratedCaseReceivedCounter counter = mock(PcfMigratedCaseReceivedCounter.class);
+        final ReferenceDataQueryService referenceDataQueryService = mock(ReferenceDataQueryService.class);
+
+        final Metadata inboundMetadata = metadataBuilder()
+                .withName("pcfdlrm.events.migrated-case-file-received")
+                .withId(randomUUID())
+                .build();
+        final JsonEnvelope dummyOutboundEnvelope = JsonEnvelope.envelopeFrom(inboundMetadata, NULL);
+        when(envelopeHelper.withMetadataInPayloadForEnvelope(any())).thenReturn(dummyOutboundEnvelope);
+
+        final MigratedCaseReceivedProcessor processor = buildProcessor(sender, envelopeHelper, counter, referenceDataQueryService);
+
+        processor.handleMigratedCaseReceived(envelopeFrom(inboundMetadata, scenario.input()));
+
+        final ArgumentCaptor<JsonEnvelope> converted = ArgumentCaptor.forClass(JsonEnvelope.class);
+        verify(envelopeHelper).withMetadataInPayloadForEnvelope(converted.capture());
+
+        assertThat(converted.getValue().metadata().name(), is("progression.initiate-court-proceedings"));
+        assertThat(converted.getValue().payload().toString(),
+                matchesWholePayload(fixture(scenario.expectedFixture(), scenario.fixtureParameters()), scenario.exclusions()));
+
+        verify(sender).sendAsAdmin((Envelope<?>) dummyOutboundEnvelope);
+        verify(counter).increment();
+    }
+
+    /**
+     * AC-T3-3 — tier 2's minimal input has no case markers and no hearings; pins that an absent
+     * input field produces an OMITTED output field, not an explicit JSON {@code null}, as its own
+     * named assertion. {@link #shouldConvertAndSendInitiateCourtProceedings} already enforces this
+     * for the minimal-tier row via {@code WholePayloadMatcher}'s STRICT comparison (a fixture with no
+     * {@code caseMarkers}/{@code listHearingRequests} key would fail against real output that had
+     * either as an explicit {@code null}), but only as a side effect of matching the whole payload —
+     * this test names the distinction directly.
+     */
+    @Test
+    void shouldOmitRatherThanEmitNullForFieldsAbsentFromMinimalInput() throws com.fasterxml.jackson.core.JsonProcessingException {
+        final Sender sender = mock(Sender.class);
+        final EnvelopeHelper envelopeHelper = mock(EnvelopeHelper.class);
+        final PcfMigratedCaseReceivedCounter counter = mock(PcfMigratedCaseReceivedCounter.class);
+        final ReferenceDataQueryService referenceDataQueryService = mock(ReferenceDataQueryService.class);
+
+        final Metadata inboundMetadata = metadataBuilder()
+                .withName("pcfdlrm.events.migrated-case-file-received")
+                .withId(randomUUID())
+                .build();
+        final JsonEnvelope dummyOutboundEnvelope = JsonEnvelope.envelopeFrom(inboundMetadata, NULL);
+        when(envelopeHelper.withMetadataInPayloadForEnvelope(any())).thenReturn(dummyOutboundEnvelope);
+
+        final MigratedCaseReceivedProcessor processor = buildProcessor(sender, envelopeHelper, counter, referenceDataQueryService);
+        processor.handleMigratedCaseReceived(envelopeFrom(inboundMetadata, minimalInput()));
+
+        final ArgumentCaptor<JsonEnvelope> converted = ArgumentCaptor.forClass(JsonEnvelope.class);
+        verify(envelopeHelper).withMetadataInPayloadForEnvelope(converted.capture());
+
+        final JsonNode payload = new ObjectMapper().readTree(converted.getValue().payload().toString());
+        final JsonNode initiateCourtProceedings = payload.get("initiateCourtProceedings");
+        final JsonNode prosecutionCase = initiateCourtProceedings.get("prosecutionCases").get(0);
+
+        assertThat(prosecutionCase.has("caseMarkers"), is(false));
+        assertThat(initiateCourtProceedings.has("listHearingRequests"), is(false));
+    }
+
+    /**
+     * AC-T3-2 — pins the current NPE behaviour when the hearing list is null (see
+     * {@link #withNullHearingListInput()}). Not folded into {@link #converterScenarios()} — that
+     * harness's {@code ConverterScenario} assumes a successful whole-payload comparison, which
+     * doesn't apply to an exception-throwing branch. Unlike {@code defendants} (mandatory,
+     * {@code minItems: 1}, in stagingdlrm's outbound schema — the only real production caller of this
+     * endpoint), {@code hearings} is genuinely optional there too, so this branch stays reachable in
+     * production and is worth pinning; the equivalent null-defendants test was removed as unreachable.
+     */
+    @Test
+    void shouldThrowNpeWhenHearingListIsNull() {
+        final Sender sender = mock(Sender.class);
+        final EnvelopeHelper envelopeHelper = mock(EnvelopeHelper.class);
+        final PcfMigratedCaseReceivedCounter counter = mock(PcfMigratedCaseReceivedCounter.class);
+        final ReferenceDataQueryService referenceDataQueryService = mock(ReferenceDataQueryService.class);
+        final MigratedCaseReceivedProcessor processor = buildProcessor(sender, envelopeHelper, counter, referenceDataQueryService);
+
+        final Metadata inboundMetadata = metadataBuilder()
+                .withName("pcfdlrm.events.migrated-case-file-received")
+                .withId(randomUUID())
+                .build();
+
+        final NullPointerException npe = assertThrows(NullPointerException.class, () ->
+                processor.handleMigratedCaseReceived(envelopeFrom(inboundMetadata, withNullHearingListInput())));
+        assertThat(npe.getStackTrace()[0].getClassName(), is(MigratedCaseToProsecutionCaseConverter.class.getName()));
+    }
+
+    /**
+     * AC-T3-5 — the {@code MigratedCaseFileReceived} fixture used as processor input round-trips
+     * JSON → POJO → JSON byte-for-byte. Proves the generated POJO doesn't silently drop a field
+     * before the downstream STRICT comparison ever gets a chance to see it. Deserialises the three
+     * sub-trees separately, not the {@code MigratedCaseFileReceived} wrapper itself — that wrapper is
+     * immutable/builder-only with no {@code @JsonCreator}, so Jackson can't construct it directly;
+     * the round-trip risk the AC cares about (a field dropped by a generated POJO) lives entirely in
+     * {@code ReceiveMigratedCaseFile}'s nested schema tree, which this does exercise.
+     */
+    @Test
+    void shouldRoundTripReceiveMigratedCaseFileFixtureWithoutLosingFields() throws com.fasterxml.jackson.core.JsonProcessingException {
+        final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+        final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter(objectMapper);
+
+        final ReceiveMigratedCaseFile original = maximalInput().getReceiveMigratedCaseFile();
+        final String firstPass = objectToJsonObjectConverter.convert(original).toString();
+
+        final ReceiveMigratedCaseFile roundTripped = objectMapper.readValue(firstPass, ReceiveMigratedCaseFile.class);
+        final String secondPass = objectToJsonObjectConverter.convert(roundTripped).toString();
+
+        assertThat(objectMapper.readTree(secondPass), is(objectMapper.readTree(firstPass)));
     }
 
     /**
@@ -142,18 +287,6 @@ class MigratedCaseReceivedProcessorTest {
         writeField(processor, "pcfMigratedCaseReceivedCounter", counter);
         return processor;
     }
-
-    private static final UUID PERSON_DEFENDANT_ID = fromString("9824e40f-0289-4221-8854-346eb28c8f27");
-    private static final UUID LEGAL_ENTITY_DEFENDANT_ID = fromString("9924e40f-0289-4221-8854-346eb28c8f27");
-    private static final UUID GUILTY_OFFENCE_ID = fromString("e1e1e1e1-1111-4111-8111-111111111111");
-    private static final UUID NOT_GUILTY_OFFENCE_ID = fromString("e2e2e2e2-2222-4222-8222-222222222222");
-
-    private static final List<String> DEFENDANT_0_EXCLUSIONS = List.of(
-            "initiateCourtProceedings.prosecutionCases[0].defendants[0].courtProceedingsInitiated");
-    private static final List<String> MAXIMAL_EXCLUSIONS = List.of(
-            "initiateCourtProceedings.prosecutionCases[0].defendants[0].courtProceedingsInitiated",
-            "initiateCourtProceedings.prosecutionCases[0].defendants[1].courtProceedingsInitiated",
-            "initiateCourtProceedings.prosecutionCases[0].caseMarkers[0].id");
 
     /** Minimal input: only the fields the converter tree cannot run without. No defendants, no hearings. */
     private static MigratedCaseFileReceived minimalInput() {
@@ -443,14 +576,6 @@ class MigratedCaseReceivedProcessorTest {
                 .build();
     }
 
-    /**
-     * Maximal input: 2 defendants (person + legal entity), the person with 2 offences (one
-     * guilty — {@code PLEA_DATE_CANNOT_BE_FUTURE_DATE}-style rule nulls its verdict — one not
-     * guilty with a verdict present), and a case marker. No hearing here — hearing present/absent is
-     * its own isolated row instead of folded into the maximal case.
-     */
-    private static final UUID MOT_REASON_ID = fromString("d1d1d1d1-1111-4111-8111-111111111111");
-
     private static MigratedCaseFileReceived maximalInput() {
         final MigratedOffence guiltyOffence = MigratedOffence.migratedOffence()
                 .withOffenceId(GUILTY_OFFENCE_ID)
@@ -596,49 +721,20 @@ class MigratedCaseReceivedProcessorTest {
     }
 
     /**
-     * AC-T3-2 — tier-3 branch row covering the "null collections" dimension: {@code defendants} is
-     * null rather than absent/empty. Real production robustness gap, not a test artifact —
-     * {@code ProsecutionCaseFileMigratedDefendantToCCDefendantConverter.convert()} calls
-     * {@code migratedDefendants.stream()} with no null-guard, confirmed by real execution. Out of
-     * scope for this test-only story to fix in {@code src/main}; used by
-     * {@link #shouldThrowNpeWhenDefendantsListIsNull()} to pin the current behaviour rather than
-     * leaving this branch uncovered.
-     */
-    private static MigratedCaseFileReceived withNullDefendantsListInput() {
-        final MigratedCaseFileReceived base = minimalInput();
-        final MigratedCaseDetails migratedCaseDetailsWithNullDefendants = MigratedCaseDetails.migratedCaseDetails()
-                .withValuesFrom(base.getReceiveMigratedCaseFile().getMigratedCaseDetails())
-                .withDefendants(null)
-                .build();
-        final ReceiveMigratedCaseFile receiveMigratedCaseFile = ReceiveMigratedCaseFile.receiveMigratedCaseFile()
-                .withValuesFrom(base.getReceiveMigratedCaseFile())
-                .withMigratedCaseDetails(migratedCaseDetailsWithNullDefendants)
-                .build();
-        return MigratedCaseFileReceived.migratedCaseFileReceived()
-                .withValuesFrom(base)
-                .withMigratedCaseSubmission(receiveMigratedCaseFile)
-                .build();
-    }
-
-    /**
-     * AC-T3-2 — tier-3 branch row covering the "null collections" dimension: same class of gap as
-     * {@link #withNullDefendantsListInput()}, but for the hearing list —
+     * AC-T3-2 — tier-3 branch row covering the "null collections" dimension for the hearing list:
      * {@code MigratedCaseToProsecutionCaseConverter.convert()} calls
-     * {@code source.getMigratedHearingWithReferenceDataList().stream()} with no null-guard.
+     * {@code source.getMigratedHearingWithReferenceDataList().stream()} with no null-guard. Real
+     * production robustness gap, not a test artifact — {@code hearings} is optional in stagingdlrm's
+     * outbound schema (the only real production caller of this endpoint), so a null/absent hearing
+     * list is reachable in production; confirmed by real execution. Out of scope for this test-only
+     * story to fix in {@code src/main}; used by {@link #shouldThrowNpeWhenHearingListIsNull()} to pin
+     * the current behaviour rather than leaving this branch uncovered.
      */
     private static MigratedCaseFileReceived withNullHearingListInput() {
         return MigratedCaseFileReceived.migratedCaseFileReceived()
                 .withValuesFrom(minimalInput())
                 .withMigratedHearingWithReferenceData(null)
                 .build();
-    }
-
-    private record ConverterScenario(String name, MigratedCaseFileReceived input, String expectedFixture,
-                                      List<String> exclusions, Map<String, String> fixtureParameters) {
-        @Override
-        public String toString() {
-            return name;
-        }
     }
 
     /**
@@ -670,140 +766,4 @@ class MigratedCaseReceivedProcessorTest {
         );
     }
 
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("converterScenarios")
-    void shouldConvertAndSendInitiateCourtProceedings(final ConverterScenario scenario) {
-        final Sender sender = mock(Sender.class);
-        final EnvelopeHelper envelopeHelper = mock(EnvelopeHelper.class);
-        final PcfMigratedCaseReceivedCounter counter = mock(PcfMigratedCaseReceivedCounter.class);
-        final ReferenceDataQueryService referenceDataQueryService = mock(ReferenceDataQueryService.class);
-
-        final Metadata inboundMetadata = metadataBuilder()
-                .withName("pcfdlrm.events.migrated-case-file-received")
-                .withId(randomUUID())
-                .build();
-        final JsonEnvelope dummyOutboundEnvelope = JsonEnvelope.envelopeFrom(inboundMetadata, NULL);
-        when(envelopeHelper.withMetadataInPayloadForEnvelope(any())).thenReturn(dummyOutboundEnvelope);
-
-        final MigratedCaseReceivedProcessor processor = buildProcessor(sender, envelopeHelper, counter, referenceDataQueryService);
-
-        processor.handleMigratedCaseReceived(envelopeFrom(inboundMetadata, scenario.input()));
-
-        final ArgumentCaptor<JsonEnvelope> converted = ArgumentCaptor.forClass(JsonEnvelope.class);
-        verify(envelopeHelper).withMetadataInPayloadForEnvelope(converted.capture());
-
-        assertThat(converted.getValue().metadata().name(), is("progression.initiate-court-proceedings"));
-        assertThat(converted.getValue().payload().toString(),
-                matchesWholePayload(fixture(scenario.expectedFixture(), scenario.fixtureParameters()), scenario.exclusions()));
-
-        verify(sender).sendAsAdmin((Envelope<?>) dummyOutboundEnvelope);
-        verify(counter).increment();
-    }
-
-    /**
-     * AC-T3-3 — tier 2's minimal input has no case markers and no hearings; pins that an absent
-     * input field produces an OMITTED output field, not an explicit JSON {@code null}, as its own
-     * named assertion. {@link #shouldConvertAndSendInitiateCourtProceedings} already enforces this
-     * for the minimal-tier row via {@code WholePayloadMatcher}'s STRICT comparison (a fixture with no
-     * {@code caseMarkers}/{@code listHearingRequests} key would fail against real output that had
-     * either as an explicit {@code null}), but only as a side effect of matching the whole payload —
-     * this test names the distinction directly.
-     */
-    @Test
-    void shouldOmitRatherThanEmitNullForFieldsAbsentFromMinimalInput() throws com.fasterxml.jackson.core.JsonProcessingException {
-        final Sender sender = mock(Sender.class);
-        final EnvelopeHelper envelopeHelper = mock(EnvelopeHelper.class);
-        final PcfMigratedCaseReceivedCounter counter = mock(PcfMigratedCaseReceivedCounter.class);
-        final ReferenceDataQueryService referenceDataQueryService = mock(ReferenceDataQueryService.class);
-
-        final Metadata inboundMetadata = metadataBuilder()
-                .withName("pcfdlrm.events.migrated-case-file-received")
-                .withId(randomUUID())
-                .build();
-        final JsonEnvelope dummyOutboundEnvelope = JsonEnvelope.envelopeFrom(inboundMetadata, NULL);
-        when(envelopeHelper.withMetadataInPayloadForEnvelope(any())).thenReturn(dummyOutboundEnvelope);
-
-        final MigratedCaseReceivedProcessor processor = buildProcessor(sender, envelopeHelper, counter, referenceDataQueryService);
-        processor.handleMigratedCaseReceived(envelopeFrom(inboundMetadata, minimalInput()));
-
-        final ArgumentCaptor<JsonEnvelope> converted = ArgumentCaptor.forClass(JsonEnvelope.class);
-        verify(envelopeHelper).withMetadataInPayloadForEnvelope(converted.capture());
-
-        final JsonNode payload = new ObjectMapper().readTree(converted.getValue().payload().toString());
-        final JsonNode initiateCourtProceedings = payload.get("initiateCourtProceedings");
-        final JsonNode prosecutionCase = initiateCourtProceedings.get("prosecutionCases").get(0);
-
-        assertThat(prosecutionCase.has("caseMarkers"), is(false));
-        assertThat(initiateCourtProceedings.has("listHearingRequests"), is(false));
-    }
-
-    /**
-     * AC-T3-2 — pins the current NPE behaviour when {@code defendants} is null (see
-     * {@link #withNullDefendantsListInput()}). Not folded into {@link #converterScenarios()} — that
-     * harness's {@code ConverterScenario} assumes a successful whole-payload comparison, which
-     * doesn't apply to an exception-throwing branch.
-     */
-    @Test
-    void shouldThrowNpeWhenDefendantsListIsNull() {
-        final Sender sender = mock(Sender.class);
-        final EnvelopeHelper envelopeHelper = mock(EnvelopeHelper.class);
-        final PcfMigratedCaseReceivedCounter counter = mock(PcfMigratedCaseReceivedCounter.class);
-        final ReferenceDataQueryService referenceDataQueryService = mock(ReferenceDataQueryService.class);
-        final MigratedCaseReceivedProcessor processor = buildProcessor(sender, envelopeHelper, counter, referenceDataQueryService);
-
-        final Metadata inboundMetadata = metadataBuilder()
-                .withName("pcfdlrm.events.migrated-case-file-received")
-                .withId(randomUUID())
-                .build();
-
-        final NullPointerException npe = assertThrows(NullPointerException.class, () ->
-                processor.handleMigratedCaseReceived(envelopeFrom(inboundMetadata, withNullDefendantsListInput())));
-        assertThat(npe.getStackTrace()[0].getClassName(), is(ProsecutionCaseFileMigratedDefendantToCCDefendantConverter.class.getName()));
-    }
-
-    /**
-     * AC-T3-2 — pins the current NPE behaviour when the hearing list is null (see
-     * {@link #withNullHearingListInput()}). Same rationale as
-     * {@link #shouldThrowNpeWhenDefendantsListIsNull()} for staying outside {@link #converterScenarios()}.
-     */
-    @Test
-    void shouldThrowNpeWhenHearingListIsNull() {
-        final Sender sender = mock(Sender.class);
-        final EnvelopeHelper envelopeHelper = mock(EnvelopeHelper.class);
-        final PcfMigratedCaseReceivedCounter counter = mock(PcfMigratedCaseReceivedCounter.class);
-        final ReferenceDataQueryService referenceDataQueryService = mock(ReferenceDataQueryService.class);
-        final MigratedCaseReceivedProcessor processor = buildProcessor(sender, envelopeHelper, counter, referenceDataQueryService);
-
-        final Metadata inboundMetadata = metadataBuilder()
-                .withName("pcfdlrm.events.migrated-case-file-received")
-                .withId(randomUUID())
-                .build();
-
-        final NullPointerException npe = assertThrows(NullPointerException.class, () ->
-                processor.handleMigratedCaseReceived(envelopeFrom(inboundMetadata, withNullHearingListInput())));
-        assertThat(npe.getStackTrace()[0].getClassName(), is(MigratedCaseToProsecutionCaseConverter.class.getName()));
-    }
-
-    /**
-     * AC-T3-5 — the {@code MigratedCaseFileReceived} fixture used as processor input round-trips
-     * JSON → POJO → JSON byte-for-byte. Proves the generated POJO doesn't silently drop a field
-     * before the downstream STRICT comparison ever gets a chance to see it. Deserialises the three
-     * sub-trees separately, not the {@code MigratedCaseFileReceived} wrapper itself — that wrapper is
-     * immutable/builder-only with no {@code @JsonCreator}, so Jackson can't construct it directly;
-     * the round-trip risk the AC cares about (a field dropped by a generated POJO) lives entirely in
-     * {@code ReceiveMigratedCaseFile}'s nested schema tree, which this does exercise.
-     */
-    @Test
-    void shouldRoundTripReceiveMigratedCaseFileFixtureWithoutLosingFields() throws com.fasterxml.jackson.core.JsonProcessingException {
-        final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
-        final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter(objectMapper);
-
-        final ReceiveMigratedCaseFile original = maximalInput().getReceiveMigratedCaseFile();
-        final String firstPass = objectToJsonObjectConverter.convert(original).toString();
-
-        final ReceiveMigratedCaseFile roundTripped = objectMapper.readValue(firstPass, ReceiveMigratedCaseFile.class);
-        final String secondPass = objectToJsonObjectConverter.convert(roundTripped).toString();
-
-        assertThat(objectMapper.readTree(secondPass), is(objectMapper.readTree(firstPass)));
-    }
 }
