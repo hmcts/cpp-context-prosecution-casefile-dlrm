@@ -114,8 +114,6 @@ public class MigratedCaseFileAggregate implements Aggregate {
     private final List<String> offenceProblems = List.of(ProblemCode.INVALID_PLEA.name(),ProblemCode.PLEA_DATE_ABSENT.name(),ProblemCode.PLEA_DATE_CANNOT_BE_FUTURE_DATE.name(),ProblemCode.CONVICTION_DATE_ABSENT.name(),
             ProblemCode.INVALID_VERDICT.name(), VERDICT_DATE_ABSENT.name());
 
-    private UUID submissionId;
-
     private ReceiveMigratedCaseFile receiveMigratedCaseFile;
 
     private final List<MaterialAdded> materialsAdded = new ArrayList<>();
@@ -126,21 +124,15 @@ public class MigratedCaseFileAggregate implements Aggregate {
 
     private MigratedCaseValidatedCreationPending migratedCaseValidatedCreationPending;
 
-    private MigratedCaseFileProcessed migratedCaseFileProcessed;
-
 
     @Override
     public Object apply(final Object event) {
         return match(event).with(
-                when(MigratedCaseFileReceived.class).apply(e -> {
-                    this.submissionId = e.getReceiveMigratedCaseFile().getSubmissionId();
-                    this.receiveMigratedCaseFile = e.getReceiveMigratedCaseFile();
-                }),
+                when(MigratedCaseFileReceived.class).apply(e -> this.receiveMigratedCaseFile = e.getReceiveMigratedCaseFile()),
                 when(MaterialAdded.class).apply(materialsAdded::add),
                 when(MigratedCaseValidatedCreationPending.class).apply(this::accept),
                 when(MaterialAddedPendingProcess.class).apply(e -> this.materialsAddedPostProcessing.put(e.getMaterialId(), e.getCourtDocument())),
                 when(MaterialReadyForCourtDocument.class).apply(e -> this.materialsReadyForCourtDocument.put(e.getMaterialId(), e.getCourtDocument())),
-                when(MigratedCaseFileProcessed.class).apply(this::acceptMigratedcaseFleProcessed),
                 otherwiseDoNothing()
         );
     }
@@ -666,10 +658,6 @@ public class MigratedCaseFileAggregate implements Aggregate {
 
     private void accept(MigratedCaseValidatedCreationPending e) {
         migratedCaseValidatedCreationPending = e;
-    }
-
-    private void acceptMigratedcaseFleProcessed(MigratedCaseFileProcessed e) {
-        migratedCaseFileProcessed = e;
     }
 
     @SuppressWarnings("squid:S00107")
