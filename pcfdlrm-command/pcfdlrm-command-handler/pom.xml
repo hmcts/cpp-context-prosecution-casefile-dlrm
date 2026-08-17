@@ -90,6 +90,12 @@
             <groupId>uk.gov.justice.framework-api</groupId>
             <artifactId>framework-api-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.pcfdlrm</groupId>
+            <artifactId>pcfdlrm-test-support</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

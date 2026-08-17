@@ -1,0 +1,22 @@
+{
+  "initiateCourtProceedings": {
+    "prosecutionCases": [
+      {
+        "defendants": [],
+        "id": "a4391799-f828-4515-a355-61f1d5d9690c",
+        "migrationSourceSystem": {
+          "migrationSourceSystemCaseIdentifier": "XHIBIT-123",
+          "migrationSourceSystemName": "XHIBIT"
+        },
+        "prosecutionCaseIdentifier": {
+          "caseURN": "URN001",
+          "prosecutionAuthorityCode": "CPS",
+          "prosecutionAuthorityId": "b1b1b1b1-1111-4111-8111-111111111111"
+        },
+        "receiptType": "Either way case",
+        "statementOfFacts": "",
+        "statementOfFactsWelsh": ""
+      }
+    ]
+  }
+}

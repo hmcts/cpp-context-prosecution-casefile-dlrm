@@ -1,0 +1,6 @@
+{
+  "code": "INVALID_FILE_TYPE_FOR_XHIBIT",
+  "values": [
+    { "key": "fileType", "value": "document.docx" }
+  ]
+}

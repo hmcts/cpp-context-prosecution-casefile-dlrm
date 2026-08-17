@@ -23,6 +23,8 @@ import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_FILE_PRO
 import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_FILE_RECEIVED;
 import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_NOT_FOUND_IN_AUTOMATION;
 import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_VALIDATED_CREATION_PENDING;
+import static uk.gov.moj.cpp.pcfdlrm.test.FixtureLoader.fixture;
+import static uk.gov.moj.cpp.pcfdlrm.test.WholePayloadMatcher.matchesWholePayload;
 
 import uk.gov.justice.services.integrationtest.utils.jms.JmsMessageConsumerClient;
 import uk.gov.justice.services.messaging.DefaultJsonObjectEnvelopeConverter;
@@ -43,6 +45,17 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
 
     private static final String PROGRESSION_INITIATE_COURT_PROCEEDINGS = "progression.initiate-court-proceedings";
     private static final String PROSECUTION_CASE_CREATED_PUBLIC_EVENT = "public.progression.prosecution-case-created";
+    private static final String INITIATE_COURT_PROCEEDINGS_FIXTURE_DIR = "json/xhibit/initiate-court-proceedings/";
+    // Only excludes defendants[0] — every scenario using these fixtures has exactly one defendant.
+    // Reusing this helper for a multi-defendant case needs the exclusion list extended per defendant index.
+    private static final List<String> INITIATE_COURT_PROCEEDINGS_EXCLUSIONS = List.of(
+            "initiateCourtProceedings.prosecutionCases[0].id",
+            "initiateCourtProceedings.prosecutionCases[0].prosecutionCaseIdentifier.caseURN",
+            "initiateCourtProceedings.prosecutionCases[0].defendants[0].id",
+            "initiateCourtProceedings.prosecutionCases[0].defendants[0].masterDefendantId",
+            "initiateCourtProceedings.prosecutionCases[0].defendants[0].prosecutionCaseId",
+            "initiateCourtProceedings.prosecutionCases[0].defendants[0].courtProceedingsInitiated"
+    );
     private final JmsMessageConsumerClient materialAddedEventProcessConsumer = newPrivateJmsMessageConsumerClientProvider(CONTEXT_NAME).withEventNames(MATERIAL_ADDED_EVENT).getMessageConsumerClient();
     private final JmsMessageConsumerClient migratedCaseValidatedCreationPendingConsumer = newPrivateJmsMessageConsumerClientProvider(CONTEXT_NAME).withEventNames(MIGRATED_CASE_VALIDATED_CREATION_PENDING).getMessageConsumerClient();
     private final JmsMessageConsumerClient migratedCaseFileProcessedConsumer = newPrivateJmsMessageConsumerClientProvider(CONTEXT_NAME).withEventNames(MIGRATED_CASE_FILE_PROCESSED).getMessageConsumerClient();
@@ -152,6 +165,16 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
                 });
 
         if(filepathIndexOne.length > 1 ){
+            await()
+                    .untilAsserted(() -> {
+                        final JsonEnvelope secondMaterialAddedEnvelop = addMaterialHelper.verifyInMessagingQueue(materialAddedEventProcessConsumer);
+
+                        assertThat(secondMaterialAddedEnvelop, jsonEnvelope(metadata().withName(MATERIAL_ADDED_EVENT), payload().isJson(allOf(
+                                withJsonPath("material.fileCloudLocation", is("http://inazure/secrets/" + filepathIndexOne[1])),
+                                withJsonPath("material.fileType", is(fileType))
+                        ))));
+                    });
+
             addMaterialHelper.verifyUploadMaterialCalled("http://inazure/secrets/" + filepathIndexOne[1]);
         }
 
@@ -172,7 +195,7 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
                 });
     }
 
-    public void verifyCourtProceedingsForCaseCreationHasBeenInitiated(final String containedString, boolean retrialIndicator, Integer offencCount) {
+    public void verifyCourtProceedingsForCaseCreationHasBeenInitiated(final String containedString, final String fixtureName) {
 
         await()
                 .atMost(30, TimeUnit.SECONDS)
@@ -188,16 +211,14 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
 
             final JsonEnvelope envelope = defaultJsonObjectEnvelopeConverter.asEnvelope(jsonObject);
 
-            assertThat(envelope,
-                    jsonEnvelope(metadata()
-                                    .withName(PROGRESSION_INITIATE_COURT_PROCEEDINGS),
-                            payload().isJson(allOf(withJsonPath("initiateCourtProceedings.prosecutionCases[0].retrialIndicator", is(retrialIndicator)),
-                                    withJsonPath("initiateCourtProceedings.prosecutionCases[0].defendants[0].offences[0].count", is(offencCount))
-                            ))));
+            assertThat(envelope.metadata().name(), is(PROGRESSION_INITIATE_COURT_PROCEEDINGS));
+
+            assertThat(envelope.payloadAsJsonObject().toString(),
+                    matchesWholePayload(fixture(INITIATE_COURT_PROCEEDINGS_FIXTURE_DIR + fixtureName + ".json"), INITIATE_COURT_PROCEEDINGS_EXCLUSIONS));
         }
     }
 
-    public void verifyCourtProceedingsForCaseCreationHasBeenInitiatedWithAllocationDecision(final String containedString, final String motReasonId) {
+    public void verifyCourtProceedingsForCaseCreationHasBeenInitiatedWithAllocationDecision(final String containedString, final String fixtureName) {
 
         await()
                 .atMost(30, TimeUnit.SECONDS)
@@ -213,10 +234,10 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
 
             final JsonEnvelope envelope = defaultJsonObjectEnvelopeConverter.asEnvelope(jsonObject);
 
-            assertThat(envelope,
-                    jsonEnvelope(metadata()
-                                    .withName(PROGRESSION_INITIATE_COURT_PROCEEDINGS),
-                            payload().isJson(allOf(withJsonPath("initiateCourtProceedings.prosecutionCases[0].defendants[0].offences[0].allocationDecision.motReasonId", is(motReasonId))))));
+            assertThat(envelope.metadata().name(), is(PROGRESSION_INITIATE_COURT_PROCEEDINGS));
+
+            assertThat(envelope.payloadAsJsonObject().toString(),
+                    matchesWholePayload(fixture(INITIATE_COURT_PROCEEDINGS_FIXTURE_DIR + fixtureName + ".json"), INITIATE_COURT_PROCEEDINGS_EXCLUSIONS));
         }
     }
 

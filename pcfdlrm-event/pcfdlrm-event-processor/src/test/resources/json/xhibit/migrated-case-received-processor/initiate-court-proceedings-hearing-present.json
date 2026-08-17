@@ -1,0 +1,67 @@
+{
+  "initiateCourtProceedings": {
+    "listHearingRequests": [
+      {
+        "courtCentre": {
+          "courtHearingLocation": "C50EX00",
+          "id": "a1a1a1a1-1111-4111-8111-111111111111",
+          "name": "Test Court",
+          "roomId": "1c1c1c1c-1111-4111-8111-111111111111",
+          "roomName": "Courtroom 1"
+        },
+        "estimateMinutes": 30,
+        "hearingType": {
+          "description": "First hearing",
+          "id": "1a1a1a1a-1111-4111-8111-111111111111"
+        },
+        "jurisdictionType": "MAGISTRATES",
+        "listDefendantRequests": [
+          {
+            "defendantId": "9824e40f-0289-4221-8854-346eb28c8f27",
+            "defendantOffences": [
+              "e1e1e1e1-1111-4111-8111-111111111111"
+            ],
+            "hearingLanguageNeeds": "WELSH",
+            "prosecutionCaseId": "a4391799-f828-4515-a355-61f1d5d9690c",
+            "summonsRequired": "FIRST_HEARING"
+          }
+        ],
+        "listedStartDateTime": "{{hearingYear}}-01-15T10:00:00.000Z"
+      }
+    ],
+    "prosecutionCases": [
+      {
+        "defendants": [
+          {
+            "courtProceedingsInitiated": "EXCLUDED",
+            "id": "9824e40f-0289-4221-8854-346eb28c8f27",
+            "masterDefendantId": "9824e40f-0289-4221-8854-346eb28c8f27",
+            "offences": [
+              {
+                "count": 0,
+                "id": "e1e1e1e1-1111-4111-8111-111111111111",
+                "offenceCode": "998A",
+                "orderIndex": 1,
+                "startDate": "2024-01-15",
+                "wording": "See indictment or charge sheet for particulars",
+                "wordingWelsh": "See indictment or charge sheet for particulars"
+              }
+            ],
+            "prosecutionCaseId": "a4391799-f828-4515-a355-61f1d5d9690c"
+          }
+        ],
+        "id": "a4391799-f828-4515-a355-61f1d5d9690c",
+        "migrationSourceSystem": {
+          "migrationSourceSystemCaseIdentifier": "XHIBIT-123",
+          "migrationSourceSystemName": "XHIBIT"
+        },
+        "prosecutionCaseIdentifier": {
+          "caseURN": "URN001",
+          "prosecutionAuthorityCode": "CPS",
+          "prosecutionAuthorityId": "b1b1b1b1-1111-4111-8111-111111111111"
+        },
+        "receiptType": "Either way case"
+      }
+    ]
+  }
+}

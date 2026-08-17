@@ -110,6 +110,12 @@
             <artifactId>test-utils-enveloper-provider</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>uk.gov.moj.cpp.pcfdlrm</groupId>
+            <artifactId>pcfdlrm-test-support</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

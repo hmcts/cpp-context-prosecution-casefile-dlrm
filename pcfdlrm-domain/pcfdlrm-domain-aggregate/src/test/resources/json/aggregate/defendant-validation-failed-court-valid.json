@@ -1,0 +1,17 @@
+{
+  "defendant": {
+    "documentationLanguage": "E",
+    "hearingLanguage": "W",
+    "id": "9824e40f-0289-4221-8854-346eb28c8f27",
+    "individual": {
+      "parentGuardianInformation": { "dateOfBirth": "1980-06-01", "gender": "FEMALE" },
+      "personalInformation": { "firstName": "John", "lastName": "Smith", "title": "Mr" },
+      "selfDefinedInformation": { "additionalNationality": "SVK", "ethnicity": "British", "gender": "MALE", "nationality": "HUN" }
+    }
+  },
+  "problems": [
+    { "code": "DEFENDANT_SELF_DEFINED_ETHNICITY_INVALID", "values": [ { "key": "individual_selfDefinedInformation_ethnicity", "value": "British" } ] },
+    { "code": "DEFENDANT_NATIONALITY_INVALID", "values": [ { "key": "individual_selfDefinedInformation_nationality", "value": "HUN" } ] },
+    { "code": "DEFENDANT_CUSTODY_STATUS_INVALID", "values": [ { "key": "custodyStatus", "value": "" } ] }
+  ]
+}

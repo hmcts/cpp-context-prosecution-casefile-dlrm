@@ -1,0 +1,10 @@
+{
+  "courtDocument": {
+    "containsFinancialMeans": false,
+    "isRemoved": false,
+    "materials": [],
+    "sendToCps": false,
+    "seqNum": 0
+  },
+  "materialId": "c1c1c1c1-1111-4111-8111-111111111111"
+}

@@ -1,0 +1,61 @@
+{
+  "receiveMigratedCaseFile": {
+    "channel": "DLRM_MIGRATION",
+    "materials": [
+      { "azureLocation": "azure/abc.pdf", "caseId": "a4391799-f828-4515-a355-61f1d5d9690c", "defendantId": "9824e40f-0289-4221-8854-346eb28c8f27", "documentType": 3, "fileName": "abc.pdf", "fileType": "99" }
+    ],
+    "migratedCaseDetails": {
+      "caseDetails": {
+        "caseId": "a4391799-f828-4515-a355-61f1d5d9690c",
+        "dateOfSending": "2024-01-15",
+        "receivingCourt": "C50EX00",
+        "sendingCourt": "B01LY00"
+      },
+      "defendants": [
+        {
+          "documentationLanguage": "E",
+          "hearingLanguage": "E",
+          "id": "9824e40f-0289-4221-8854-346eb28c8f27",
+          "individual": {
+            "custodyStatus": "U",
+            "parentGuardianInformation": { "dateOfBirth": "1980-06-01", "gender": "NOT_KNOWN" },
+            "personalInformation": { "firstName": "John", "lastName": "Smith", "title": "Mr" },
+            "selfDefinedInformation": { "additionalNationality": "SVK", "gender": "NOT_KNOWN" }
+          }
+        }
+      ],
+      "migrationSourceSystem": { "migrationSourceSystemCaseIdentifier": "XHIBIT-123", "migrationSourceSystemName": "XHIBIT" }
+    },
+    "submissionId": "e3e3e3e3-3333-4333-8333-333333333333"
+  },
+  "prosecutionWithReferenceData": {
+    "prosecution": {
+      "caseDetails": { "receiptType": "Either way case" },
+      "channel": "DLRM_MIGRATION",
+      "defendants": [
+        {
+          "id": "9824e40f-0289-4221-8854-346eb28c8f27",
+          "individual": {
+            "parentGuardianInformation": { "dateOfBirth": "1980-06-01" },
+            "personalInformation": { "firstName": "John", "lastName": "Smith", "title": "Mr" },
+            "selfDefinedInformation": { "additionalNationality": "SVK", "ethnicity": "British", "nationality": "HUN" }
+          }
+        }
+      ]
+    },
+    "referenceDataVO": {
+      "countryNationalityReferenceData": [],
+      "selfdefinedEthnicityReferenceData": [],
+      "organisationUnitReferenceData": [],
+      "initiationTypes": [],
+      "offenceReferenceData": [],
+      "caseMarkers": [],
+      "observedEthnicityReferenceData": [],
+      "vehicleCodesReferenceData": [],
+      "offenderCodeReferenceData": [],
+      "bailStatusReferenceData": [],
+      "modeOfTrialReasonsReferenceData": []
+    }
+  },
+  "migratedHearingWithReferenceDataList": []
+}

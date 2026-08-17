@@ -1,0 +1,116 @@
+{
+  "initiateCourtProceedings": {
+    "prosecutionCases": [
+      {
+        "caseMarkers": [
+          {
+            "id": "EXCLUDED",
+            "markerTypeCode": "ABC001",
+            "markerTypeDescription": "Marker One"
+          }
+        ],
+        "defendants": [
+          {
+            "courtProceedingsInitiated": "EXCLUDED",
+            "id": "9824e40f-0289-4221-8854-346eb28c8f27",
+            "masterDefendantId": "9824e40f-0289-4221-8854-346eb28c8f27",
+            "offences": [
+              {
+                "allocationDecision": {
+                  "courtIndicatedSentence": {
+                    "courtIndicatedSentenceDescription": "Indicated custodial sentence",
+                    "courtIndicatedSentenceTypeId": "d2d2d2d2-2222-4222-8222-222222222222"
+                  },
+                  "motReasonCode": "MOT01",
+                  "motReasonDescription": "Either way \u2014 allocated to Crown Court",
+                  "motReasonId": "d1d1d1d1-1111-4111-8111-111111111111",
+                  "offenceId": "e1e1e1e1-1111-4111-8111-111111111111",
+                  "sequenceNumber": 1
+                },
+                "convictionDate": "2024-01-20",
+                "count": 0,
+                "id": "e1e1e1e1-1111-4111-8111-111111111111",
+                "offenceCode": "998A",
+                "orderIndex": 1,
+                "plea": {
+                  "offenceId": "e1e1e1e1-1111-4111-8111-111111111111",
+                  "pleaDate": "2024-01-20",
+                  "pleaValue": "GUILTY"
+                },
+                "startDate": "2024-01-15",
+                "wording": "See indictment or charge sheet for particulars",
+                "wordingWelsh": "See indictment or charge sheet for particulars"
+              },
+              {
+                "convictionDate": "2024-01-30",
+                "count": 0,
+                "id": "e2e2e2e2-2222-4222-8222-222222222222",
+                "offenceCode": "998B",
+                "orderIndex": 2,
+                "plea": {
+                  "offenceId": "e2e2e2e2-2222-4222-8222-222222222222",
+                  "pleaDate": "2024-01-21",
+                  "pleaValue": "NOT GUILTY"
+                },
+                "startDate": "2024-01-16",
+                "verdict": {
+                  "offenceId": "e2e2e2e2-2222-4222-8222-222222222222",
+                  "verdictDate": "2024-01-30",
+                  "verdictType": {
+                    "category": "Guilty",
+                    "cjsVerdictCode": "1001",
+                    "description": "Convicted after trial",
+                    "id": "c1c1c1c1-1111-4111-8111-111111111111",
+                    "verdictCode": "GAT"
+                  }
+                },
+                "wording": "See indictment or charge sheet for particulars",
+                "wordingWelsh": "See indictment or charge sheet for particulars"
+              }
+            ],
+            "personDefendant": {
+              "personDetails": {
+                "address": {
+                  "address1": "1 Test Street",
+                  "postcode": "SW1A 1AA"
+                },
+                "documentationLanguageNeeds": "WELSH",
+                "firstName": "John",
+                "gender": "MALE",
+                "hearingLanguageNeeds": "WELSH",
+                "lastName": "Smith"
+              }
+            },
+            "prosecutionCaseId": "a4391799-f828-4515-a355-61f1d5d9690c"
+          },
+          {
+            "courtProceedingsInitiated": "EXCLUDED",
+            "id": "9924e40f-0289-4221-8854-346eb28c8f27",
+            "legalEntityDefendant": {
+              "organisation": {
+                "name": "Acme Ltd"
+              }
+            },
+            "masterDefendantId": "9924e40f-0289-4221-8854-346eb28c8f27",
+            "offences": [],
+            "prosecutionCaseId": "a4391799-f828-4515-a355-61f1d5d9690c"
+          }
+        ],
+        "id": "a4391799-f828-4515-a355-61f1d5d9690c",
+        "migrationSourceSystem": {
+          "migrationSourceSystemCaseIdentifier": "XHIBIT-123",
+          "migrationSourceSystemName": "XHIBIT"
+        },
+        "prosecutionCaseIdentifier": {
+          "caseURN": "URN001",
+          "contact": {
+            "primaryEmail": "informant@example.com"
+          },
+          "prosecutionAuthorityCode": "CPS",
+          "prosecutionAuthorityId": "b1b1b1b1-1111-4111-8111-111111111111"
+        },
+        "receiptType": "Either way case"
+      }
+    ]
+  }
+}
