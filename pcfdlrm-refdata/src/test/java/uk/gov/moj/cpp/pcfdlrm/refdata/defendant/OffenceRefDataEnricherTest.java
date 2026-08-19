@@ -101,6 +101,27 @@ class OffenceRefDataEnricherTest {
         verify(referenceDataQueryService, times(1)).retrieveOffenceDataList(Lists.newArrayList(buildOffenceWithSpacedOffenceLocation().getOffenceCode()));
     }
 
+    // FR10/T4 — createDefendantWithOffences rebuilds the defendant field-by-field; this pins that
+    // numPreviousConvictions survives the rebuild rather than being silently dropped.
+    @Test
+    void shouldPreserveNumPreviousConvictionsAfterEnrichment() {
+        final List<MigratedOffence> offences = new ArrayList<>();
+        offences.add(buildOffence());
+        final MigratedDefendant defendant = MigratedDefendant.migratedDefendant()
+                .withId(DEFENDANT_ID)
+                .withOffences(offences)
+                .withInitiationCode("S")
+                .withNumPreviousConvictions(3)
+                .build();
+        final DefendantsWithReferenceData defendantsWithReferenceData =
+                new DefendantsWithReferenceData(new ArrayList<>(List.of(defendant)), null);
+        defendantsWithReferenceData.setCaseDetails(CaseDetails.caseDetails().withInitiationCode("P").build());
+
+        offenceDataRefDataEnricher.enrich(defendantsWithReferenceData);
+
+        assertThat(defendantsWithReferenceData.getDefendants().get(0).getNumPreviousConvictions(), is(3));
+    }
+
     private DefendantsWithReferenceData getMockDefendantsWithReferenceData(final MigratedOffence offence, final String prosecutionAuthorityShortName) {
         final List<MigratedOffence> offences = new ArrayList<>();
         offences.add(offence);

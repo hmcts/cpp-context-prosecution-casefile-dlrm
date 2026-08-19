@@ -319,6 +319,9 @@ public class MigratedCaseToProsecutionCaseConverterTest {
 
         assertThat(convertedProsecutionCase.getCommittalDate(), equalTo(null));
         assertThat(convertedProsecutionCase.getDateOfSendingCase(), equalTo(null));
+        // AC-T5-1/FR16 — retrialIndicator is a straight copy; this input leaves it unset (null),
+        // proving the LIBRA-reachable absence doesn't NPE or silently default to a value.
+        assertThat(convertedProsecutionCase.getRetrialIndicator(), equalTo(null));
     }
 
     @Test

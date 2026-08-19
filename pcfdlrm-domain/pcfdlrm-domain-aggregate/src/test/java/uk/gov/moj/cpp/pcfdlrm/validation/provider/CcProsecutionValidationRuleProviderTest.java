@@ -66,6 +66,7 @@ import uk.gov.moj.cpp.pcfdlrm.validation.rules.prosecutors.ProsecutorSJPValidati
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -123,7 +124,7 @@ class CcProsecutionValidationRuleProviderTest {
     @Test
     void shouldValidateCaseValidationRulesForSummons() {
         final List<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>> validationRules = CcProsecutionValidationRuleProvider
-                .getCaseValidationRules(SUMMONS.getCode());
+                .getCaseValidationRules(SUMMONS.getCode(), "XHIBIT");
 
         assertEquals(Set.of(
                 SummonsCodeValidationRule.class,
@@ -138,9 +139,37 @@ class CcProsecutionValidationRuleProviderTest {
     }
 
     @Test
+    void shouldValidateCaseValidationRulesForLibraSjp() {
+        final List<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>> validationRules = CcProsecutionValidationRuleProvider
+                .getCaseValidationRules(SJP.getCode(), "LIBRA");
+
+        assertEquals(Set.of(
+                CaseInitiationValidationRule.class,
+                SummonsCodeValidationRule.class,
+                ProsecutorReferenceDataValidationRule.class,
+                ProsecutorSJPValidationRule.class,
+                ProsecutorAOCPValidationRule.class
+        ), classesOf(validationRules));
+    }
+
+    // AC-T2-6 — absent/unrecognised source systems resolve to the LIBRA/PCF-shaped set, not XHIBIT's.
+    @Test
+    void shouldValidateCaseValidationRulesForAbsentSourceSystem() {
+        final List<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>> validationRules = CcProsecutionValidationRuleProvider
+                .getCaseValidationRules(SUMMONS.getCode(), null);
+
+        assertEquals(Set.of(
+                CaseInitiationValidationRule.class,
+                ProsecutorReferenceDataValidationRule.class,
+                CaseMarkersValidationAndEnricherRule.class,
+                PoliceForceCodeValidationRule.class
+        ), classesOf(validationRules));
+    }
+
+    @Test
     void shouldValidateCaseValidationRulesForRequisition() {
         final List<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>> validationRules = CcProsecutionValidationRuleProvider
-                .getCaseValidationRules(REQUISITION.getCode());
+                .getCaseValidationRules(REQUISITION.getCode(), "XHIBIT");
 
         assertEquals(Set.of(
                 CaseInitiationValidationRule.class,
@@ -156,7 +185,7 @@ class CcProsecutionValidationRuleProviderTest {
     @Test
     void shouldValidateCaseValidationRulesForSjp() {
         final List<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>> validationRules = CcProsecutionValidationRuleProvider
-                .getCaseValidationRules(SJP.getCode());
+                .getCaseValidationRules(SJP.getCode(), "XHIBIT");
 
         assertEquals(Set.of(
                 ProsecutorAOCPValidationRule.class,
@@ -172,7 +201,7 @@ class CcProsecutionValidationRuleProviderTest {
     @Test
     void shouldValidateCaseValidationRulesForDefaultInitiationCode() {
         final List<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>> validationRules = CcProsecutionValidationRuleProvider
-                .getCaseValidationRules(OTHER.getCode());
+                .getCaseValidationRules(OTHER.getCode(), "XHIBIT");
 
         assertEquals(Set.of(
                 CaseInitiationValidationRule.class,
@@ -356,50 +385,115 @@ class CcProsecutionValidationRuleProviderTest {
         ), classesOf(validationRules));
     }
 
+    // AC-T2-3 — J takes SPI_DEFENDANT_RULE_SET_FOR_INITIATION_CODE at the defendant level, asserted
+    // explicitly so a later change can't quietly move J back onto the common path (FR13).
+    @Test
+    void shouldValidateDefendantValidateDlrmRulesForSjp() {
+
+        final List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> validationRules = CcProsecutionValidationRuleProvider
+                .getDefendantValidationRules(SJP.getCode(), Channel.DLRM_MIGRATION, Boolean.FALSE);
+
+        assertEquals(Set.of(
+                NationalityValidationAndEnricherRule.class,
+                AdditionalNationalityValidationAndEnricherRule.class,
+                ParentGuardianDateOfBirthValidationRule.class,
+                ParentGuardianObservedEthnicityValidationAndEnricherRule.class,
+                ParentGuardianSelfDefinedEthnicityValidationAndEnricherRule.class,
+                ParentGuardianPrimaryEmailAddressValidationRule.class,
+                ParentGuardianSecondaryEmailAddressValidationRule.class,
+                ChargeDateValidationRule.class,
+                DefendantDateOfBirthValidationRule.class,
+                DefendantPerceivedBirthYearValidationRule.class,
+                ObservedEthnicityValidationAndEnricherRule.class,
+                SelfDefinedEthnicityValidationAndEnricherRule.class,
+                IndividualDefendantPrimaryEmailAddressValidationRule.class,
+                IndividualDefendantSecondaryEmailAddressValidationRule.class,
+                CorporateDefendantPrimaryEmailAddressValidationRule.class,
+                CorporateDefendantSecondaryEmailAddressValidationRule.class,
+                OffenceAlcoholLevelValidationAndEnricherRule.class,
+                OffenceCodeValidationAndEnricherRule.class,
+                OffenceBackDutyValidationRuleAndEnricherRule.class,
+                OffenceLocationValidationAndEnricherRule.class,
+                OffenceGenericValidationAndEnricherRule.class,
+                PostCodeValidationRule.class,
+                DefendantInitiationCodeValidationRule.class
+        ), classesOf(validationRules));
+    }
+
+    // Mirrors production's COMMON_DEFENDANT_RULE_SET / SPI_DEFENDANT_RULE_SET — shared by every
+    // defendantValidationMapSpi-routed test below, since both DLRM tests only differ in the
+    // per-initiation-code set layered on top (CHARGE_DEFENDANT_RULE_SET vs DEFAULT_DEFENDANT_RULE_SET).
+    private static final Set<Class<?>> COMMON_DEFENDANT_RULE_CLASSES = Set.of(
+            IndividualDefendantPrimaryEmailAddressValidationRule.class,
+            IndividualDefendantSecondaryEmailAddressValidationRule.class,
+            CorporateDefendantPrimaryEmailAddressValidationRule.class,
+            CorporateDefendantSecondaryEmailAddressValidationRule.class,
+            ParentGuardianDateOfBirthValidationRule.class,
+            ParentGuardianObservedEthnicityValidationAndEnricherRule.class,
+            ParentGuardianSelfDefinedEthnicityValidationAndEnricherRule.class,
+            ParentGuardianPrimaryEmailAddressValidationRule.class,
+            ParentGuardianSecondaryEmailAddressValidationRule.class,
+            OffenderCodeValidationAndEnricherRule.class,
+            SelfDefinedEthnicityValidationAndEnricherRule.class,
+            OffenceLocationValidationAndEnricherRule.class,
+            ObservedEthnicityValidationAndEnricherRule.class,
+            OffenceAlcoholLevelValidationAndEnricherRule.class,
+            DefendantDateOfBirthValidationRule.class,
+            NationalityValidationAndEnricherRule.class,
+            VehicleCodeValidationAndEnricherRule.class,
+            DefendantPerceivedBirthYearValidationRule.class,
+            OffenceCodeValidationAndEnricherRule.class,
+            OffenceDrugLevelMethodValidationAndEnricherRule.class,
+            OffenceDrugLevelAmountValidationAndEnricherRule.class,
+            OffenceBackDutyValidationRuleAndEnricherRule.class,
+            CourtReceivedFromCodeCourtValidationRules.class,
+            CourtReceivedToCodeCourtValidationRules.class,
+            PleaValidationRule.class,
+            VerdictValidationRule.class
+    );
+
+    private static final Set<Class<?>> SPI_DEFENDANT_RULE_CLASSES = Set.of(
+            PncIdSpiValidationRule.class,
+            CroNumberSpiValidationRule.class,
+            OffenceGenericValidationAndEnricherRule.class,
+            PostCodeValidationRule.class,
+            DefendantInitiationCodeValidationRule.class
+    );
+
     @Test
     void shouldValidateDefendantValidateDlrmRules() {
 
         final List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> validationRules = CcProsecutionValidationRuleProvider
                 .getDefendantValidationRules(CHARGE.getCode(), Channel.DLRM_MIGRATION, Boolean.FALSE);
 
-        assertEquals(Set.of(
-                AdditionalNationalityValidationAndEnricherRule.class,
-                ArrestDateValidationRule.class,
+        // CHARGE_DEFENDANT_RULE_SET layered on COMMON + SPI.
+        assertEquals(union(COMMON_DEFENDANT_RULE_CLASSES, SPI_DEFENDANT_RULE_CLASSES, Set.of(
                 BailConditionsValidationAndEnricherRule.class,
+                ArrestDateValidationRule.class,
                 ChargeDateValidationRule.class,
-                CorporateDefendantPrimaryEmailAddressValidationRule.class,
-                CorporateDefendantSecondaryEmailAddressValidationRule.class,
-                CourtReceivedFromCodeCourtValidationRules.class,
-                CourtReceivedToCodeCourtValidationRules.class,
-                CroNumberSpiValidationRule.class,
-                CustodyStatusValidationAndEnricherRule.class,
-                DefendantDateOfBirthValidationRule.class,
-                DefendantInitiationCodeValidationRule.class,
-                DefendantPerceivedBirthYearValidationRule.class,
-                IndividualDefendantPrimaryEmailAddressValidationRule.class,
-                IndividualDefendantSecondaryEmailAddressValidationRule.class,
-                NationalityValidationAndEnricherRule.class,
-                ObservedEthnicityValidationAndEnricherRule.class,
-                OffenceAlcoholLevelValidationAndEnricherRule.class,
-                OffenceBackDutyValidationRuleAndEnricherRule.class,
-                OffenceCodeValidationAndEnricherRule.class,
-                OffenceDrugLevelAmountValidationAndEnricherRule.class,
-                OffenceDrugLevelMethodValidationAndEnricherRule.class,
-                OffenceGenericValidationAndEnricherRule.class,
-                OffenceLocationValidationAndEnricherRule.class,
-                OffenderCodeValidationAndEnricherRule.class,
-                ParentGuardianDateOfBirthValidationRule.class,
-                ParentGuardianObservedEthnicityValidationAndEnricherRule.class,
-                ParentGuardianPrimaryEmailAddressValidationRule.class,
-                ParentGuardianSecondaryEmailAddressValidationRule.class,
-                ParentGuardianSelfDefinedEthnicityValidationAndEnricherRule.class,
-                PleaValidationRule.class,
-                PncIdSpiValidationRule.class,
-                PostCodeValidationRule.class,
-                SelfDefinedEthnicityValidationAndEnricherRule.class,
-                VehicleCodeValidationAndEnricherRule.class,
-                VerdictValidationRule.class
-        ), classesOf(validationRules));
+                AdditionalNationalityValidationAndEnricherRule.class,
+                CustodyStatusValidationAndEnricherRule.class
+        )), classesOf(validationRules));
+    }
+
+    // FR12b Option A — R has no map entry, so it takes the composed fallback triple; pinned by name.
+    @Test
+    void shouldValidateDefendantValidateDlrmRulesForRemittanceFallback() {
+
+        final List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> validationRules = CcProsecutionValidationRuleProvider
+                .getDefendantValidationRules("R", Channel.DLRM_MIGRATION, Boolean.FALSE);
+
+        // DEFAULT_DEFENDANT_RULE_SET layered on COMMON + SPI — the fallback triple.
+        assertEquals(union(COMMON_DEFENDANT_RULE_CLASSES, SPI_DEFENDANT_RULE_CLASSES, Set.of(
+                ArrestDateValidationRule.class,
+                ChargeDateValidationRule.class,
+                CustodyStatusValidationAndEnricherRule.class
+        )), classesOf(validationRules));
+    }
+
+    @SafeVarargs
+    private static Set<Class<?>> union(final Set<Class<?>>... sets) {
+        return Stream.of(sets).flatMap(Set::stream).collect(Collectors.toSet());
     }
 
     private static <T> Set<Class<?>> classesOf(final List<ValidationRule<T, ReferenceDataQueryService>> validationRules) {

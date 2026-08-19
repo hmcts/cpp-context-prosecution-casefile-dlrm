@@ -10,6 +10,13 @@
 > **`O, C, Q, J, R`**, `R` arrives as `R`, and **no translation layer exists or is needed**. FR12b
 > stands, but **its recommendation is now open** — see *Validation dispatch* below: PCF turns out to
 > exercise `R` on the fallback rather than special-casing it.
+>
+> **Updated for LIBRA 0.13.1.** 0.13.1 drops `officerInCase` and `offence.convictionDate` (confirmed
+> by diffing `dlrm-libra-0.13.1.json` against `dlrm-libra-0.13.json` in `cpp-context-stagingdlrm`).
+> The officer schema changes, **G2**, and the officer/`convictionDate` converter work are **void**.
+> What survives from *Receive/Carry Group B*: declaring and carrying `numPreviousConvictions`
+> (one schema edit, one converter rename). The validation-dispatch, aggregate-guard and tolerance
+> design below is unaffected — none of it depended on the officer block.
 
 ## 2a — Cross-context impact
 
@@ -18,7 +25,7 @@ obligations *out* of this repo that do not block it.
 
 | Boundary | Impact | Action |
 |---|---|---|
-| **Progression** / `cpp.platform.core.domain` | None. All three onward fields already exist in the `courtReferral.json` closure — `ProsecutionCase.policeOfficerInCase`, `Defendant.numberOfPreviousConvictionsCited`, `Offence.convictionDate`. No core change, no version bump | Regression only |
+| **Progression** / `cpp.platform.core.domain` | None. `Defendant.numberOfPreviousConvictionsCited` already exists in the `courtReferral.json` closure. No core change, no version bump. *(`ProsecutionCase.policeOfficerInCase` and `Offence.convictionDate` were the other two onward fields; both are moot — LIBRA 0.13.1 sends neither `officerInCase` nor `convictionDate`.)* | Regression only |
 | **stagingDLRM** (DD-43081) | Two amendments owed to ADR-003 (**G1**, **G2**); the Group B converter mapping stays compile-blocked until this releases | Raise now; neither blocks build here |
 | **`cpp-apitests`** | Out of scope, as for DD-43099 | None |
 
@@ -37,28 +44,30 @@ Crown-flavoured fallback in the window between. Under Option A there is no entry
   2026-08-17 as a transcription error for `R` — so no translation is needed and none should be built.
   DD-43081's `libra-schema-impact.csv` carries the same error (`C, J, O, Q, X`) and needs the same
   correction.
-- **ADR-003 §3**: the officer block nests (G2).
+- **~~ADR-003 §3: the officer block nests (G2).~~ VOID under LIBRA 0.13.1** — no officer block is
+  sent, so its shape is moot.
 
 ## 2b — Design inside the service
 
 ### The shape of the problem
 
 ```text
-FR1–FR5  five schema edits ──────► generated POJOs ──► converter targets exist
+FR5      one schema edit (numPreviousConvictions) ──► generated POJO ──► converter target exists
                                           │
 FR12 source-system dispatch ──┐           │
 FR12b  R's rule set (OPEN)   ─┤           ▼
 FR12a  :368 only             ─┴──► CcProsecutionValidationRuleProvider + aggregate
                                           │
-FR9/FR9a officer all-or-nothing ──────────┤
-FR10 two fields + one rename  ────────────┴──► MigratedCaseToProsecutionCaseConverter
-                                                 + …MigratedDefendantToCCDefendantConverter
+FR10 one rename  ─────────────────────────┴──► …MigratedDefendantToCCDefendantConverter
 FR16 five relaxed fields ──► tests only, no production change
 FR17 fixture reconciliation ──► fixtures only
 ```
 
-Three independent workstreams. Only the validation dispatch and the aggregate edits touch shared
-code; everything else is additive or test-only.
+*(FR1–FR4, FR9/FR9a and the officer/`convictionDate` half of FR10 are void under LIBRA 0.13.1 —
+struck from the diagram above; see the top-of-file note.)*
+
+Three independent workstreams, now smaller. Only the validation dispatch and the aggregate edits
+touch shared code; everything else is additive or test-only.
 
 **FR16 carries no production change** *(corrected 2026-08-14)*. DD-43081 relaxes **five** constraints,
 not ten, and its `01-requirements.md` FR1 states that `durationMinutes` and `prosecutorOffenceId`
@@ -73,27 +82,27 @@ already tolerated; the deliverable is the confirming tests.
 
 | File | Change | Closed? | Failure mode if skipped |
 |---|---|---|---|
-| `migrated/migrated-case-details.json` | **add** `officerInCase` → `$ref` `pcf-policeOfficerInCase.json` | **yes** | terminal 4xx on every LIBRA submission carrying an officer |
-| `pcf-policeOfficerInCase.json` | **add** `policeWorkerReferenceNumber`, `policeWorkerLocationCode` | no | silent drop — and FR9 could never take its send branch |
-| `contact-details.json` | **add** `fax` | **yes, and shared** | 4xx; widens every parent reaching it |
-| `migrated/migrated-offence.json` | **add** `convictionDate` | no | silent drop |
+| ~~`migrated/migrated-case-details.json`~~ | ~~**add** `officerInCase` → `$ref` `pcf-policeOfficerInCase.json`~~ **VOID — LIBRA 0.13.1 sends no `officerInCase`** | — | — |
+| ~~`pcf-policeOfficerInCase.json`~~ | ~~**add** `policeWorkerReferenceNumber`, `policeWorkerLocationCode`~~ **VOID** — no officer container to add them to | — | — |
+| ~~`contact-details.json`~~ | ~~**add** `fax`~~ **VOID** — `fax` was the officer's; nothing else needs it | — | — |
+| ~~`migrated/migrated-offence.json`~~ | ~~**add** `convictionDate`~~ **VOID — LIBRA 0.13.1 drops it too** | — | — |
 | `migrated/migrated-defendant.json` | **add** `numPreviousConvictions` (**integer**) | no | silent drop |
 
 **Type note.** `numPreviousConvictions` must be declared `integer` — core's
 `Defendant.numberOfPreviousConvictionsCited` is `Integer`, and a string declaration here would make
-FR10's rename a parse rather than a copy. `convictionDate` maps to core's `Offence.convictionDate`,
-a `String` in the POJO against a `datePattern` `$ref` in schema.
+FR10's rename a parse rather than a copy. *(The `convictionDate` type note that used to sit alongside
+this is void with the field.)*
 
-**Three seams, three failure modes** — worth keeping distinct because they need different tests: the
-closed container (`migrated-case-details.json`) is a 4xx, the open containers are silent drops, and
-the shared closed schema (`contact-details.json`) is a widening that must be reviewed as a
-shared-schema change rather than an officer-local one.
+**~~Three seams, three failure modes~~ — narrowed to one.** The closed-container 4xx
+(`migrated-case-details.json`) and the shared-closed-schema widening (`contact-details.json`) are
+void with the officer block. What remains is the single open-container silent drop
+(`migrated-defendant.json`) — still worth its own test.
 
 **No runtime entry-schema edit** (FR8): `pcfdlrm.command.receive-migrated-case-file.json` and
 `pcfdlrm.receive-migrated-case-file.json` both `$ref` `migrated-case-details.json` rather than
-restating it, so all five changes propagate to the inbound gate automatically. Re-confirmed at
-`04c0b2d1` — DD-43081's F6 found the sibling repo's equivalent file *does* diverge, so this is
-checked rather than assumed.
+restating it, so the remaining change (`numPreviousConvictions`) propagates to the inbound gate
+automatically. Re-confirmed at `04c0b2d1` — DD-43081's F6 found the sibling repo's equivalent file
+*does* diverge, so this is checked rather than assumed.
 
 ### Validation dispatch
 
@@ -206,8 +215,9 @@ with case-, hearing- or offence-level problems proceeds to Progression carrying 
 `MigratedCaseReceivedProcessor:51-57`. The reachability root is **`courtReferral.json`**, not
 `apiProsecutionCase.json`; core holds two parallel families whose closures are disjoint.
 
-1. **`.withPoliceOfficerInCase(...)`** on the `prosecutionCase` builder (`:88-106`), built by a new
-   private `buildPoliceOfficerInCase(...)` implementing FR9/FR9a:
+1. **~~`.withPoliceOfficerInCase(...)` on the `prosecutionCase` builder, built by a new private
+   `buildPoliceOfficerInCase(...)` implementing FR9/FR9a.~~ VOID under LIBRA 0.13.1** — no officer
+   block reaches PCFDLRM to map. *(Retained for the record — the mapping this would have been:)*
 
    ```text
    send iff surname ∧ policeOfficerRank ∧ policeWorkerReferenceNumber ∧ policeWorkerLocationCode
@@ -221,18 +231,15 @@ with case-, hearing- or offence-level problems proceeds to Progression carrying 
 
 2. **`ProsecutionCaseFileMigratedDefendantToCCDefendantConverter`** — add
    `.withNumberOfPreviousConvictionsCited(...)` from `numPreviousConvictions` (FR10's rename, applied
-   at this seam and nowhere else).
+   at this seam and nowhere else). **The one converter change that survives LIBRA 0.13.1.**
 
-3. **`ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter`** (reached from the defendant
-   converter at `:73`) — add `.withConvictionDate(...)`.
+3. **~~`ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter` — add `.withConvictionDate(...)`.~~
+   VOID under LIBRA 0.13.1** — FR4 is void; there is no `convictionDate` to map.
 
-Neither converter mentions officers, previous convictions or vehicles today, so all three are pure
-additions.
+Item 2 is a pure addition; items 1 and 3 are not built.
 
-**Cost depends on G2.** With canonical nesting (recommended), `buildPoliceOfficerInCase` is a
-level-preserving rename — PCFDLRM's `personalInformation{names, contactDetails, address}` maps
-straight onto core's `personDetails{…}`. If canonical stays flat, it becomes a re-nest, which is the
-first in this repo's history and the reason FR2a recommends the other way.
+**~~Cost depends on G2.~~ VOID** — with the officer converter void, there is no re-nest-vs-rename
+question left to depend on.
 
 ### The unmatched-offence rule
 
@@ -261,9 +268,10 @@ call site. **No LIBRA-specific test class, and no `if` on source system inside a
   (AC6), with `J`'s SJP routing asserted explicitly so it cannot drift back onto the common path
   (FR13) and **`R`'s rule set asserted explicitly** whichever FR12b option is chosen — the assertion
   is the deliverable either way, so the choice cannot change unnoticed. **No `X` fixture anywhere**
-  (AC6a): `X` is not a real code, and one would encode the workbook's error into the suite. The
-  officer block accepted whole and refused partial (AC4); `gender: NOT_KNOWN` (AC4a); each relaxed
-  field accepted when absent (AC9); the no-materials path (AC9a).
+  (AC6a): `X` is not a real code, and one would encode the workbook's error into the suite. ~~The
+  officer block accepted whole and refused partial (AC4); `gender: NOT_KNOWN` (AC4a)~~ *(void under
+  LIBRA 0.13.1 — AC4, AC4a are void)*; each relaxed field accepted when absent (AC9); the no-materials
+  path (AC9a).
 - **Integration — one representative LIBRA journey**, at DD-43099's depth.
 - **A whole-payload assertion at the `receive-migrated-case-file` boundary** is required, not a
   field-presence spot check — it is the only assertion that catches an ADR-003 name mismatch, which
@@ -274,9 +282,9 @@ call site. **No LIBRA-specific test class, and no `if` on source system inside a
 
 | FR | Where |
 |---|---|
-| FR1–FR5, FR7, FR8 | *Schema changes, file by file* |
-| FR2a | *Converter changes* cost note · **G2** |
-| FR9, FR9a, FR10, FR11 | *Converter changes* · 2a hand-back |
+| ~~FR1–FR4~~ (void) · FR5, FR7, FR8 | *Schema changes, file by file* |
+| ~~FR2a~~ (void) · ~~G2~~ (void) | *Converter changes* cost note |
+| ~~FR9, FR9a~~ (void) · FR10 (numPreviousConvictions only), FR11 | *Converter changes* · 2a hand-back |
 | FR12, FR14 | *Validation dispatch* |
 | FR12b | *Validation dispatch* — Option A vs B, **decision open** |
 | AC6a, AC6b | *Test layout* — no `X` fixture · 2a hand-back (impact CSV + ADR-003 §5 correction) |
@@ -285,7 +293,7 @@ call site. **No LIBRA-specific test class, and no `if` on source system inside a
 | FR15 | No design impact — `initiationCode` stays a plain `string` |
 | FR16 | *The unmatched-offence rule* |
 | FR17 | Fixture reconciliation — no design impact, but see **F3** |
-| FR19 | Cross-repo obligation — no design impact |
+| FR19 | Cross-repo obligation — no design impact in this repo. *(Revised 2026-08-18: the stagingDLRM close-out PR is tracked under DD-43130 itself, not a separate ticket.)* |
 
 ## Findings
 
@@ -319,34 +327,33 @@ return VALID`). So no material work is needed for LIBRA. But `:348` also hardcod
 from the migration flow entirely**, including for LIBRA `J` cases. Out of scope; recorded because it
 is the material-layer version of the `J`-is-SJP question.
 
-**F6 — police-rank reference data exists in this repo and is consumed by nothing.**
+**F6 — police-rank reference data exists in this repo and is consumed by nothing.** *(Decision for
+T4 is now moot under LIBRA 0.13.1 — see below.)*
 `ReferenceDataQueryServiceImpl:76` declares `referencedata.query.police-ranks`, `RefDataHelper:73`
 has `asPoliceRankRefData()`, `PoliceRankReferenceData` is generated, and
 `referencedata.get-police-ranks.json` is already stubbed for the ITs — but nothing outside
-`pcfdlrm-refdata` references any of it. It is a third orphan alongside
-`pcf-policeOfficerInCase.json` and `getDlrmDefendantValidationRules`.
-**Decision for T4: do not wire it.** PCF does not validate the officer at all, so `policeOfficerRank`
-is carried through as the string LIBRA sends. Recorded because the plumbing is sitting there and the
-next person to touch the officer block will find it and reasonably assume it was meant to be used.
-Note the stub holds exactly one rank (`AXE`), so anyone who *did* wire it would need the LIBRA
-fixture's rank to match — a trap worth knowing about rather than discovering in a red IT.
+`pcfdlrm-refdata` references any of it. It remains an orphan alongside `pcf-policeOfficerInCase.json`
+and `getDlrmDefendantValidationRules` — **now a second-order orphan**, since with the officer block
+void there is no `policeOfficerRank` for this reference data to have ever validated. ~~Decision for
+T4: do not wire it.~~ Moot — T4's officer half does not exist. Recorded for whichever future story
+reintroduces the officer block: note the stub holds exactly one rank (`AXE`).
 
-**F5 — PCF declares the officer block and never reads it.** `case-details.json:45` declares
-`otherPartyOfficerInCase`; it flows into PCF's domain and public events and has **zero** references
-in PCF main Java. `CCCaseToProsecutionCaseConverter` builds field-by-field with no whole-object copy.
-This is why "follow PCF" does not reach FR9 — PCF is silent, not opposed — and why FR9 was decided
-on the merits instead.
+**F5 — PCF declares the officer block and never reads it.** *(No longer load-bearing for this story
+— FR9 is void — but retained: it is the reason "follow PCF" never applied to the officer decision,
+which matters if the officer block returns in a future LIBRA revision.)* `case-details.json:45`
+declares `otherPartyOfficerInCase`; it flows into PCF's domain and public events and has **zero**
+references in PCF main Java. `CCCaseToProsecutionCaseConverter` builds field-by-field with no
+whole-object copy.
 
 ## Gates
 
 | # | Question | Recommendation | Blocks |
 |---|---|---|---|
 | **G1** *(revised 2026-08-17)* | **Canonical's `initiationCode` is `enum: ["O"]` and DD-43081 FR1 has decided not to widen it** — reading LIBRA 0.13's workbook snapshot as `["O"]` too, and dropping "the whole initiation-code thread". LIBRA will in fact send new codes; `["O"]` is correct only because **XHIBIT** sends only `O` | Reinstate the thread: **widen** canonical to LIBRA's `O, C, Q, J, R`; **keep** the XHIBIT allowed-values rule at `["O"]`, now a real constraint; **add** a LIBRA rule at the five — the exact shape ADR-002 §4 anticipates. Amend ADR-003 §5 (`C, J, Q, S` → `O, C, Q, J, R`) and **correct the `X`** in §5 and in `libra-schema-impact.csv` — architect-confirmed as a transcription error for `R`, so no translation is needed and none should be built | Nothing here — PCFDLRM's `initiationCode` is a plain `string`. **Blocks any LIBRA case that is not `O`**, and so the LIBRA journey (AC15) |
-| **G2** | ADR-003 §3 declares the officer block flat; PCFDLRM and core both nest | Canonical nests (FR2a option 2). `officer-in-case.json` had **not landed** in stagingDLRM at `55bf1721`, so this is a schema edit now and a three-party change later | Nothing here; sets FR9's converter cost |
+| ~~G2~~ | ~~ADR-003 §3 declares the officer block flat; PCFDLRM and core both nest~~ **Void under LIBRA 0.13.1 — 2026-08-18** | No officer block is sent; the flat-vs-nested question does not arise | — |
 | ~~G3~~ | ~~Must the `prosecutorOffenceId` hearing loss be *prevented* or only *detected*?~~ **Withdrawn 2026-08-14** | The field is **not relaxed** — DD-43081 `01-requirements.md` FR1 states LIBRA 0.13 requires it on both sides, and the impact CSV marks it `already_flowing`. The condition is unreachable from LIBRA | — |
 
-Neither G1 nor G2 blocks work in this repo. Both get more expensive the longer they wait — G2
-sharply, once the LIBRA extract is written against a flat officer block.
+G1 does not block work in this repo. G2 is void, so it no longer needs waiting on.
 
 ## Tasks
 
@@ -355,12 +362,18 @@ otherwise collide in `pcfdlrm-domain-aggregate`.
 
 | Task | Owns | Covers | Depends on |
 |---|---|---|---|
-| **T1** Schemas | `pcfdlrm-domain-value-schema` | FR1–FR5, FR7, FR8, FR19 | — (gates T4) |
+| **T1** Schemas | `pcfdlrm-domain-value-schema` | ~~FR1–FR4~~ (void) · FR5, FR7, FR8, FR19 | — (gates T4) |
 | **T2** Validation dispatch | `pcfdlrm-domain-aggregate` | FR12, FR12b, FR13, FR14 | — |
 | **T3** Aggregate guards | `pcfdlrm-domain-aggregate` | FR12a | T2 (same module) |
-| **T4** Converters | `pcfdlrm-event-processor` | FR9, FR9a, FR10 | T1 (generated POJOs) |
+| **T4** Converters | `pcfdlrm-event-processor` | ~~FR9, FR9a~~ (void) · FR10 (`numPreviousConvictions` only) | T1 (generated POJO) |
 | **T5** Tolerance tests + fixture reconciliation | `pcfdlrm-domain-aggregate`, fixtures | FR16, FR17 | T3 (same module) |
 | **T6** Integration — the LIBRA journey | `pcfdlrm-integration-test` | FR18 (integration half) | T1 (fixture), T1–T4 (to pass) |
+
+**T1 and T4 are now much smaller under LIBRA 0.13.1.** T1 shrinks from five schema edits to one
+(`numPreviousConvictions`); T4 shrinks from an officer converter plus two field mappings to a single
+rename. Both remain worth keeping as separate PRs against their owning modules rather than folding
+into T2/T3/T5 — but whether that split is still the right size is a call for whoever picks up build,
+not a decision this stage should force.
 
 ```text
 T1 ──────────────► T4 ──────┐
@@ -368,8 +381,8 @@ T2 ──► T3 ──► T5 ───────────┴──► T6
 ```
 
 **T1 first.** It unblocks DD-43081's compile-blocked Group B converter mapping (FR19) and produces
-the generated POJOs T4 depends on. Check what the POJO-generation plugin emits once
-`pcf-policeOfficerInCase.json` is reachable before estimating T4 — FR2a's outcome changes that cost.
+the generated POJO T4 depends on. *(The `pcf-policeOfficerInCase.json` POJO-generation check that
+used to gate T4's estimate is void — FR2a is void, and T4's remaining work is a single rename.)*
 
 **T2, T3, T5 share `pcfdlrm-domain-aggregate` and must sequence.** They are not parallelisable; T4
 runs alongside the whole chain because it owns a different module.
@@ -396,6 +409,6 @@ It needs no task.
   designing the routing twice.
 - **The `:368` fix has no XHIBIT-visible behaviour change**, so it needs a LIBRA no-materials fixture
   to be provable at all. `stagingdlrm-testharness` carries a `fixeddatenomaterial` case as precedent.
-- Open for build to settle: whether the officer converter lives in
-  `MigratedCaseToProsecutionCaseConverter` or its own class — it is ~40 lines with an all-or-nothing
-  guard, and that converter is already 200+ lines.
+- ~~Open for build to settle: whether the officer converter lives in
+  `MigratedCaseToProsecutionCaseConverter` or its own class.~~ Void under LIBRA 0.13.1 — there is no
+  officer converter to place.

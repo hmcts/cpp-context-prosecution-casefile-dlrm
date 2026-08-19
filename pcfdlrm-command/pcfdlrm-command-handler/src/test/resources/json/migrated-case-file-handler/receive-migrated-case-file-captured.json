@@ -17,6 +17,7 @@
           "selfDefinedInformation": {}
         },
         "initiationCode": "C",
+        "numPreviousConvictions": 3,
         "offences": [
           {
             "arrestDate": "2023-10-15",

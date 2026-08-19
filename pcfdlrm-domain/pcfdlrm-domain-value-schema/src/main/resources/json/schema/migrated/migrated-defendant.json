@@ -88,6 +88,11 @@
     },
     "initiationCode": {
       "type": "string"
+    },
+
+    "numPreviousConvictions": {
+      "type": "integer",
+      "description": "Number of previous convictions, as supplied by the source system. Carried onward to core's Defendant.numberOfPreviousConvictionsCited."
     }
 
   },

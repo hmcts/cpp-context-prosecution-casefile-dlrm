@@ -77,7 +77,6 @@ import uk.gov.moj.cpp.pcfdlrm.validation.rules.hearing.WeekCommencingStartDateVa
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.prosecutors.ProsecutorAOCPValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.prosecutors.ProsecutorSJPValidationRule;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel;
-import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -123,6 +122,26 @@ public class CcProsecutionValidationRuleProvider {
             CHARGE.getCode(), COMMON_CASE_RULE_SET,
             REQUISITION.getCode(), COMMON_CASE_RULE_SET,
             SJP.getCode(), SJP_CASE_RULE_SET);
+
+    // LIBRA-shaped: COMMON minus the three rules PCF does not have (SendingCourt, ReceivingCourt, ReceiptType).
+    private static final List<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>> COMMON_CASE_RULE_SET_LIBRA = List.of(
+            new CaseInitiationValidationRule(),
+            new ProsecutorReferenceDataValidationRule(),
+            new CaseMarkersValidationAndEnricherRule(),
+            new PoliceForceCodeValidationRule());
+
+    // LIBRA-shaped: SJP minus the two court rules (SendingCourt, ReceivingCourt).
+    private static final List<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>> SJP_CASE_RULE_SET_LIBRA = List.of(
+            new CaseInitiationValidationRule(),
+            new SummonsCodeValidationRule(),
+            new ProsecutorReferenceDataValidationRule(),
+            new ProsecutorSJPValidationRule(),
+            new ProsecutorAOCPValidationRule());
+
+    private static final Map<String, List<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>>> caseValidationMapLibra = of(
+            CHARGE.getCode(), COMMON_CASE_RULE_SET_LIBRA,
+            REQUISITION.getCode(), COMMON_CASE_RULE_SET_LIBRA,
+            SJP.getCode(), SJP_CASE_RULE_SET_LIBRA);
 
     private static final List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> SJP_DEFENDANT_RULE_SET = unmodifiableList(asList(
             new NationalityValidationAndEnricherRule(),
@@ -291,11 +310,17 @@ public class CcProsecutionValidationRuleProvider {
     private static final Map<String, List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>>> defendantValidationMapDlrm = defendantValidationMapSpi;
 
 
+    private static final String XHIBIT = "XHIBIT";
+
     private CcProsecutionValidationRuleProvider() {
     }
 
-    public static List<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>> getCaseValidationRules(final String caseInitiationCode) {
-        return caseValidationMap.getOrDefault(caseInitiationCode, COMMON_CASE_RULE_SET);
+    public static List<ValidationRule<ProsecutionWithReferenceData, ReferenceDataQueryService>> getCaseValidationRules(final String caseInitiationCode, final String sourceSystemName) {
+        if (XHIBIT.equals(sourceSystemName)) {
+            return caseValidationMap.getOrDefault(caseInitiationCode, COMMON_CASE_RULE_SET);
+        }
+        // Absent/unrecognised source systems default to the LIBRA/PCF-shaped set, not XHIBIT's.
+        return caseValidationMapLibra.getOrDefault(caseInitiationCode, COMMON_CASE_RULE_SET_LIBRA);
     }
 
     public static List<ValidationRule<MigratedHearingWithReferenceData, ReferenceDataQueryService>> getMigratedHearingValidationRules() {
@@ -327,14 +352,6 @@ public class CcProsecutionValidationRuleProvider {
         } else {
             return Stream.of(commonDefendantRules, spiDefendantRules, DEFAULT_DEFENDANT_RULE_SET).flatMap(Collection::stream).collect(toList());
         }
-    }
-
-    private static List<ValidationRule<MigratedDefendant, ReferenceDataQueryService>> getDlrmDefendantValidationRules(
-            final String defendantInitiationCode,
-            final Map<String, List<ValidationRule<MigratedDefendant, ReferenceDataQueryService>>> defendantValidationMap) {
-
-        // What will fo here
-        return defendantValidationMap.getOrDefault(defendantInitiationCode, null);
     }
 
 }

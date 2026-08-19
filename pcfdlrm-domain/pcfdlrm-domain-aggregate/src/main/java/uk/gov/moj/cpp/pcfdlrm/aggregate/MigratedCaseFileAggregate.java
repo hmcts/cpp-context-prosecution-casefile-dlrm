@@ -209,7 +209,7 @@ public class MigratedCaseFileAggregate implements Aggregate {
 
         final List<Problem> caseProblems = validate(
                 receivedProsecutionWithReferenceData,
-                referenceDataQueryService, getCaseValidationRules(receivedInitiationCode));
+                referenceDataQueryService, getCaseValidationRules(receivedInitiationCode, sourceSystemName));
 
         if (isNotEmpty(caseProblems) && isXhibit(receiveMigratedCaseFile)) {
 
@@ -357,15 +357,13 @@ public class MigratedCaseFileAggregate implements Aggregate {
                                     .withMigratedHearingWithReferenceData(migratedHearingWithReferenceDataList)
                                     .build());
                         },
-                        () -> {
-                            if (isXhibit(finalReceiveMigratedCaseFile)) {
-                                builder.add(MigratedCaseFileReceived.migratedCaseFileReceived()
-                                        .withMigratedCaseSubmission(finalReceiveMigratedCaseFile)
-                                        .withReferenceDataVO(receivedProsecutionWithReferenceData.getReferenceDataVO())
-                                        .withMigratedHearingWithReferenceData(migratedHearingWithReferenceDataList)
-                                        .build());
-                            }
-                        }
+                        // No isXhibit guard here (AC9a/AC-T3-1, DD-43130): a non-XHIBIT case with no
+                        // materials must still emit MigratedCaseFileReceived, not silently produce nothing.
+                        () -> builder.add(MigratedCaseFileReceived.migratedCaseFileReceived()
+                                .withMigratedCaseSubmission(finalReceiveMigratedCaseFile)
+                                .withReferenceDataVO(receivedProsecutionWithReferenceData.getReferenceDataVO())
+                                .withMigratedHearingWithReferenceData(migratedHearingWithReferenceDataList)
+                                .build())
                 );
 
         return apply(builder.build());
@@ -513,7 +511,7 @@ public class MigratedCaseFileAggregate implements Aggregate {
     }
 
     private boolean isXhibit(final ReceiveMigratedCaseFile receiveMigratedCaseFile) {
-        return receiveMigratedCaseFile.getMigratedCaseDetails().getMigrationSourceSystem().getMigrationSourceSystemName().equals(XHIBIT);
+        return XHIBIT.equals(receiveMigratedCaseFile.getMigratedCaseDetails().getMigrationSourceSystem().getMigrationSourceSystemName());
     }
 
     private boolean hasInvalidOuCode(final List<Problem> caseProblems) {

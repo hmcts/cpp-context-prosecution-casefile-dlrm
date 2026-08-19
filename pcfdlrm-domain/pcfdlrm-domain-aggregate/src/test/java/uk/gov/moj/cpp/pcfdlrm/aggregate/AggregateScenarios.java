@@ -160,11 +160,14 @@ final class AggregateScenarios {
         final List<ExpectedEvent> xhibitExpectedNullMaterials = new ArrayList<>(defendantValidationNoise);
         xhibitExpectedNullMaterials.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-no-materials-null.json"));
 
+        final List<ExpectedEvent> libraExpected = new ArrayList<>(defendantValidationNoise);
+        libraExpected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-no-materials-libra.json"));
+
         return Stream.of(
                 new AggregateScenario("isXhibit() true for XHIBIT — MigratedCaseFileReceived reaches the stream",
                         noMaterialsInput(sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER)), xhibitExpected),
-                new AggregateScenario("isXhibit() false for LIBRA — MigratedCaseFileReceived is withheld",
-                        noMaterialsInput(sourceSystem("LIBRA", "LIBRA-123")), defendantValidationNoise),
+                new AggregateScenario("No materials, LIBRA — MigratedCaseFileReceived reaches the stream too (T3 fix — was withheld)",
+                        noMaterialsInput(sourceSystem("LIBRA", "LIBRA-123")), libraExpected),
                 new AggregateScenario("No materials present — materials list is null rather than empty, same isXhibit() outcome",
                         nullMaterialsInput(), xhibitExpectedNullMaterials)
         );
