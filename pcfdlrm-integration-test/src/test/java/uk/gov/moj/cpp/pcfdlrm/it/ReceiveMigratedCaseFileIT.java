@@ -270,6 +270,21 @@ class ReceiveMigratedCaseFileIT {
         receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiated(caseUrn, "no-material");
     }
 
+    // T6 — the one representative LIBRA journey: LIBRA + initiationCode "J" + no materials + numPreviousConvictions.
+    @Test
+    void receiveMigratedLibraCaseFileWithoutMaterial() {
+        final String submissionId = UUID.randomUUID().toString();
+        final String caseId = UUID.randomUUID().toString();
+        final String caseUrn = randomAlphanumeric(10);
+        final String staticPayLoad = getStringFromResource("command-json/pcfdlrm.command.receive-migrated-case-file-libra-journey.json")
+                .replace("SUBMISSION_ID", submissionId)
+                .replace("CASE_ID", caseId)
+                .replace("CASE_URN", caseUrn)
+                .replace("HEARING_DATE", LocalDate.now().plusDays(1).toString());
+        receiveMigratedCaseFileHelper.receiveMigratedCaseFile(staticPayLoad);
+        receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiated(caseUrn, "libra-journey");
+    }
+
     @Test
     void receiveMigratedCaseFileWithAllHearingsSkipped() {
         final String submissionId = UUID.randomUUID().toString();

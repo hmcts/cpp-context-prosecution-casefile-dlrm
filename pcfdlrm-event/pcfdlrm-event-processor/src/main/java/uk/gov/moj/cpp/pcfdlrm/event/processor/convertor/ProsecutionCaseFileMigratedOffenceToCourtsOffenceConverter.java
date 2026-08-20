@@ -309,6 +309,7 @@ public class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter implemen
         return OffenceFacts.offenceFacts()
                 .withVehicleCode(vehicleCode)
                 .withVehicleRegistration(vehicleRegistration)
+                .withVehicleMake(offence.getVehicleMake())
                 .withAlcoholReadingMethodCode(alcoholReadingMethodCode)
                 .withAlcoholReadingMethodDescription(getAlcoholLevelMethodDescription(alcoholReadingMethodCode))
                 .withAlcoholReadingAmount(alcoholReadingAmount)

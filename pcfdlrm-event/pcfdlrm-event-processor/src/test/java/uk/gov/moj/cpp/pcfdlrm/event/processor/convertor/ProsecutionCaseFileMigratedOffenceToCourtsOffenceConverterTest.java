@@ -937,6 +937,34 @@ class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest {
 
 
     @Test
+    void shouldSetVehicleMakeOnOffenceFacts() {
+        final UUID offenceId = randomUUID();
+        final String vehicleMake = "Ford";
+        final ReferenceDataVO referenceDataVO = buildReferenceDataWithOffenceAndModeOfTrial(EITHER_WAY);
+
+        final List<MigratedOffence> offences = of(migratedOffence()
+                .withOffenceId(offenceId)
+                .withOffenceCode(OFFENCE_CODE_TVL_ABC)
+                .withOffenceCommittedDate(LocalDate.now())
+                .withVehicleRelatedOffence(new VehicleRelatedOffence("OTHER", "L"))
+                .withVehicleMake(vehicleMake)
+                .withReferenceData(offenceReferenceData()
+                        .withModeOfTrialDerived(SUMMARY)
+                        .build())
+                .build());
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName(XHIBIT);
+        paramsVO.setReferenceDataVO(referenceDataVO);
+
+        final List<uk.gov.justice.core.courts.Offence> coreOffences = converter.convert(offences, paramsVO);
+
+        final uk.gov.justice.core.courts.Offence offence = coreOffences.get(0);
+        assertThat(offence.getOffenceFacts(), notNullValue());
+        assertThat(offence.getOffenceFacts().getVehicleMake(), is(vehicleMake));
+    }
+
+    @Test
     void shouldHandleNullOffenceFacts() {
         final UUID offenceId = randomUUID();
         final ReferenceDataVO referenceDataVO = buildReferenceDataWithOffenceAndModeOfTrial(EITHER_WAY);

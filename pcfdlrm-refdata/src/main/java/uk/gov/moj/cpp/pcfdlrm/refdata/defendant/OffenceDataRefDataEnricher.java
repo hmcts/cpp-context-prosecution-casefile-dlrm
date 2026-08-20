@@ -85,6 +85,7 @@ public class OffenceDataRefDataEnricher implements DefendantRefDataEnricher {
                 .withIndividualAliases(defendant.getIndividualAliases())
                 .withInitiationCode(defendant.getInitiationCode())
                 .withLanguageRequirement(defendant.getLanguageRequirement())
+                .withNumPreviousConvictions(defendant.getNumPreviousConvictions())
                 .withOffences(offences)
                 .withOrganisationName(defendant.getOrganisationName())
                 .withPncIdentifier(defendant.getPncIdentifier())

@@ -92,6 +92,29 @@ class ProsecutionCaseFileMigratedDefendantToCCDefendantConverterTest {
         assertNull(courtsDefendants.get(1).getAssociatedPersons());
     }
 
+    // AC-T4-4/FR10 — numPreviousConvictions renames onto core's numberOfPreviousConvictionsCited.
+    @Test
+    void shouldConvertNumPreviousConvictionsToNumberOfPreviousConvictionsCited() {
+        final ProsecutionWithReferenceData prosecutionWithReferenceData = buildProsecutionWithReferenceData(EITHER_WAY);
+        final MigratedDefendant defendantWithConvictions = MigratedDefendant.migratedDefendant()
+                .withValuesFrom(prosecutionWithReferenceData.getProsecution().getDefendants().get(0))
+                .withNumPreviousConvictions(3)
+                .build();
+        final List<MigratedDefendant> defendants = List.of(defendantWithConvictions);
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName(XHIBIT);
+        paramsVO.setCaseId(prosecutionWithReferenceData.getProsecution().getCaseDetails().getCaseId());
+        paramsVO.setReferenceDataVO(prosecutionWithReferenceData.getReferenceDataVO());
+        paramsVO.setInitiationCode("J");
+
+        when(referenceDataQueryService.retrieveAlcoholLevelMethods()).thenReturn(asList(alcoholLevelMethodReferenceData().withMethodCode("A").withMethodDescription("Blood").build(),
+                alcoholLevelMethodReferenceData().withMethodCode("B").withMethodDescription("Breath").build()));
+
+        final List<Defendant> courtsDefendants = converter.convert(defendants, paramsVO);
+
+        assertThat(courtsDefendants.get(0).getNumberOfPreviousConvictionsCited(), is(3));
+    }
+
     @Test
     void shouldConvertToCourtsDefendantWithNoAliases() {
         final ProsecutionWithReferenceData prosecutionWithReferenceData = buildProsecutionWithReferenceData(EITHER_WAY, true);

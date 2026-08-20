@@ -76,6 +76,7 @@ public class ProsecutionCaseFileMigratedDefendantToCCDefendantConverter implemen
                                     .withCroNumber(defendant.getCroNumber())
                                     .withProsecutionAuthorityReference(defendant.getProsecutorDefendantReference())
                                     .withProsecutionCaseId(paramsVO.getCaseId())
+                                    .withNumberOfPreviousConvictionsCited(defendant.getNumPreviousConvictions())
                                     .withLegalEntityDefendant(prosecutionMigrationCaseFileToCCLegalEntityDefendantConverter.convert(defendant))
                                     .withAssociatedPersons(defendant.getIndividual() != null ? buildAssociatedPersons(defendant.getIndividual().getParentGuardianInformation(), paramsVO.getReferenceDataVO()) : null);
 

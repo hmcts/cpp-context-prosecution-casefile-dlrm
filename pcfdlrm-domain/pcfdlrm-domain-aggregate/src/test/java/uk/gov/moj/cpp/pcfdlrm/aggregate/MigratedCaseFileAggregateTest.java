@@ -5,10 +5,16 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.createMigratedMaterials;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.noMaterialsInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_DATE_OF_HEARING_EXCLUSIONS;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_HEARING_DATE_GMT;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_WEEK_COMMENCING_START_DATE;
@@ -37,6 +43,7 @@ import uk.gov.moj.cpp.pcfdlrm.refdata.defendant.DefendantRefDataEnricher;
 import uk.gov.moj.cpp.pcfdlrm.refdata.hearing.MigratedHearingRefDataEnricher;
 import uk.gov.moj.cpp.pcfdlrm.refdata.proscase.CaseRefDataEnricher;
 import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
+import uk.gov.moj.cpp.pcfdlrm.validation.provider.CcProsecutionValidationRuleProvider;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CourtDocument;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CourtRoom;
@@ -72,6 +79,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
+import org.mockito.MockedStatic;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -184,6 +192,30 @@ class MigratedCaseFileAggregateTest {
                 receiveMigratedCaseFile(receiveMigratedCase, prosecutionWithReferenceData)
         );
         assertEquals("File type matching cps bundle code is not found in map", exception.getMessage());
+    }
+
+    // Call-argument check, not output — isXhibit guards discard case problems for LIBRA either way.
+    @Test
+    void shouldPassLibraSourceSystemNameToCaseValidationRules() {
+        final CaseFileInput input = noMaterialsInput(sourceSystem("LIBRA", "LIBRA-123"));
+        prosecutionWithReferenceData = input.prosecutionWithReferenceData();
+
+        try (MockedStatic<CcProsecutionValidationRuleProvider> mockedProvider =
+                     mockStatic(CcProsecutionValidationRuleProvider.class, CALLS_REAL_METHODS)) {
+
+            receiveMigratedCaseFile(input.receiveMigratedCaseFile(), prosecutionWithReferenceData);
+
+            mockedProvider.verify(() -> CcProsecutionValidationRuleProvider.getCaseValidationRules(any(), eq("LIBRA")));
+        }
+    }
+
+    // AC-T3-3 — migrationSourceSystemName is not required by schema, so a null one is a real input.
+    @Test
+    void shouldNotThrowWhenMigrationSourceSystemNameIsAbsent() {
+        final CaseFileInput input = noMaterialsInput(sourceSystem(null, "UNKNOWN-1"));
+        prosecutionWithReferenceData = input.prosecutionWithReferenceData();
+
+        assertDoesNotThrow(() -> receiveMigratedCaseFile(input.receiveMigratedCaseFile(), prosecutionWithReferenceData));
     }
 
     @Test

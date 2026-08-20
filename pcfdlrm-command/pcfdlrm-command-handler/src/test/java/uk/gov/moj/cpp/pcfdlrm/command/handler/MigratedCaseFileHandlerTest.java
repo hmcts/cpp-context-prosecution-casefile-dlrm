@@ -5,6 +5,7 @@ import static java.util.List.of;
 import static java.util.UUID.fromString;
 import static java.util.stream.Stream.builder;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
@@ -179,6 +180,11 @@ class MigratedCaseFileHandlerTest {
 
         assertThat(captured.getDocumentMetadataReferenceDataList(), is(getDocumentTypeAccessReferenceData()));
 
+        final List<MigratedDefendant> capturedDefendants =
+                captured.getReceiveMigratedCaseFile().getMigratedCaseDetails().getDefendants();
+        assertThat(capturedDefendants.get(0).getNumPreviousConvictions(), is(3));
+        assertThat(capturedDefendants.get(1).getNumPreviousConvictions(), is(nullValue()));
+
         final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter(new ObjectMapperProducer().objectMapper());
         assertThat(objectToJsonObjectConverter.convert(captured.getReceiveMigratedCaseFile()).toString(),
                 matchesWholePayload(fixture("json/migrated-case-file-handler/receive-migrated-case-file-captured.json"), List.of()));
@@ -216,12 +222,13 @@ class MigratedCaseFileHandlerTest {
     private List<MigratedDefendant> getDefendantList() {
 
         return Arrays.asList(
-                buildDefendant(fromString("d1d1d1d1-1111-4111-8111-111111111111"), "John", "Smith"),
-                buildDefendant(fromString("d2d2d2d2-2222-4222-8222-222222222222"), "Roger", "Wesley"));
+                buildDefendant(fromString("d1d1d1d1-1111-4111-8111-111111111111"), "John", "Smith", 3),
+                buildDefendant(fromString("d2d2d2d2-2222-4222-8222-222222222222"), "Roger", "Wesley", null));
 
     }
 
-    private MigratedDefendant buildDefendant(final UUID defendantId, final String firstName, final String lastName) {
+    private MigratedDefendant buildDefendant(final UUID defendantId, final String firstName, final String lastName,
+                                              final Integer numPreviousConvictions) {
         return MigratedDefendant.migratedDefendant()
                 .withId(defendantId)
                 .withIndividual(individual()
@@ -241,6 +248,7 @@ class MigratedCaseFileHandlerTest {
                         .withOffenceSequenceNumber(1)
                         .build()))
                 .withInitiationCode("C")
+                .withNumPreviousConvictions(numPreviousConvictions)
                 .build();
     }
 

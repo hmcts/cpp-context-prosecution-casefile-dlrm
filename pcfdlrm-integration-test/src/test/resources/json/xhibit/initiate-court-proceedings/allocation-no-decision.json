@@ -28,6 +28,7 @@
             "courtProceedingsInitiated": "EXCLUDED",
             "id": "EXCLUDED",
             "masterDefendantId": "EXCLUDED",
+            "numberOfPreviousConvictionsCited": 3,
             "offences": [
               {
                 "allocationDecision": {
