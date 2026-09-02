@@ -4,6 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this service is
 
+> **Branch note — `team/25.104.x`.** This branch is cut from `main` for the DD-43191 Java 25 upgrade
+> epic. It does **not** carry the LIBRA-era work that lives on `team/dlrm8` / `team/libra1`: the
+> `pcfdlrm-test-support` module and its `WholePayloadMatcher`. Anything
+> describing those is out of scope here — see
+> `docs/pipeline/adrs/DD-43191-j25-parity-method.md` decision 7 for the J25 stories'
+> scope against what this branch actually contains.
+
 `pcfdlrm` (Prosecution Casefile DLRM — Data Lake / Reporting / Migration) is one of the HMCTS CPP bounded contexts. It sits **alongside** the main `prosecutioncasefile` context: it ingests **migrated** prosecution case files from the legacy estate, validates and accepts them, layers in court‑document material, and emits a single public event (`public.pcfdlrm.migrated-case-file-processed`) that `progression` consumes to bring the migrated case into the live pipeline.
 
 Built on the CPP framework (`uk.gov.moj.cpp.common:service-parent-pom`), packaged as a WAR, deployed to WildFly. Java 17.
@@ -67,6 +74,11 @@ Azure DevOps (`azure-pipelines.yaml`):
 - SonarQube project: `uk.gov.moj.cpp.prosecutioncasefile.dlrm:prosecutioncasefile-dlrm-parent`.
 
 ## Architecture — the three layers you must reason across
+
+For a full source-cited trace of the end-to-end migration flow (stagingdlrm → pcfdlrm → progression →
+listing), the validation rule set, material-upload mechanics, cross-context dependencies, and known edge
+cases, see `docs/architecture/pcfdlrm-flow-reference.md`. It predates the Java 25 work, so its version
+pins are the J17 ones — read them as the *before* picture.
 
 Every change touching events needs to be reasoned about across **three layers**. Breaking one without the others produces silent data drift:
 
@@ -132,11 +144,56 @@ For public events: also update `public-publications-descriptor.yaml`. The proces
 
 When bumping any upstream interface version in `pom.xml` (`coredomain`, `progression`, `resulting`, `sjp`, `defence`, `referencedata`, `referencedata.offences`, `material`, `stream-transformation-tool`, `service-parent-pom`), also check the matching schema/RAML classifier dep is on the same version — otherwise schema validation fails at runtime. The `RequireLatestMojInterfaceRule` enforcer in CI will block stale interface versions.
 
+## SDLC Orchestrator (hmcts-sdlc-orchestrator plugin)
+
+This repo uses the `hmcts-sdlc-orchestrator` plugin exclusively for AI-assisted SDLC work —
+its 8-stage pipeline (Requirements → Architecture & Design → User Story → Test Specs → Code →
+Code Review → Build & Test → Deploy Sandbox) and agents are reused as-is. This repo's
+Java/Maven CQRS/WildFly modules match the plugin's legacy context-service assumptions, so no
+local agent/rule/skill overrides are maintained here.
+
+- **Reuse from the plugin as-is:** `requirements-analyst`, `architecture-designer`,
+  `story-writer`, `test-engineer`, `implementation`, `code-reviewer`, `ci-orchestrator`,
+  `deployer`, `context-scaffold`, `context-service-guide`, `api-contract-check`,
+  `dependency-audit`, `review-pr`, `event-flow-mapper`, `doc-generator`,
+  `migration-reviewer`, `rbac-auditor`, the security hooks (`block-secrets`, `block-pii`,
+  `guard-bash`, `guard-paths`).
+- **Do NOT use:** `springboot-service-from-template`, `springboot-api-from-template`,
+  `terraform-validate`, `helm-config-validator` — no Spring Boot, Terraform, or Helm chart
+  in this repo.
+- No local Spec-Kit installation, custom agents, or rule files — a previous
+  `.claude/agents/` + `.claude/rules/` + `.specify/` Spec-Kit setup was installed here but
+  never actually driven (no `specs/` output ever existed) and has been removed in favour of
+  the plugin.
+- Pipeline artefacts go to one directory **per story**, named
+  `docs/pipeline/<EPIC-KEY>-<STORY-KEY>-<slug>/` (created on first use, no pre-scaffolding
+  required): `00-input-brief.md` → `01-requirements.md` → `02-design.md` → `03-stories.md`,
+  plus a shared `docs/pipeline/adrs/` for any architecturally-significant decision. Both Jira
+  keys sit in the directory name, so an epic's stories sort together and either key is greppable
+  without opening a file — e.g. `DD-43067-DD-43099-pcfdlrm-test-hardening/`. A ticket with no
+  parent epic keeps the single-key form, and existing directories are not renamed retroactively.
+- **Each story directory is self-contained.** An SDLC stage run against one story must not need
+  another story's files — epic-level framing (the epic's goal, cross-cutting design decisions,
+  links to supporting analysis) is repeated in that story's `00-input-brief.md`. There is no
+  epic-level artefact directory.
+- **A story belongs to exactly one repo.** Stage 7 (CI) is per-repo, so a change needing work in
+  two repos is two stories, one per repo. The two DLRM repos are worked **independently, by separate
+  developers**, so each repo's pipeline must be self-contained: no stage may need a file that lives
+  only in the other repo.
+- **ADRs are named `<JIRA-KEY>-<slug>.md`, never numbered.** `docs/pipeline/adrs/DD-43191-j25-parity-method.md`.
+  A sequential number has to be allocated by someone at authoring time, which cannot work with stories
+  running in parallel on separate branches: two authors both reach for the next integer and neither sees
+  the other until merge. Every ADR is born from an epic or story that already carries a unique key, so
+  keying to it makes collision impossible, needs no register and no approval round-trip, gives a mirrored
+  ADR the same filename in both repos automatically, and makes `grep DD-43191` find the stories and their
+  ADRs together. An epic with several ADRs distinguishes them by slug, exactly as its story directories
+  do. Pre-existing numbered ADRs keep their names — they are not renumbered retroactively.
+- **Shared ADRs are mirrored, not linked across.** A decision shared with `cpp-context-stagingdlrm` is
+  authored once and committed to **both** repos, under the same filename, carrying a header
+  line that names its mirror. Amend both copies in the same pair of PRs, or neither; sections applying
+  to only one repo say so inline so the two files stay byte-identical. Never reference the other repo by URL for anything a stage needs to read — the other repo may not be
+  checked out, may be ahead, or may not yet carry the file.
+
 ## Java style
 
 No wildcard imports. Always use explicit per‑class imports.
-
-<!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
-<!-- SPECKIT END -->
