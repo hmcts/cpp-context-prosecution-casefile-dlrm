@@ -5,7 +5,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.pcfdlrm</groupId>
         <artifactId>pcfdlrm-domain</artifactId>
-        <version>17.104.22-DLRMJ25-SNAPSHOT</version>
+        <version>17.104.23-DLRMJ25-SNAPSHOT</version>
     </parent>
 
     <artifactId>pcfdlrm-domain-aggregate</artifactId>
