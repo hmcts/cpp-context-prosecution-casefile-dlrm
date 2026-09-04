@@ -185,6 +185,53 @@ class MigratedCaseReceivedProcessorTest {
         assertThat(initiateCourtProceedings.has("listHearingRequests"), is(false));
     }
 
+    @Test
+    void shouldEmitIndicatedPleaAndNoPleaForLibraIndicatedNotGuilty() throws com.fasterxml.jackson.core.JsonProcessingException {
+        final JsonNode offence = firstOffenceOf(libraIndicatedPleaInput(GUILTY_OFFENCE_ID, "INDICATED_NOT_GUILTY", "No"));
+
+        assertThat(offence.has("plea"), is(false));
+        final JsonNode indicatedPlea = offence.get("indicatedPlea");
+        assertThat(indicatedPlea.get("indicatedPleaValue").asText(), is("INDICATED_NOT_GUILTY"));
+        assertThat(indicatedPlea.get("offenceId").asText(), is(GUILTY_OFFENCE_ID.toString()));
+        assertThat(indicatedPlea.get("indicatedPleaDate").asText(), is("2024-01-20"));
+        assertThat(indicatedPlea.get("source").asText(), is("IN_COURT"));
+    }
+
+    @Test
+    void shouldEmitIndicatedPleaAndNoPleaForLibraIndicatedGuilty() throws com.fasterxml.jackson.core.JsonProcessingException {
+        final JsonNode offence = firstOffenceOf(libraIndicatedPleaInput(GUILTY_OFFENCE_ID, "INDICATED_GUILTY", "Yes"));
+
+        assertThat(offence.has("plea"), is(false));
+        final JsonNode indicatedPlea = offence.get("indicatedPlea");
+        assertThat(indicatedPlea.get("indicatedPleaValue").asText(), is("INDICATED_GUILTY"));
+        assertThat(indicatedPlea.get("offenceId").asText(), is(GUILTY_OFFENCE_ID.toString()));
+        assertThat(indicatedPlea.get("source").asText(), is("IN_COURT"));
+    }
+
+    private static JsonNode firstOffenceOf(final MigratedCaseFileReceived input) throws com.fasterxml.jackson.core.JsonProcessingException {
+        final Sender sender = mock(Sender.class);
+        final EnvelopeHelper envelopeHelper = mock(EnvelopeHelper.class);
+        final PcfMigratedCaseReceivedCounter counter = mock(PcfMigratedCaseReceivedCounter.class);
+        final ReferenceDataQueryService referenceDataQueryService = mock(ReferenceDataQueryService.class);
+
+        final Metadata inboundMetadata = metadataBuilder()
+                .withName("pcfdlrm.events.migrated-case-file-received")
+                .withId(randomUUID())
+                .build();
+        final JsonEnvelope dummyOutboundEnvelope = JsonEnvelope.envelopeFrom(inboundMetadata, NULL);
+        when(envelopeHelper.withMetadataInPayloadForEnvelope(any())).thenReturn(dummyOutboundEnvelope);
+
+        final MigratedCaseReceivedProcessor processor = buildProcessor(sender, envelopeHelper, counter, referenceDataQueryService);
+        processor.handleMigratedCaseReceived(envelopeFrom(inboundMetadata, input));
+
+        final ArgumentCaptor<JsonEnvelope> converted = ArgumentCaptor.forClass(JsonEnvelope.class);
+        verify(envelopeHelper).withMetadataInPayloadForEnvelope(converted.capture());
+
+        final JsonNode payload = new ObjectMapper().readTree(converted.getValue().payload().toString());
+        return payload.get("initiateCourtProceedings").get("prosecutionCases").get(0)
+                .get("defendants").get(0).get("offences").get(0);
+    }
+
     /**
      * AC-T3-2 — pins the current NPE behaviour when the hearing list is null (see
      * {@link #withNullHearingListInput()}). Not folded into {@link #converterScenarios()} — that
@@ -390,6 +437,78 @@ class MigratedCaseReceivedProcessorTest {
                 .withId(fromString("b1b1b1b1-1111-4111-8111-111111111111"))
                 .withShortName("CPS")
                 .build());
+
+        return MigratedCaseFileReceived.migratedCaseFileReceived()
+                .withMigratedCaseSubmission(receiveMigratedCaseFile)
+                .withReferenceDataVO(referenceDataVO)
+                .withMigratedHearingWithReferenceData(List.of())
+                .build();
+    }
+
+    private static MigratedCaseFileReceived libraIndicatedPleaInput(final UUID offenceId,
+                                                                    final String pleaValue,
+                                                                    final String guiltyFlag) {
+        final Individual individual = Individual.individual()
+                .withSelfDefinedInformation(SelfDefinedInformation.selfDefinedInformation().withGender("MALE").build())
+                .withPersonalInformation(PersonalInformation.personalInformation()
+                        .withFirstName("John")
+                        .withLastName("Smith")
+                        .withAddress(Address.address().withAddress1("1 Test Street").withPostcode("SW1A 1AA").build())
+                        .build())
+                .build();
+
+        final MigratedOffence offence = MigratedOffence.migratedOffence()
+                .withOffenceId(offenceId)
+                .withOffenceCode("998A")
+                .withOffenceSequenceNumber(1)
+                .withOffenceCommittedDate(LocalDate.of(2024, 1, 15))
+                .withPlea(MigratedPlea.migratedPlea()
+                        .withId(fromString("f4f4f4f4-4444-4444-8444-444444444444"))
+                        .withPleaDate(LocalDate.of(2024, 1, 20))
+                        .build())
+                .build();
+
+        final MigratedDefendant defendant = MigratedDefendant.migratedDefendant()
+                .withId(PERSON_DEFENDANT_ID)
+                .withProsecutorDefendantId("DEF-001")
+                .withDocumentationLanguage("W")
+                .withHearingLanguage("W")
+                .withIndividual(individual)
+                .withOffences(List.of(offence))
+                .build();
+
+        final CaseDetails caseDetails = CaseDetails.caseDetails()
+                .withCaseId(fromString("a4391799-f828-4515-a355-61f1d5d9690c"))
+                .withProsecutorCaseReference("URN001")
+                .withReceiptType("Either way case")
+                .build();
+
+        final MigrationSourceSystem migrationSourceSystem = MigrationSourceSystem.migrationSourceSystem()
+                .withMigrationSourceSystemName("LIBRA")
+                .withMigrationSourceSystemCaseIdentifier("LIBRA-123")
+                .build();
+
+        final MigratedCaseDetails migratedCaseDetails = MigratedCaseDetails.migratedCaseDetails()
+                .withCaseDetails(caseDetails)
+                .withMigrationSourceSystem(migrationSourceSystem)
+                .withDefendants(List.of(defendant))
+                .build();
+
+        final ReceiveMigratedCaseFile receiveMigratedCaseFile = ReceiveMigratedCaseFile.receiveMigratedCaseFile()
+                .withChannel(Channel.DLRM_MIGRATION)
+                .withMigratedCaseDetails(migratedCaseDetails)
+                .withSubmissionId(fromString("e3e3e3e3-3333-4333-8333-333333333333"))
+                .build();
+
+        final ReferenceDataVO referenceDataVO = new ReferenceDataVO();
+        referenceDataVO.setProsecutorsReferenceData(ProsecutorsReferenceData.prosecutorsReferenceData()
+                .withId(fromString("b1b1b1b1-1111-4111-8111-111111111111"))
+                .withShortName("CPS")
+                .build());
+        referenceDataVO.setPleaReferenceDataMap(Map.of(
+                PERSON_DEFENDANT_ID, Map.of(
+                        offenceId, PleaReferenceData.pleaReferenceData()
+                                .withPleaTypeCode("IND").withPleaTypeGuiltyFlag(guiltyFlag).withPleaValue(pleaValue).build())));
 
         return MigratedCaseFileReceived.migratedCaseFileReceived()
                 .withMigratedCaseSubmission(receiveMigratedCaseFile)

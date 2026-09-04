@@ -3,7 +3,6 @@ package uk.gov.moj.cpp.pcfdlrm.it;
 
 import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
-import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.apache.openejb.config.QuickJarsTxtParser.FILE_NAME;
 import static uk.gov.justice.services.messaging.Envelope.metadataBuilder;
 
@@ -41,6 +40,7 @@ import java.util.stream.Stream;
 
 import javax.json.JsonObject;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -156,7 +156,7 @@ class ReceiveMigratedCaseFileIT {
 
         final String materialId = randomUUID().toString();
 
-        final String caseUrn = randomAlphanumeric(10);
+        final String caseUrn = RandomStringUtils.secure().nextAlphanumeric(10);
 
         final String staticPayLoad = getStringFromResource("command-json/pcfdlrm.command.receive-migrated-case-file-retrail-indicator-"+retrialIndicator+".json")
                 .replace("SUBMISSION_ID", submissionId)
@@ -191,7 +191,7 @@ class ReceiveMigratedCaseFileIT {
 
         final String materialId = randomUUID().toString();
 
-        final String caseUrn = randomAlphanumeric(10);
+        final String caseUrn = RandomStringUtils.secure().nextAlphanumeric(10);
 
         final String staticPayLoad = getStringFromResource(fileName)
                 .replace("SUBMISSION_ID", submissionId)
@@ -222,7 +222,7 @@ class ReceiveMigratedCaseFileIT {
 
         final String materialId = randomUUID().toString();
 
-        final String caseUrn = randomAlphanumeric(10);
+        final String caseUrn = RandomStringUtils.secure().nextAlphanumeric(10);
 
         final String offenceId = "550e8400-e29b-41d4-a716-446655440206";
 
@@ -256,40 +256,30 @@ class ReceiveMigratedCaseFileIT {
         receiveMigratedCaseFileHelper.verifyCaseProcessed(addMaterialHelper, submissionId, NO_MATCHING_DEFENDANTS_WITH_HEARINGS_FOUND_FOR_HEARING);
     }
 
-    @Test
-    void receiveMigratedCaseFileWithoutMaterial() {
+    @ParameterizedTest
+    @CsvSource({
+            "command-json/pcfdlrm.command.receive-migrated-case-file-xhibit-no-material.json, no-material",
+            "command-json/pcfdlrm.command.receive-migrated-case-file-libra-journey.json, libra-journey",
+            "command-json/pcfdlrm.command.receive-migrated-case-file-libra-indicated-plea.json, libra-indicated-plea"
+    })
+    void receiveMigratedCaseFileWithoutMaterialInitiatesCourtProceedings(final String commandJson, final String expectedFixture) {
         final String submissionId = UUID.randomUUID().toString();
         final String caseId = UUID.randomUUID().toString();
-        final String caseUrn = randomAlphanumeric(10);
-        final String staticPayLoad = getStringFromResource("command-json/pcfdlrm.command.receive-migrated-case-file-xhibit-no-material.json")
+        final String caseUrn = RandomStringUtils.secure().nextAlphanumeric(10);
+        final String staticPayLoad = getStringFromResource(commandJson)
                 .replace("SUBMISSION_ID", submissionId)
                 .replace("CASE_ID", caseId)
                 .replace("CASE_URN", caseUrn)
                 .replace("HEARING_DATE", LocalDate.now().plusDays(1).toString());
         receiveMigratedCaseFileHelper.receiveMigratedCaseFile(staticPayLoad);
-        receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiated(caseUrn, "no-material");
-    }
-
-    // T6 — the one representative LIBRA journey: LIBRA + initiationCode "J" + no materials + numPreviousConvictions.
-    @Test
-    void receiveMigratedLibraCaseFileWithoutMaterial() {
-        final String submissionId = UUID.randomUUID().toString();
-        final String caseId = UUID.randomUUID().toString();
-        final String caseUrn = randomAlphanumeric(10);
-        final String staticPayLoad = getStringFromResource("command-json/pcfdlrm.command.receive-migrated-case-file-libra-journey.json")
-                .replace("SUBMISSION_ID", submissionId)
-                .replace("CASE_ID", caseId)
-                .replace("CASE_URN", caseUrn)
-                .replace("HEARING_DATE", LocalDate.now().plusDays(1).toString());
-        receiveMigratedCaseFileHelper.receiveMigratedCaseFile(staticPayLoad);
-        receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiated(caseUrn, "libra-journey");
+        receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiated(caseUrn, expectedFixture);
     }
 
     @Test
     void receiveMigratedCaseFileWithAllHearingsSkipped() {
         final String submissionId = UUID.randomUUID().toString();
         final String caseId = UUID.randomUUID().toString();
-        final String caseUrn = randomAlphanumeric(10);
+        final String caseUrn = RandomStringUtils.secure().nextAlphanumeric(10);
 
         final String payload = getStringFromResource(
                 "command-json/pcfdlrm.command.receive-migrated-case-file-xhibit-all-hearings-skipped.json")
@@ -320,7 +310,7 @@ class ReceiveMigratedCaseFileIT {
         final String payload = getStringFromResource("command-json/pcfdlrm.command.receive-migrated-case-file-xhibit-fd-no-time.json")
                 .replace("SUBMISSION_ID", submissionId)
                 .replace("CASE_ID", caseId)
-                .replace("CASE_URN", randomAlphanumeric(10))
+                .replace("CASE_URN", RandomStringUtils.secure().nextAlphanumeric(10))
                 .replace("HEARING_DATE", hearingDate.toString());
 
         final String expectedUtcTime = LocalDateTime.of(hearingDate, LocalTime.of(10, 0))
@@ -337,7 +327,7 @@ class ReceiveMigratedCaseFileIT {
     void shouldMarkMigratedCaseAsProcessedWhenAcceptingAPreviouslyReceivedCase() {
         final String submissionId = UUID.randomUUID().toString();
         final String caseId = UUID.randomUUID().toString();
-        final String caseUrn = randomAlphanumeric(10);
+        final String caseUrn = RandomStringUtils.secure().nextAlphanumeric(10);
 
         final String receivePayload = getStringFromResource("command-json/pcfdlrm.command.receive-migrated-case-file-xhibit-no-material.json")
                 .replace("SUBMISSION_ID", submissionId)
