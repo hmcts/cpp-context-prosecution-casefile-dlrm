@@ -37,6 +37,18 @@
       "jurisdiction": "MAGISTRATES"
     },
     {
+      "id": "3c7b1e0d-9a4f-4e8d-bf6d-2c7b1e0d9a55",
+      "sequence": 55,
+      "pleaTypeCode": "ING",
+      "pleaTypeUIFlag": true,
+      "pleaTypeDescription": "Indicated plea of Not Guilty",
+      "pleaTypeGuiltyFlag": "No",
+      "pleaTypeCivilFlag": "No",
+      "pleaStatusCode": "2",
+      "pleaValue": "INDICATED_NOT_GUILTY",
+      "jurisdiction": "MAGISTRATES"
+    },
+    {
       "id": "cd2f5a1e-8b3c-4d9e-af6d-2c7b1e0d9a4f",
       "sequence": 60,
       "pleaTypeCode": "ADB",

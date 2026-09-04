@@ -79,16 +79,26 @@ Unit tests added to `ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterT
 - `shouldKeepIndicatedGuiltyOnPleaObjectForXhibit` (AC-6 — XHIBIT excluded)
 - AC-4 is covered by the pre-existing `GUILTY`/`NOT_GUILTY` tests, which still pass.
 
-(The four indicated-plea tests set `migrationSourceSystemName = LIBRA`; the XHIBIT test asserts the
-value stays on `plea`.)
+(The indicated-plea diversion tests set `migrationSourceSystemName = LIBRA`; the two XHIBIT tests
+assert the value stays on `plea` for both indicated values.)
 
-**Result:** `ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest` — 47 tests, 0 failures;
-full `pcfdlrm-event-processor` module — 0 failures/errors.
+**Processor-level tests** (`MigratedCaseReceivedProcessorTest`, DD-34568):
+- `shouldEmitIndicatedPleaAndNoPleaForLibraIndicatedNotGuilty`
+- `shouldEmitIndicatedPleaAndNoPleaForLibraIndicatedGuilty`
 
-## Follow-up (not in this story's code, but recommended)
+These run the real converter tree and assert on the serialised `progression.initiate-court-proceedings`
+command JSON (`offences[0].indicatedPlea` present with `source`, `offences[0].plea` absent) — proving
+the object survives POJO → JSON onto the outbound command, not just the converter return value.
 
-- **Integration test.** Add an `INDICATED_GUILTY` case to the IT fixtures under
-  `pcfdlrm-integration-test/.../initiate-court-proceedings/` asserting `indicatedPlea` on the
-  emitted command. The plea-types stub `referencedata.query.plea-types.json` already contains
-  `INDICATED_GUILTY` (code `IG`); it has **no** `INDICATED_NOT_GUILTY` row — add one if an IT
-  needs to exercise that path.
+**Integration test** (`ReceiveMigratedCaseFileIT.receiveMigratedLibraCaseFileWithIndicatedPlea`):
+a LIBRA case whose offence plea points at the new `INDICATED_NOT_GUILTY` plea-type stub row; asserts
+the emitted `initiate-court-proceedings` matches `json/xhibit/initiate-court-proceedings/libra-indicated-plea.json`
+(the `libra-journey` fixture plus an `indicatedPlea` object). Runs only in the Docker IT env
+(`./runIntegrationTests.sh`), not in `mvn verify`.
+
+**Reference-data stub:** added the missing `INDICATED_NOT_GUILTY` row (code `ING`, MAGISTRATES,
+guilty-flag `No`) to `referencedata.query.plea-types.json`.
+
+**Result:** `ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest` — 48 tests, 0 failures;
+`MigratedCaseReceivedProcessorTest` — 12 tests, 0 failures; full `pcfdlrm-event-processor` module —
+0 failures/errors. IT module test-compiles; the IT itself needs the Docker env to run.

@@ -96,8 +96,7 @@ public class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter implemen
                 : Optional.empty();
         final String pleaValue = pleaReferenceData.map(PleaReferenceData::getPleaValue).orElse(null);
         final IndicatedPleaValue indicatedPleaValue = toIndicatedPleaValue(pleaValue);
-        // Indicated pleas are diverted to the indicatedPlea object for LIBRA migrations only;
-        // XHIBIT keeps its existing behaviour of emitting the value on the plea object.
+
         final boolean isIndicatedPlea = indicatedPleaValue != null && LIBRA.equals(paramsVO.getMigrationSourceSystemName());
         final boolean guiltyPlea = isGuiltyPleaValue(pleaValue);
 

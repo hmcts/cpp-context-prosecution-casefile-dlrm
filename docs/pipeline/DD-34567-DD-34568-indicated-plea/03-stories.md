@@ -28,8 +28,13 @@ See `01-requirements.md` AC-1 … AC-6. Summary:
 ### Definition of done
 
 - [x] Converter change implemented.
-- [x] Unit tests for AC-1..AC-6; existing suite still green (47/47 in the converter test).
-- [x] Scope limited to LIBRA migrations; XHIBIT behaviour unchanged and covered by a test.
+- [x] Unit tests for AC-1..AC-6; existing suite still green (48/48 in the converter test).
+- [x] Scope limited to LIBRA migrations; XHIBIT behaviour unchanged and covered by tests for both
+      indicated values.
+- [x] Processor-level tests assert `indicatedPlea` (and absent `plea`) on the serialised
+      `progression.initiate-court-proceedings` command for both indicated values (12/12).
+- [x] Integration test added (`receiveMigratedLibraCaseFileWithIndicatedPlea`) + `INDICATED_NOT_GUILTY`
+      plea-type stub row. Runs in the Docker IT env only.
 - [x] Full `pcfdlrm-event-processor` module tests green.
 - [ ] Open question #1 (`source` = `IN_COURT`) confirmed by PO / `progression` team.
 - [ ] (Recommended) integration-test coverage in `pcfdlrm-integration-test`.
