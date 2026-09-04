@@ -22,10 +22,13 @@ import uk.gov.justice.core.courts.CommittingCourt;
 import uk.gov.justice.core.courts.CourtCentre;
 import uk.gov.justice.core.courts.CourtIndicatedSentence;
 import uk.gov.justice.core.courts.CustodyTimeLimit;
+import uk.gov.justice.core.courts.IndicatedPlea;
+import uk.gov.justice.core.courts.IndicatedPleaValue;
 import uk.gov.justice.core.courts.LjaDetails;
 import uk.gov.justice.core.courts.Offence;
 import uk.gov.justice.core.courts.OffenceFacts;
 import uk.gov.justice.core.courts.Plea;
+import uk.gov.justice.core.courts.Source;
 import uk.gov.justice.core.courts.VehicleCode;
 import uk.gov.justice.core.courts.Verdict;
 import uk.gov.justice.core.courts.VerdictType;
@@ -66,6 +69,8 @@ public class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter implemen
     private static final String SUMMARY_ONLY_MODE_OF_TRIAL = "Summary";
     private static final String GUILTY = "GUILTY";
     private static final String INDICATED_GUILTY = "INDICATED_GUILTY";
+    private static final String INDICATED_NOT_GUILTY = "INDICATED_NOT_GUILTY";
+    private static final String GUILTY_FLAG_NO = "No";
     private static final String SEE_INDICTMENT_OR_CHARGE_SHEET_FOR_PARTICULARS = "See indictment or charge sheet for particulars";
     private static final String XHIBIT = "XHIBIT";
     private static final int COURT_HEARING_OU_CODE_LENGTH = 7;
@@ -85,7 +90,18 @@ public class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter implemen
         final boolean isXhibit = paramsVO.getMigrationSourceSystemName().equals(XHIBIT);
         final String modeOfTrialDerived = getModeOfTrialDerived(offence.getOffenceCode(), referenceDataVO);
 
-        final Plea plea = convertPlea(offence, referenceDataVO);
+        final Optional<PleaReferenceData> pleaReferenceData = offence.getPlea() != null
+                ? findPleaReferenceData(offence, referenceDataVO)
+                : Optional.empty();
+        final String pleaValue = pleaReferenceData.map(PleaReferenceData::getPleaValue).orElse(null);
+        final IndicatedPleaValue indicatedPleaValue = toIndicatedPleaValue(pleaValue);
+        final boolean isIndicatedPlea = indicatedPleaValue != null;
+        final boolean guiltyPlea = isGuiltyPleaValue(pleaValue);
+
+        final Plea plea = isIndicatedPlea ? null : convertPlea(offence, referenceDataVO);
+        final IndicatedPlea indicatedPlea = isIndicatedPlea
+                ? convertIndicatedPlea(offence, pleaReferenceData.orElseThrow(), indicatedPleaValue)
+                : null;
         final LocalDate convictionDate = getConvictionDate(offence, referenceDataVO);
         final String offenceWording = isXhibit ? getWording(offence) : offence.getOffenceWording();
         final CustodyTimeLimit custodyTimeLimit = isInCustody(paramsVO)
@@ -119,12 +135,13 @@ public class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter implemen
                 .withOffenceDateCode(offence.getOffenceDateCode())
                 .withCommittingCourt(getCommittingCourtFromReferenceData(paramsVO))
                 .withPlea(plea)
+                .withIndicatedPlea(indicatedPlea)
                 .withVerdict(verdict)
                 .withAllocationDecision(buildAllocationDecision(offence, paramsVO))
                 .withDvlaOffenceCode(getDvlaCode(offence.getOffenceCode(), referenceDataVO))
                 .withMaxPenalty(getMaxPenalty(offence.getOffenceCode(), referenceDataVO))
-                .withConvictingCourt(getConvictingCourt(offence, paramsVO, plea))
-                .withCustodyTimeLimit(isCustodyLimitTobeSet(offence, plea, referenceDataVO) ? custodyTimeLimit : null);
+                .withConvictingCourt(getConvictingCourt(offence, paramsVO, guiltyPlea))
+                .withCustodyTimeLimit(isCustodyLimitTobeSet(offence, guiltyPlea, referenceDataVO) ? custodyTimeLimit : null);
 
         if (convictionDate != null) {
             offenceBuilder.withConvictionDate(convictionDate.toString());
@@ -140,8 +157,7 @@ public class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter implemen
         return IN_CUSTODY.equalsIgnoreCase(paramsVO.getCustodyStatus());
     }
 
-    private boolean isCustodyLimitTobeSet(final MigratedOffence offence, final Plea plea, final ReferenceDataVO referenceDataVO) {
-        boolean guiltyPlea = hasGuiltyPlea(plea);
+    private boolean isCustodyLimitTobeSet(final MigratedOffence offence, final boolean guiltyPlea, final ReferenceDataVO referenceDataVO) {
         final boolean guiltyVerdict = hasGuiltyVerdict(offence, referenceDataVO);
         return !guiltyPlea && !guiltyVerdict ;
 
@@ -174,14 +190,14 @@ public class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter implemen
                 .isPresent();
     }
 
-    private CourtCentre getConvictingCourt(final MigratedOffence offence, final ParamsVO paramsVO, Plea plea) {
+    private CourtCentre getConvictingCourt(final MigratedOffence offence, final ParamsVO paramsVO, final boolean guiltyPlea) {
         if(!hasVerdict(offence)  && !hasPlea(offence)){
             return null;
         }
 
         CourtCentre courtCentre = isValidOuCode(offence.getConvictingCourtCode()) ? getCourtCentre(offence.getConvictingCourtCode()) : null;
 
-        if (isNull(courtCentre) && (hasGuiltyPlea(plea) || hasGuiltyVerdict(offence, paramsVO.getReferenceDataVO()))) {
+        if (isNull(courtCentre) && (guiltyPlea || hasGuiltyVerdict(offence, paramsVO.getReferenceDataVO()))) {
            courtCentre = getConvictingCourtFromHearing(paramsVO, offence.getOffenceId());
         }
         return courtCentre;
@@ -388,8 +404,57 @@ public class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter implemen
                 .isPresent();
     }
 
-    private boolean hasGuiltyPlea(final Plea plea) {
-        return plea != null && (INDICATED_GUILTY.equalsIgnoreCase(plea.getPleaValue()) || GUILTY.equalsIgnoreCase(plea.getPleaValue()));
+    private boolean isGuiltyPleaValue(final String pleaValue) {
+        return INDICATED_GUILTY.equalsIgnoreCase(pleaValue) || GUILTY.equalsIgnoreCase(pleaValue);
+    }
+
+    private IndicatedPleaValue toIndicatedPleaValue(final String pleaValue) {
+        if (INDICATED_GUILTY.equalsIgnoreCase(pleaValue)) {
+            return IndicatedPleaValue.INDICATED_GUILTY;
+        }
+        if (INDICATED_NOT_GUILTY.equalsIgnoreCase(pleaValue)) {
+            return IndicatedPleaValue.INDICATED_NOT_GUILTY;
+        }
+        return null;
+    }
+
+    /**
+     * Builds the courts {@code IndicatedPlea} used when the migrated plea value is an indicated
+     * plea ({@code INDICATED_GUILTY} / {@code INDICATED_NOT_GUILTY}). In that case the offence
+     * carries an {@code indicatedPlea} instead of a {@code plea}. The indicated-plea date mirrors
+     * the {@link #convertPlea} date handling (defaulting a missing non-guilty date to today).
+     *
+     * @param source of the indication — see DD-34568 open question; defaulted to {@code IN_COURT}
+     *               for migrated legacy cases pending PO confirmation.
+     */
+    private IndicatedPlea convertIndicatedPlea(final MigratedOffence offence, final PleaReferenceData pleaReferenceData, final IndicatedPleaValue indicatedPleaValue) {
+        final MigratedPlea plea = offence.getPlea();
+        final String indicatedPleaDate;
+        if (GUILTY_FLAG_NO.equalsIgnoreCase(pleaReferenceData.getPleaTypeGuiltyFlag())) {
+            final String now = LocalDate.now().toString();
+            indicatedPleaDate = ofNullable(plea.getPleaDate()).map(LocalDate::toString).orElse(now);
+        } else {
+            indicatedPleaDate = ofNullable(plea.getPleaDate()).map(LocalDate::toString).orElse(null);
+        }
+
+        return IndicatedPlea.indicatedPlea()
+                .withOffenceId(offence.getOffenceId())
+                .withIndicatedPleaValue(indicatedPleaValue)
+                .withIndicatedPleaDate(indicatedPleaDate)
+                .withSource(Source.IN_COURT)
+                .build();
+    }
+
+    private Optional<PleaReferenceData> findPleaReferenceData(final MigratedOffence offence, final ReferenceDataVO referenceDataVO) {
+        final Map<UUID, Map<UUID, PleaReferenceData>> pleaReferenceDataMap = referenceDataVO.getPleaReferenceDataMap();
+        if (Objects.isNull(pleaReferenceDataMap)) {
+            return Optional.empty();
+        }
+        return pleaReferenceDataMap.values().stream()
+                .flatMap(map -> map.entrySet().stream())
+                .filter(entry -> entry.getKey().equals(offence.getOffenceId()))
+                .map(Map.Entry::getValue)
+                .findFirst();
     }
 
     private Verdict convertVerdict(final MigratedOffence offence, final ReferenceDataVO referenceDataVO, final Plea plea) {

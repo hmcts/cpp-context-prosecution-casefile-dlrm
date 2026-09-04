@@ -33,8 +33,10 @@ import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.Mig
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedPlea.migratedPlea;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedVerdict.migratedVerdict;
 
+import uk.gov.justice.core.courts.IndicatedPleaValue;
 import uk.gov.justice.core.courts.InitiationCode;
 import uk.gov.justice.core.courts.JurisdictionType;
+import uk.gov.justice.core.courts.Source;
 import uk.gov.moj.cpp.pcfdlrm.domain.OffenceIdsWithCourtHearingLocation;
 import uk.gov.moj.cpp.pcfdlrm.domain.ParamsVO;
 import uk.gov.moj.cpp.pcfdlrm.domain.ReferenceDataVO;
@@ -1419,6 +1421,127 @@ class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest {
         assertThat(offence.getId(), is(offenceId));
         assertNotNull(offence.getCustodyTimeLimit());
         assertThat(offence.getCustodyTimeLimit().getTimeLimit(), is(custodyTimeLimit.toString()));
+    }
+
+    @Test
+    void shouldPopulateIndicatedPleaAndClearPleaWhenPleaValueIsIndicatedGuilty() {
+        final ReferenceDataVO referenceDataVO = buildReferenceDataWithOffenceAndModeOfTrial(EITHER_WAY);
+        final UUID offenceId = randomUUID();
+        final LocalDate pleaDate = LocalDate.now().minusDays(1);
+
+        final Map<UUID, Map<UUID, PleaReferenceData>> pleaReferenceDataMap = new HashMap<>();
+        pleaReferenceDataMap.put(randomUUID(), Map.of(offenceId, PleaReferenceData.pleaReferenceData()
+                .withPleaValue("INDICATED_GUILTY").withPleaTypeCode("IG").withPleaTypeGuiltyFlag("Yes").build()));
+        referenceDataVO.setPleaReferenceDataMap(pleaReferenceDataMap);
+
+        final List<MigratedOffence> offences = of(migratedOffence()
+                .withOffenceId(offenceId)
+                .withOffenceCode(OFFENCE_CODE_TVL_ABC)
+                .withOffenceCommittedDate(LocalDate.now())
+                .withPlea(migratedPlea().withId(randomUUID()).withPleaDate(pleaDate).build())
+                .build());
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName(XHIBIT);
+        paramsVO.setReferenceDataVO(referenceDataVO);
+
+        final uk.gov.justice.core.courts.Offence offence = converter.convert(offences, paramsVO).get(0);
+
+        assertNull(offence.getPlea());
+        assertThat(offence.getIndicatedPlea(), is(notNullValue()));
+        assertThat(offence.getIndicatedPlea().getOffenceId(), is(offenceId));
+        assertThat(offence.getIndicatedPlea().getIndicatedPleaValue(), is(IndicatedPleaValue.INDICATED_GUILTY));
+        assertThat(offence.getIndicatedPlea().getIndicatedPleaDate(), is(pleaDate.toString()));
+        assertThat(offence.getIndicatedPlea().getSource(), is(Source.IN_COURT));
+    }
+
+    @Test
+    void shouldPopulateIndicatedPleaAndClearPleaWhenPleaValueIsIndicatedNotGuilty() {
+        final ReferenceDataVO referenceDataVO = buildReferenceDataWithOffenceAndModeOfTrial(EITHER_WAY);
+        final UUID offenceId = randomUUID();
+        final LocalDate pleaDate = LocalDate.now().minusDays(1);
+
+        final Map<UUID, Map<UUID, PleaReferenceData>> pleaReferenceDataMap = new HashMap<>();
+        pleaReferenceDataMap.put(randomUUID(), Map.of(offenceId, PleaReferenceData.pleaReferenceData()
+                .withPleaValue("INDICATED_NOT_GUILTY").withPleaTypeCode("ING").withPleaTypeGuiltyFlag("No").build()));
+        referenceDataVO.setPleaReferenceDataMap(pleaReferenceDataMap);
+
+        final List<MigratedOffence> offences = of(migratedOffence()
+                .withOffenceId(offenceId)
+                .withOffenceCode(OFFENCE_CODE_TVL_ABC)
+                .withOffenceCommittedDate(LocalDate.now())
+                .withPlea(migratedPlea().withId(randomUUID()).withPleaDate(pleaDate).build())
+                .build());
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName(XHIBIT);
+        paramsVO.setReferenceDataVO(referenceDataVO);
+
+        final uk.gov.justice.core.courts.Offence offence = converter.convert(offences, paramsVO).get(0);
+
+        assertNull(offence.getPlea());
+        assertThat(offence.getIndicatedPlea(), is(notNullValue()));
+        assertThat(offence.getIndicatedPlea().getOffenceId(), is(offenceId));
+        assertThat(offence.getIndicatedPlea().getIndicatedPleaValue(), is(IndicatedPleaValue.INDICATED_NOT_GUILTY));
+        assertThat(offence.getIndicatedPlea().getIndicatedPleaDate(), is(pleaDate.toString()));
+        assertThat(offence.getIndicatedPlea().getSource(), is(Source.IN_COURT));
+    }
+
+    @Test
+    void shouldDefaultIndicatedPleaDateToTodayWhenIndicatedNotGuiltyAndPleaDateMissing() {
+        final ReferenceDataVO referenceDataVO = buildReferenceDataWithOffenceAndModeOfTrial(EITHER_WAY);
+        final UUID offenceId = randomUUID();
+
+        final Map<UUID, Map<UUID, PleaReferenceData>> pleaReferenceDataMap = new HashMap<>();
+        pleaReferenceDataMap.put(randomUUID(), Map.of(offenceId, PleaReferenceData.pleaReferenceData()
+                .withPleaValue("INDICATED_NOT_GUILTY").withPleaTypeCode("ING").withPleaTypeGuiltyFlag("No").build()));
+        referenceDataVO.setPleaReferenceDataMap(pleaReferenceDataMap);
+
+        final List<MigratedOffence> offences = of(migratedOffence()
+                .withOffenceId(offenceId)
+                .withOffenceCode(OFFENCE_CODE_TVL_ABC)
+                .withOffenceCommittedDate(LocalDate.now())
+                .withPlea(migratedPlea().withId(randomUUID()).build())
+                .build());
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName(XHIBIT);
+        paramsVO.setReferenceDataVO(referenceDataVO);
+
+        final uk.gov.justice.core.courts.Offence offence = converter.convert(offences, paramsVO).get(0);
+
+        assertNull(offence.getPlea());
+        assertThat(offence.getIndicatedPlea().getIndicatedPleaDate(), is(LocalDate.now().toString()));
+    }
+
+    @Test
+    void shouldTreatIndicatedGuiltyAsGuiltyWhenDerivingCustodyTimeLimit() {
+        final ReferenceDataVO referenceDataVO = buildReferenceDataWithOffenceAndModeOfTrial(EITHER_WAY);
+        final UUID offenceId = randomUUID();
+
+        final Map<UUID, Map<UUID, PleaReferenceData>> pleaReferenceDataMap = new HashMap<>();
+        pleaReferenceDataMap.put(randomUUID(), Map.of(offenceId, PleaReferenceData.pleaReferenceData()
+                .withPleaValue("INDICATED_GUILTY").withPleaTypeCode("IG").withPleaTypeGuiltyFlag("Yes").build()));
+        referenceDataVO.setPleaReferenceDataMap(pleaReferenceDataMap);
+
+        final List<MigratedOffence> offences = of(migratedOffence()
+                .withOffenceId(offenceId)
+                .withOffenceCode(OFFENCE_CODE_TVL_ABC)
+                .withOffenceCommittedDate(LocalDate.now())
+                .withPlea(migratedPlea().withId(randomUUID()).withPleaDate(LocalDate.now()).build())
+                .build());
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName(XHIBIT);
+        paramsVO.setReferenceDataVO(referenceDataVO);
+        paramsVO.setCustodyStatus("C");
+        paramsVO.setCustodyTimeLimit(LocalDate.now());
+
+        final uk.gov.justice.core.courts.Offence offence = converter.convert(offences, paramsVO).get(0);
+
+        // Guilty-derivation preserved: an indicated guilty plea still counts as guilty, so no custody time limit is set.
+        assertNull(offence.getCustodyTimeLimit());
+        assertThat(offence.getIndicatedPlea().getIndicatedPleaValue(), is(IndicatedPleaValue.INDICATED_GUILTY));
     }
 
 }
