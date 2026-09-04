@@ -74,6 +74,7 @@ class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest {
     private final String EITHER_WAY = "Either Way";
     private final String SUMMARY = "Summary";
     private final String XHIBIT = "XHIBIT";
+    private final String LIBRA = "LIBRA";
     private static final String INVALID = "INVALID";
     private final String INDICTABLE = "Indictable";
     private static final String GUILTY = "GUILTY";
@@ -1442,7 +1443,7 @@ class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest {
                 .build());
 
         final ParamsVO paramsVO = new ParamsVO();
-        paramsVO.setMigrationSourceSystemName(XHIBIT);
+        paramsVO.setMigrationSourceSystemName(LIBRA);
         paramsVO.setReferenceDataVO(referenceDataVO);
 
         final uk.gov.justice.core.courts.Offence offence = converter.convert(offences, paramsVO).get(0);
@@ -1474,7 +1475,7 @@ class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest {
                 .build());
 
         final ParamsVO paramsVO = new ParamsVO();
-        paramsVO.setMigrationSourceSystemName(XHIBIT);
+        paramsVO.setMigrationSourceSystemName(LIBRA);
         paramsVO.setReferenceDataVO(referenceDataVO);
 
         final uk.gov.justice.core.courts.Offence offence = converter.convert(offences, paramsVO).get(0);
@@ -1505,7 +1506,7 @@ class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest {
                 .build());
 
         final ParamsVO paramsVO = new ParamsVO();
-        paramsVO.setMigrationSourceSystemName(XHIBIT);
+        paramsVO.setMigrationSourceSystemName(LIBRA);
         paramsVO.setReferenceDataVO(referenceDataVO);
 
         final uk.gov.justice.core.courts.Offence offence = converter.convert(offences, paramsVO).get(0);
@@ -1532,7 +1533,7 @@ class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest {
                 .build());
 
         final ParamsVO paramsVO = new ParamsVO();
-        paramsVO.setMigrationSourceSystemName(XHIBIT);
+        paramsVO.setMigrationSourceSystemName(LIBRA);
         paramsVO.setReferenceDataVO(referenceDataVO);
         paramsVO.setCustodyStatus("C");
         paramsVO.setCustodyTimeLimit(LocalDate.now());
@@ -1542,6 +1543,36 @@ class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest {
         // Guilty-derivation preserved: an indicated guilty plea still counts as guilty, so no custody time limit is set.
         assertNull(offence.getCustodyTimeLimit());
         assertThat(offence.getIndicatedPlea().getIndicatedPleaValue(), is(IndicatedPleaValue.INDICATED_GUILTY));
+    }
+
+    @Test
+    void shouldKeepIndicatedGuiltyOnPleaObjectForXhibit() {
+        final ReferenceDataVO referenceDataVO = buildReferenceDataWithOffenceAndModeOfTrial(EITHER_WAY);
+        final UUID offenceId = randomUUID();
+        final LocalDate pleaDate = LocalDate.now().minusDays(1);
+
+        final Map<UUID, Map<UUID, PleaReferenceData>> pleaReferenceDataMap = new HashMap<>();
+        pleaReferenceDataMap.put(randomUUID(), Map.of(offenceId, PleaReferenceData.pleaReferenceData()
+                .withPleaValue("INDICATED_GUILTY").withPleaTypeCode("IG").withPleaTypeGuiltyFlag("Yes").build()));
+        referenceDataVO.setPleaReferenceDataMap(pleaReferenceDataMap);
+
+        final List<MigratedOffence> offences = of(migratedOffence()
+                .withOffenceId(offenceId)
+                .withOffenceCode(OFFENCE_CODE_TVL_ABC)
+                .withOffenceCommittedDate(LocalDate.now())
+                .withPlea(migratedPlea().withId(randomUUID()).withPleaDate(pleaDate).build())
+                .build());
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName(XHIBIT);
+        paramsVO.setReferenceDataVO(referenceDataVO);
+
+        final uk.gov.justice.core.courts.Offence offence = converter.convert(offences, paramsVO).get(0);
+
+        // XHIBIT is unchanged: an indicated plea value stays on the plea object, no indicatedPlea.
+        assertNull(offence.getIndicatedPlea());
+        assertThat(offence.getPlea(), is(notNullValue()));
+        assertThat(offence.getPlea().getPleaValue(), is("INDICATED_GUILTY"));
     }
 
 }

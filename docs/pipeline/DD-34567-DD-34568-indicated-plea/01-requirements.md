@@ -8,8 +8,9 @@
 
 | ID | Requirement |
 |----|-------------|
-| FR-1 | When a migrated offence's resolved plea value is `INDICATED_GUILTY` or `INDICATED_NOT_GUILTY`, the outgoing courts `Offence` (on `progression.initiate-court-proceedings`) MUST carry an `indicatedPlea` object and MUST NOT carry a `plea` object. |
-| FR-2 | For all other plea values (`GUILTY`, `NOT_GUILTY`, `GUILTY_SINGLE_JUSTICE_PROCEDURE`, `ADMITS_BREACH`, `UNFIT_TO_PLEAD`, `CONSENTS`, …) behaviour is unchanged: `plea` is populated, `indicatedPlea` is null. |
+| FR-1 | For **LIBRA** migrations only: when a migrated offence's resolved plea value is `INDICATED_GUILTY` or `INDICATED_NOT_GUILTY`, the outgoing courts `Offence` (on `progression.initiate-court-proceedings`) MUST carry an `indicatedPlea` object and MUST NOT carry a `plea` object. |
+| FR-1b | For **XHIBIT** migrations: behaviour is unchanged — an indicated plea value stays on the `plea` object and no `indicatedPlea` is emitted. The diversion is gated on `migrationSourceSystemName == "LIBRA"`. |
+| FR-2 | For all other plea values (`GUILTY`, `NOT_GUILTY`, `GUILTY_SINGLE_JUSTICE_PROCEDURE`, `ADMITS_BREACH`, `UNFIT_TO_PLEAD`, `CONSENTS`, …) behaviour is unchanged for both source systems: `plea` is populated, `indicatedPlea` is null. |
 | FR-3 | `indicatedPlea` MUST satisfy the courts schema: `offenceId`, `indicatedPleaValue`, `indicatedPleaDate`, `source` all present. |
 | FR-4 | `indicatedPleaValue` maps 1:1 from the plea value string to the enum (`INDICATED_GUILTY` / `INDICATED_NOT_GUILTY`). |
 | FR-5 | `indicatedPleaDate` mirrors the existing `plea` date rule: use the migrated plea date; if the plea type's guilty flag is `No` and the date is missing, default to today. |
@@ -35,8 +36,12 @@
   - *Then* `plea` is populated as today and `indicatedPlea` is null.
 
 - **AC-5 — Guilty derivation preserved**
-  - *Given* an `INDICATED_GUILTY` plea for a defendant in custody with a custody time limit
+  - *Given* an `INDICATED_GUILTY` LIBRA plea for a defendant in custody with a custody time limit
   - *Then* no custody time limit is set on the offence (indicated guilty still counts as guilty).
+
+- **AC-6 — XHIBIT unchanged**
+  - *Given* an `INDICATED_GUILTY` plea on an **XHIBIT** migration
+  - *Then* the value stays on `plea` (`pleaValue = INDICATED_GUILTY`) and `indicatedPlea` is null.
 
 ## Open questions (require PO / ticket confirmation)
 

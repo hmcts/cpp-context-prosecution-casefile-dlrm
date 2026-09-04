@@ -14,20 +14,22 @@ mistaken for an entered `plea`.
 
 ### Acceptance criteria
 
-See `01-requirements.md` AC-1 … AC-5. Summary:
+See `01-requirements.md` AC-1 … AC-6. Summary:
 
-1. `INDICATED_GUILTY` → offence carries `indicatedPlea` (correct enum, offence id, date, source);
-   `plea` is null.
-2. `INDICATED_NOT_GUILTY` → same, with `INDICATED_NOT_GUILTY`.
-3. Missing date on an indicated-not-guilty plea → `indicatedPleaDate` defaults to today.
+1. **LIBRA** `INDICATED_GUILTY` → offence carries `indicatedPlea` (correct enum, offence id, date,
+   source); `plea` is null.
+2. **LIBRA** `INDICATED_NOT_GUILTY` → same, with `INDICATED_NOT_GUILTY`.
+3. Missing date on a LIBRA indicated-not-guilty plea → `indicatedPleaDate` defaults to today.
 4. Non-indicated plea values behave exactly as before (`plea` set, `indicatedPlea` null).
 5. `INDICATED_GUILTY` still counts as guilty for conviction date, convicting court, and custody
-   time limit.
+   time limit (both source systems).
+6. **XHIBIT** indicated values are unchanged — they stay on `plea`, no `indicatedPlea`.
 
 ### Definition of done
 
 - [x] Converter change implemented.
-- [x] Unit tests for AC-1..AC-5; existing suite still green (46/46 in the converter test).
+- [x] Unit tests for AC-1..AC-6; existing suite still green (47/47 in the converter test).
+- [x] Scope limited to LIBRA migrations; XHIBIT behaviour unchanged and covered by a test.
 - [x] Full `pcfdlrm-event-processor` module tests green.
 - [ ] Open question #1 (`source` = `IN_COURT`) confirmed by PO / `progression` team.
 - [ ] (Recommended) integration-test coverage in `pcfdlrm-integration-test`.

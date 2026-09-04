@@ -71,6 +71,7 @@ public class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter implemen
     private static final String INDICATED_GUILTY = "INDICATED_GUILTY";
     private static final String INDICATED_NOT_GUILTY = "INDICATED_NOT_GUILTY";
     private static final String GUILTY_FLAG_NO = "No";
+    private static final String LIBRA = "LIBRA";
     private static final String SEE_INDICTMENT_OR_CHARGE_SHEET_FOR_PARTICULARS = "See indictment or charge sheet for particulars";
     private static final String XHIBIT = "XHIBIT";
     private static final int COURT_HEARING_OU_CODE_LENGTH = 7;
@@ -95,7 +96,9 @@ public class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter implemen
                 : Optional.empty();
         final String pleaValue = pleaReferenceData.map(PleaReferenceData::getPleaValue).orElse(null);
         final IndicatedPleaValue indicatedPleaValue = toIndicatedPleaValue(pleaValue);
-        final boolean isIndicatedPlea = indicatedPleaValue != null;
+        // Indicated pleas are diverted to the indicatedPlea object for LIBRA migrations only;
+        // XHIBIT keeps its existing behaviour of emitting the value on the plea object.
+        final boolean isIndicatedPlea = indicatedPleaValue != null && LIBRA.equals(paramsVO.getMigrationSourceSystemName());
         final boolean guiltyPlea = isGuiltyPleaValue(pleaValue);
 
         final Plea plea = isIndicatedPlea ? null : convertPlea(offence, referenceDataVO);

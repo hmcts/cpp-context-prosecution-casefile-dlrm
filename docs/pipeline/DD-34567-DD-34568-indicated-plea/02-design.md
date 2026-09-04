@@ -33,9 +33,16 @@ decisions.
 1. Resolves the plea reference data once (`findPleaReferenceData`) and reads the plea value string.
 2. Computes `indicatedPleaValue = toIndicatedPleaValue(pleaValue)` — non-null iff the value is
    `INDICATED_GUILTY` / `INDICATED_NOT_GUILTY`.
-3. If indicated: `plea = null`, `indicatedPlea = convertIndicatedPlea(...)`. Else: `plea =
+3. Gates the diversion on source system: `isIndicatedPlea = indicatedPleaValue != null &&
+   "LIBRA".equals(migrationSourceSystemName)`. **XHIBIT is excluded** — an indicated value on an
+   XHIBIT migration stays on `plea`, exactly as before this change.
+4. If diverted: `plea = null`, `indicatedPlea = convertIndicatedPlea(...)`. Else: `plea =
    convertPlea(...)` (unchanged), `indicatedPlea = null`.
-4. Sets both `.withPlea(plea).withIndicatedPlea(indicatedPlea)` (exactly one is non-null).
+5. Sets both `.withPlea(plea).withIndicatedPlea(indicatedPlea)` (exactly one is non-null).
+
+Note the guilty-derivation (`guiltyPlea`) is computed from the plea *value* and is
+**source-independent**, so XHIBIT's `INDICATED_GUILTY` keeps counting as guilty just as it did
+when the value lived on `plea`.
 
 ### The critical decision — preserve guilty derivation
 
@@ -69,9 +76,13 @@ Unit tests added to `ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterT
 - `shouldPopulateIndicatedPleaAndClearPleaWhenPleaValueIsIndicatedNotGuilty` (AC-2)
 - `shouldDefaultIndicatedPleaDateToTodayWhenIndicatedNotGuiltyAndPleaDateMissing` (AC-3)
 - `shouldTreatIndicatedGuiltyAsGuiltyWhenDerivingCustodyTimeLimit` (AC-5 — the regression guard)
+- `shouldKeepIndicatedGuiltyOnPleaObjectForXhibit` (AC-6 — XHIBIT excluded)
 - AC-4 is covered by the pre-existing `GUILTY`/`NOT_GUILTY` tests, which still pass.
 
-**Result:** `ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest` — 46 tests, 0 failures;
+(The four indicated-plea tests set `migrationSourceSystemName = LIBRA`; the XHIBIT test asserts the
+value stays on `plea`.)
+
+**Result:** `ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest` — 47 tests, 0 failures;
 full `pcfdlrm-event-processor` module — 0 failures/errors.
 
 ## Follow-up (not in this story's code, but recommended)

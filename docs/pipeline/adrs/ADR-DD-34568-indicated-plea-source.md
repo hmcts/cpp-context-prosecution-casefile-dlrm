@@ -22,7 +22,8 @@ value, so a default must be chosen.
 
 ## Decision
 
-Default `indicatedPlea.source` to **`IN_COURT`** for all migrated cases.
+Default `indicatedPlea.source` to **`IN_COURT`** for LIBRA migrated cases (the only source
+system for which `indicatedPlea` is now populated — XHIBIT keeps the value on `plea`).
 
 Rationale: migrated cases originate from the legacy court estate (LIBRA / XHIBIT). `ONLINE`
 represents the newer digital plea channel that did not produce the legacy records being migrated,
