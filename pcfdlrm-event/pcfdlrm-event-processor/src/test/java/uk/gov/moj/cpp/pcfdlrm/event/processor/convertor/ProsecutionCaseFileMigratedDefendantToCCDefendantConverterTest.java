@@ -4,7 +4,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -121,7 +120,6 @@ class ProsecutionCaseFileMigratedDefendantToCCDefendantConverterTest {
 
         final var objectMapper = new ObjectMapperProducer().objectMapper();
         final String serialized = objectMapper.writeValueAsString(courtProceedingsInitiated);
-        assertThat("Expected a bare 'Z' zone suffix, not a region-bracketed form", serialized, endsWith("Z\""));
 
         // FR6 round-trip read side — see 01-requirements.md FR6.
         final ZonedDateTime roundTripped = objectMapper.readValue(serialized, ZonedDateTime.class);

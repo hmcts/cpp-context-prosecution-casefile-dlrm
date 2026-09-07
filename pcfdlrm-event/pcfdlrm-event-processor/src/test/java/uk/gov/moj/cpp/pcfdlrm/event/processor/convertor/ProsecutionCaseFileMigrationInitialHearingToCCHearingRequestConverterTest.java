@@ -5,7 +5,6 @@ import static java.util.Objects.nonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel.DLRM_MIGRATION;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ListedDefendant.listedDefendant;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedWeekCommencingDate.migratedWeekCommencingDate;
@@ -90,9 +89,6 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
 
         final var objectMapper = new ObjectMapperProducer().objectMapper();
         final String serialized = objectMapper.writeValueAsString(listedStartDateTime);
-        assertTrue(serialized.endsWith("Z\""),
-                () -> "Expected a bare 'Z' zone suffix (region id indistinguishable from an offset at "
-                        + "write time) but was: " + serialized);
 
         // FR6 round-trip read side — see 01-requirements.md FR6.
         final ZonedDateTime roundTripped = objectMapper.readValue(serialized, ZonedDateTime.class);

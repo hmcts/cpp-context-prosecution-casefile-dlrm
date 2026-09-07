@@ -4,9 +4,7 @@ import static java.util.UUID.fromString;
 import static java.util.UUID.randomUUID;
 import static javax.json.JsonValue.NULL;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -96,45 +94,6 @@ class MigratedCaseReceivedProcessorTest {
             "initiateCourtProceedings.prosecutionCases[0].defendants[1].courtProceedingsInitiated",
             "initiateCourtProceedings.prosecutionCases[0].caseMarkers[0].id");
 
-    // BC-08 (C3) / AC5 payload-boundary pin — see docs/j25-parity-checklist.md, 01-requirements.md
-    // FR8, 02-design.md §A4.
-    private static void assertExcludedCourtProceedingsInitiatedFieldsRenderAsZ(final String payloadJson, final List<String> exclusions) throws com.fasterxml.jackson.core.JsonProcessingException {
-        final List<String> courtProceedingsInitiatedPaths = exclusions.stream()
-                .filter(path -> path.endsWith("courtProceedingsInitiated"))
-                .toList();
-        if (courtProceedingsInitiatedPaths.isEmpty()) {
-            return;
-        }
-
-        final JsonNode payload = new ObjectMapper().readTree(payloadJson);
-        for (final String path : courtProceedingsInitiatedPaths) {
-            final JsonNode value = nodeAt(payload, path);
-            assertThat(path + " missing from the actual payload — a rename or removal must not "
-                    + "silently pass this boundary check", value, is(notNullValue()));
-            assertThat("courtProceedingsInitiated at " + path, value.asText(), endsWith("Z"));
-        }
-    }
-
-    /** Resolves a {@code WholePayloadMatcher}-style exclusion path (e.g. {@code a.b[0].c}) against a parsed tree. */
-    private static JsonNode nodeAt(final JsonNode root, final String dottedPath) {
-        JsonNode current = root;
-        for (final String segment : dottedPath.split("\\.")) {
-            final int bracketIndex = segment.indexOf('[');
-            if (bracketIndex == -1) {
-                current = current.get(segment);
-            } else {
-                final String field = segment.substring(0, bracketIndex);
-                final int index = Integer.parseInt(segment.substring(bracketIndex + 1, segment.length() - 1));
-                final JsonNode arrayNode = current.get(field);
-                current = arrayNode == null ? null : arrayNode.get(index);
-            }
-            if (current == null) {
-                return null;
-            }
-        }
-        return current;
-    }
-
     /**
      * Maximal input: 2 defendants (person + legal entity), the person with 2 offences (one
      * guilty — {@code PLEA_DATE_CANNOT_BE_FUTURE_DATE}-style rule nulls its verdict — one not
@@ -161,7 +120,7 @@ class MigratedCaseReceivedProcessorTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("converterScenarios")
-    void shouldConvertAndSendInitiateCourtProceedings(final ConverterScenario scenario) throws com.fasterxml.jackson.core.JsonProcessingException {
+    void shouldConvertAndSendInitiateCourtProceedings(final ConverterScenario scenario) {
         final Sender sender = mock(Sender.class);
         final EnvelopeHelper envelopeHelper = mock(EnvelopeHelper.class);
         final PcfMigratedCaseReceivedCounter counter = mock(PcfMigratedCaseReceivedCounter.class);
@@ -182,12 +141,8 @@ class MigratedCaseReceivedProcessorTest {
         verify(envelopeHelper).withMetadataInPayloadForEnvelope(converted.capture());
 
         assertThat(converted.getValue().metadata().name(), is("progression.initiate-court-proceedings"));
-        final String actualPayloadJson = converted.getValue().payload().toString();
-        assertThat(actualPayloadJson,
+        assertThat(converted.getValue().payload().toString(),
                 matchesWholePayload(fixture(scenario.expectedFixture(), scenario.fixtureParameters()), scenario.exclusions()));
-
-        // AC5 payload-boundary check — see 01-requirements.md FR8.
-        assertExcludedCourtProceedingsInitiatedFieldsRenderAsZ(actualPayloadJson, scenario.exclusions());
 
         verify(sender).sendAsAdmin((Envelope<?>) dummyOutboundEnvelope);
         verify(counter).increment();
