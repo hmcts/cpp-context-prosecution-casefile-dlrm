@@ -71,19 +71,8 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
     }
 
     @Test
-    // BC-08 (C1): Jackson jsr310 resolves 'Z' to ZoneOffset.UTC (an offset) where J17 currently
-    // produces a region-based ZoneId — the two are equals-unequal and render differently. This pins
-    // the OBSERVED J17 behaviour of the region id ZoneId.of("UTC") used by getDateAndTimeOfHearing(),
-    // not a claim that it is correct (01-requirements.md risk notes). Serialized via a fresh
-    // ObjectMapperProducer instance — the same producer class/config the converter's own private
-    // static OBJECT_MAPPER is built from (02-design.md §A1); the field itself is unreachable without
-    // reflection, which this pin deliberately avoids.
-    //
-    // Observed on J17 (2026-09-04): the region ZoneId.of("UTC") still renders as a bare "Z", not the
-    // region-bracketed form (e.g. "[UTC]") — indistinguishable on the wire from ZoneOffset.UTC at
-    // serialization time. The date/time portion is not asserted here: the fixture's dateOfHearing
-    // floats via now().plusDays(1), so a literal would break daily — see the zone-suffix assertion
-    // below and FR6's "identity and rendering, never the instant" instruction.
+    // BC-08 (C1) zone-identity pin — see docs/j25-parity-checklist.md, 01-requirements.md FR6,
+    // 02-design.md §A1.
     void shouldPinZoneIdentityOnListedStartDateTime() throws JsonProcessingException {
         final MigratedHearingWithReferenceData migratedHearingWithReferenceData = getMigratedHearingWithReferenceData(true);
 
@@ -105,14 +94,7 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
                 () -> "Expected a bare 'Z' zone suffix (region id indistinguishable from an offset at "
                         + "write time) but was: " + serialized);
 
-        // FR6 — pin the round trip, not just the write side: read the same string back through the
-        // same mapper and assert what zone identity comes out the other end.
-        // CONFIRMED on J17 (2026-09-04 run, twice): the region identity survives the round trip —
-        // reading the "...Z"-suffixed string back produces ZoneId.of("UTC") (toString "UTC"), NOT
-        // ZoneOffset.UTC (toString "Z") as originally guessed here. This is precisely BC-08's target
-        // seam: the write side already looks offset-like, but the read side currently preserves the
-        // region id — a J25 Jackson version that resolves 'Z' straight to ZoneOffset.UTC on read
-        // would flip this assertion, which is the whole point of pinning it.
+        // FR6 round-trip read side — see 01-requirements.md FR6.
         final ZonedDateTime roundTripped = objectMapper.readValue(serialized, ZonedDateTime.class);
         assertEquals(ZoneId.of("UTC"), roundTripped.getZone(),
                 "J17 read side: 'Z' currently resolves back to the region id ZoneId.of(\"UTC\"), not an offset");

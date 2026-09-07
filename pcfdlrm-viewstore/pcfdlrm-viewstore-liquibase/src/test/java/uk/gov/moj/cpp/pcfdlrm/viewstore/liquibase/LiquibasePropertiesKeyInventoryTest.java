@@ -12,11 +12,8 @@ import org.junit.jupiter.api.Test;
 class LiquibasePropertiesKeyInventoryTest {
 
     @Test
-    // BC-07: Liquibase 4->5 rejects removed properties (hub.mode, searchPath), failing the
-    // migration job at deploy time rather than in mvn test. This pins today's key set — including
-    // liquibase.hub.mode, the exact property java-25-parity.pdf flags as rejected — so an unsupported
-    // key fails fast here. Removing the stale key is the upgrade story's job (01-requirements.md
-    // FR16), not this one.
+    // BC-07 liquibase.properties key-inventory pin — see docs/j25-parity-checklist.md,
+    // 01-requirements.md FR12/FR16, 02-design.md §D.
     void shouldExposeExactlyTheCurrentSupportedKeySet() throws IOException {
         final Properties properties = new Properties();
         try (InputStream in = getClass().getClassLoader().getResourceAsStream("liquibase.properties")) {

@@ -98,14 +98,8 @@ class ProsecutionCaseFileMigratedDefendantToCCDefendantConverterTest {
         assertNull(courtsDefendants.get(1).getAssociatedPersons());
     }
 
-    // BC-08 (C3): ZonedDateTime.now(ZoneId.of("UTC")) is a region id, and the instant is
-    // non-deterministic by design — per FR6 this pins zone identity and rendering only, never the
-    // instant. Constructs a fresh ObjectMapperProducer rather than reflecting into the converter
-    // (02-design.md §A2); there is no static mapper field on this converter to reach anyway.
-    //
-    // Observed on J17 (2026-09-04): the region ZoneId.of("UTC") renders as a bare "Z" at write time
-    // (e.g. "2026-09-04T13:15:02.427Z") — not the region-bracketed "[UTC]" form originally assumed
-    // here. Corrected per FR1/decision 4 ("a J17 run outranks the report") after the first real run.
+    // BC-08 (C3) zone-identity pin — see docs/j25-parity-checklist.md, 01-requirements.md FR6,
+    // 02-design.md §A2.
     @Test
     void shouldPinZoneIdentityOnCourtProceedingsInitiated() throws JsonProcessingException {
         final ProsecutionWithReferenceData prosecutionWithReferenceData = buildProsecutionWithReferenceData(EITHER_WAY);
@@ -129,10 +123,7 @@ class ProsecutionCaseFileMigratedDefendantToCCDefendantConverterTest {
         final String serialized = objectMapper.writeValueAsString(courtProceedingsInitiated);
         assertThat("Expected a bare 'Z' zone suffix, not a region-bracketed form", serialized, endsWith("Z\""));
 
-        // FR6 — the round-trip read side. CONFIRMED on J17 (2026-09-04 run, twice, same result as
-        // carrier C1): the region identity survives the round trip — reading the "...Z"-suffixed
-        // string back produces ZoneId.of("UTC") (toString "UTC"), NOT ZoneOffset.UTC (toString "Z")
-        // as originally guessed here. This is precisely BC-08's target seam.
+        // FR6 round-trip read side — see 01-requirements.md FR6.
         final ZonedDateTime roundTripped = objectMapper.readValue(serialized, ZonedDateTime.class);
         assertThat("J17 read side: 'Z' currently resolves back to the region id ZoneId.of(\"UTC\"), not an offset",
                 roundTripped.getZone(), is(ZoneId.of("UTC")));

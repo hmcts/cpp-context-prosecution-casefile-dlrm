@@ -21,17 +21,8 @@ class GeneratedEventTypeInventoryTest {
     private static final String SCHEMA_CLASSPATH_DIR = "json/schema";
 
     @Test
-    // BC-21: reflections 0.9.10->0.10.2 changes the classpath-scanning contract codegen relies on,
-    // so verify generated sources rather than assume the count. Derives the expected type from each
-    // schema's own "id" URL instead of hard-coding a package or class list (FR12).
-    //
-    // Two package roots are genuinely in use here, confirmed by inspecting the real
-    // target/generated-sources tree before writing this, not assumed (02-design.md §G): 7 of the 8
-    // schemas' "id" fields sit under .../cps/.../domain/event/, generating into
-    // uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event; defendant-validation-passed's "id" sits
-    // under a different path, .../cpp/json/schemas/.../events/, generating into
-    // uk.gov.moj.cpp.json.schemas.prosecution.casefile.dlrm.events. This test follows the id field
-    // rather than assuming one package for the whole module.
+    // BC-21 codegen type-inventory guard — see docs/j25-parity-checklist.md, 01-requirements.md
+    // FR12, 02-design.md §G.
     void shouldGenerateExactlyOneTypePerOwnSchemaFile() throws Exception {
         final URL schemaDirUrl = getClass().getClassLoader().getResource(SCHEMA_CLASSPATH_DIR);
         assertFalse(schemaDirUrl == null, "Expected " + SCHEMA_CLASSPATH_DIR + " to be on the test classpath");

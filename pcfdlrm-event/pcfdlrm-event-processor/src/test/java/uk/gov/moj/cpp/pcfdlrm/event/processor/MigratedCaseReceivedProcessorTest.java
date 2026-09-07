@@ -96,13 +96,8 @@ class MigratedCaseReceivedProcessorTest {
             "initiateCourtProceedings.prosecutionCases[0].defendants[1].courtProceedingsInitiated",
             "initiateCourtProceedings.prosecutionCases[0].caseMarkers[0].id");
 
-    // BC-08 (C3), AC5: courtProceedingsInitiated is excluded from the whole-payload comparison above
-    // because ZonedDateTime.now() is non-deterministic — but excluding it entirely would let a
-    // payload-level regression through unnoticed (FR8). Rather than grepping the serialized payload
-    // as text, this walks the actual parsed JSON at each excluded path and pins its rendering (a bare
-    // "Z" suffix, confirmed on J17 2026-09-04 — see the unit-level pin in
-    // ProsecutionCaseFileMigratedDefendantToCCDefendantConverterTest) without needing the exact
-    // non-deterministic instant.
+    // BC-08 (C3) / AC5 payload-boundary pin — see docs/j25-parity-checklist.md, 01-requirements.md
+    // FR8, 02-design.md §A4.
     private static void assertExcludedCourtProceedingsInitiatedFieldsRenderAsZ(final String payloadJson, final List<String> exclusions) throws com.fasterxml.jackson.core.JsonProcessingException {
         final List<String> courtProceedingsInitiatedPaths = exclusions.stream()
                 .filter(path -> path.endsWith("courtProceedingsInitiated"))
@@ -191,9 +186,7 @@ class MigratedCaseReceivedProcessorTest {
         assertThat(actualPayloadJson,
                 matchesWholePayload(fixture(scenario.expectedFixture(), scenario.fixtureParameters()), scenario.exclusions()));
 
-        // AC5 — an assertion on the payload as it actually crosses the boundary, not only on a
-        // converter's return value: courtProceedingsInitiated is excluded above (non-deterministic
-        // instant) but must still be checked for its zone rendering here.
+        // AC5 payload-boundary check — see 01-requirements.md FR8.
         assertExcludedCourtProceedingsInitiatedFieldsRenderAsZ(actualPayloadJson, scenario.exclusions());
 
         verify(sender).sendAsAdmin((Envelope<?>) dummyOutboundEnvelope);
