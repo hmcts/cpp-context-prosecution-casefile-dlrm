@@ -122,6 +122,9 @@ final class AggregateScenarios {
         return candidate.toString();
     }
 
+    // DD-43194 (FR7) — J25 parity pin: GMT/BST rows below, not a BC-08 carrier. Consumed via
+    // @MethodSource by MigratedCaseFileAggregateTest#shouldDefaultHearingTimeTo10AmOnlyForFixedHearingWithNoWarnings,
+    // which is otherwise unchanged by this story.
     static Stream<Arguments> fixedHearingTimeDefaultingScenarios() {
         final List<ExpectedEvent> pastNoWarning = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
         pastNoWarning.add(warning("Hearing validation", "DATE_OF_HEARING_IN_THE_PAST : [2026-03-05]"));
@@ -139,8 +142,8 @@ final class AggregateScenarios {
         return Stream.of(
                 Arguments.of("2026-03-05", null, "past dateOfHearing raises warning — should not default timeOfHearing", pastNoWarning),
                 Arguments.of(FUTURE_HEARING_DATE_GMT, "09:30", "future dateOfHearing with existing time — should not overwrite timeOfHearing", futureWithTime),
-                Arguments.of(FUTURE_HEARING_DATE_GMT, null, "GMT: future dateOfHearing with no time — should default to 10:00:00 UTC", futureNoTimeGmt),
-                Arguments.of(FUTURE_HEARING_DATE_BST, null, "BST: future dateOfHearing with no time — should default to 09:00:00 UTC", futureNoTimeBst)
+                Arguments.of(FUTURE_HEARING_DATE_GMT, null, "GMT: future dateOfHearing with no time — should default to 10:00:00 UTC", futureNoTimeGmt), // DD-43194 FR7
+                Arguments.of(FUTURE_HEARING_DATE_BST, null, "BST: future dateOfHearing with no time — should default to 09:00:00 UTC", futureNoTimeBst) // DD-43194 FR7
         );
     }
 

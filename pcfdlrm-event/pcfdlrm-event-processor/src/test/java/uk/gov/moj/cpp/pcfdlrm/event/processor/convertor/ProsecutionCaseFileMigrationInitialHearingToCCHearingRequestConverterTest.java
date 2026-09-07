@@ -20,12 +20,16 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDe
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedHearing;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedOffence;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedWeekCommencingDate;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -63,6 +67,33 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
         assertEquals(JurisdictionType.CROWN, listHearingRequests.get(0).getJurisdictionType());
         assertEquals("C55BN00", listHearingRequests.get(0).getCourtCentre().getCourtHearingLocation());
 
+    }
+
+    @Test
+    // BC-08 (C1) zone-identity pin — see docs/j25-parity-checklist.md, 01-requirements.md FR6,
+    // 02-design.md §A1.
+    void shouldPinZoneIdentityOnListedStartDateTime() throws JsonProcessingException {
+        final MigratedHearingWithReferenceData migratedHearingWithReferenceData = getMigratedHearingWithReferenceData(true);
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName("XHIBIT");
+        paramsVO.setChannel(DLRM_MIGRATION);
+
+        final List<ListHearingRequest> listHearingRequests = prosecutionCaseFileMigrationInitialHearingToCCHearingRequestConverter
+                .convert(List.of(migratedHearingWithReferenceData), paramsVO);
+
+        assertEquals(1, listHearingRequests.size());
+        final var listedStartDateTime = listHearingRequests.get(0).getListedStartDateTime();
+        assertNotNull(listedStartDateTime);
+        assertEquals(ZoneId.of("UTC"), listedStartDateTime.getZone());
+
+        final var objectMapper = new ObjectMapperProducer().objectMapper();
+        final String serialized = objectMapper.writeValueAsString(listedStartDateTime);
+
+        // FR6 round-trip read side — see 01-requirements.md FR6.
+        final ZonedDateTime roundTripped = objectMapper.readValue(serialized, ZonedDateTime.class);
+        assertEquals(ZoneId.of("UTC"), roundTripped.getZone(),
+                "J17 read side: 'Z' currently resolves back to the region id ZoneId.of(\"UTC\"), not an offset");
     }
 
     @Test

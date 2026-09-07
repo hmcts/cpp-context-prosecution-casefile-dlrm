@@ -28,7 +28,7 @@ the Java 25 upgrade will move**
 
 ### Summary (JIRA summary line)
 
-`[Java 25] Pin PCFDLRM J17 behaviour: ZonedDateTime zone identity on the outbound CC payload, JSON-P provider resolution, codegen and deploy-time guards`
+`[Java 25] Pin PCFDLRM J17 behaviour: ZonedDateTime zone identity on the outbound CC payload, JSON-P null-guard parity, codegen and deploy-time guards`
 
 ### User story
 
@@ -61,19 +61,20 @@ build or return a 4xx; it writes a plausible-looking wrong timestamp into a migr
 
 | Tier | Depth | Rationale |
 |---|---|---|
-| **Unit / component** | **Exhaustive** for BC-08: every `ZonedDateTime` carrier in main code, and both directions of the Jackson round trip. Sufficient-branch for the rest. | Fast, in `mvn test`, no environment. |
-| **Build-time assertion** | **Single decisive check** per item (BC-11, BC-21, BC-07, BC-12). | Packaging and code-generation facts, not runtime behaviour. |
+| **Unit / component** | **Exhaustive** for BC-08: every `ZonedDateTime` carrier in main code, and both directions of the Jackson round trip. Sufficient-branch for the rest, including BC-11's null-guard parity pin (runtime behaviour, not a packaging fact — see FR9). | Fast, in `mvn test`, no environment. |
+| **Build-time assertion** | **Single decisive check** per item (BC-21, BC-07, BC-12). | Packaging and code-generation facts, not runtime behaviour. |
 | **Integration** | **Authored, not executed.** | Only 2 IT classes exist here against 105 unit tests, and no WildFly 40 image is confirmed available. |
 
 ## Scope
 
-- `pcfdlrm-event/pcfdlrm-event-processor` — the two outbound CC converters (BC-08)
+- `pcfdlrm-event/pcfdlrm-event-processor` — the two outbound CC converters (BC-08), and the
+  `JsonObjects` null-guard parity pin in `MetadataHelper`/`EnvelopeHelper`/`MaterialEventProcessor`
+  (BC-11, corrected — see FR9)
 - `pcfdlrm-domain/pcfdlrm-domain-aggregate` — `MigratedCaseFileAggregate` (BC-08)
 - `pcfdlrm-test-support` — `WholePayloadMatcher` (BC-13, test fidelity)
 - `pcfdlrm-command/pcfdlrm-command-api` — access-control DRL harness (BC-03 annotate, BC-20)
 - `pcfdlrm-domain/pcfdlrm-domain-event` — generated-type inventory (BC-21)
 - `pcfdlrm-viewstore/pcfdlrm-viewstore-liquibase` — `liquibase.properties` (BC-07)
-- Module POMs — `javax.json` coordinate inventory (BC-11)
 - `docs/j25-parity-checklist.md` — new
 
 Out of scope entirely: `pcfdlrm-viewstore-persistence` (no Java), `pcfdlrm-domain-value-schema`
@@ -131,10 +132,18 @@ Out of scope entirely: `pcfdlrm-viewstore-persistence` (no Java), `pcfdlrm-domai
 
 ### C. The remaining items
 
-- **FR9 — BC-11: pin JSON-P provider resolution.** Seven `javax.json` coordinates exist across
-  domain-aggregate, domain-event, query-view, event-listener and command-handler. Assert that
-  **exactly one** JSON-P provider is resolvable on the affected paths, and **which** one. The J25
-  failure mode is a `ServiceLoader` collision between glassfish and Parsson.
+- **FR9 — BC-11: pin the `JsonObjects` null-value guard, not provider resolution.** *(Revised
+  2026-09-04 — see `java-25-parity.pdf`'s 2026-08-26 correction.)* BC-11 was originally hypothesised as
+  a JSON-P `ServiceLoader` collision between glassfish and Parsson across the seven `javax.json`
+  coordinates in domain-aggregate, domain-event, query-view, event-listener and command-handler. That
+  has since been **refuted** by a real J17/J25 run on `cpp-context-notification-notify`: the shared
+  framework helper `JsonObjects.createObjectBuilder()` already null-guards its own `add(key, value)`
+  and throws `NullPointerException` identically on both runtimes — there is no provider collision to
+  pin. This repo's own JSON-P touchpoints in main code go entirely through that same helper (confirmed
+  by grep: no raw `javax.json.Json` provider call, no `ServiceLoader`/`JsonProvider` reference anywhere
+  in `src/main`), so the correction transfers directly. The test is now a parity pin: assert that
+  passing a `null` value to the helper throws `NullPointerException` on J17, matching the corrected
+  guide's confirmed-unchanged J25 behaviour — not a provider-resolution check.
 - **FR10 — BC-13: pin `WholePayloadMatcher`'s comparison behaviour as test infrastructure.** This
   repo has **no everit and no product-side schema-validation seam**; its only `org.json` exposure is
   *through* JSONassert inside `WholePayloadMatcher`. The risk is a whole-payload comparison silently
@@ -188,7 +197,9 @@ Out of scope entirely: `pcfdlrm-viewstore-persistence` (no Java), `pcfdlrm-domai
   outputs differing by an hour, and is labelled a `java.time` pin rather than a BC-08 carrier (FR7).
 - **AC5** — At least one assertion is on the payload as it crosses the boundary to
   `cpp-context-prosecution-casefile` or onto `public.pcfdlrm.migrated-case-file-processed` (FR8).
-- **AC6** — Each affected module asserts exactly one resolvable JSON-P provider, and names it (FR9).
+- **AC6** — The `JsonObjects` null-value guard used by this repo's affected modules throws
+  `NullPointerException` identically when exercised on J17, pinning the corrected parity finding
+  rather than asserting provider resolution (FR9).
 - **AC7** — The command-API knowledge base asserts a non-zero rule count, and
   `ReceiveMigratedCaseRuleTest` is annotated as an existing BC-03 pin (FR11).
 - **AC8** — `docs/j25-parity-checklist.md` exists, covers every BC-01..BC-24 with a legend mark, notes
@@ -225,6 +236,9 @@ Out of scope entirely: `pcfdlrm-viewstore-persistence` (no Java), `pcfdlrm-domai
 - **The investigation report is a hypothesis catalogue, not a specification.** 3 of 24 entries are
   Refuted, 2 Mixed, 2 Inconclusive, and its authors flag fleet-wide counts as directional. FR1 exists
   because the reference context already found one load-bearing claim wrong under a real J17 run.
+  **BC-11 is this story's instance of that**: its original provider-collision framing was refuted by a
+  real run on `cpp-context-notification-notify` (`java-25-parity.pdf`, corrected 2026-08-26), and this
+  repo's own code was checked and found to sit on the same refuted code path (FR9).
 - **BC-13 here is easy to mis-scope.** It looks like DD-43192's primary item and is not: no everit, no
   product seam, and `pcfdlrm-domain-value-schema` has no tests at all. Scoping it as a product risk
   would spend the story's budget in the wrong module.
