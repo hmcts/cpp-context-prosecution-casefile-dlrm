@@ -158,7 +158,11 @@ starting point to verify, not to assume).
 **What exists:** `pcfdlrm-viewstore-liquibase/src/main/resources/liquibase.properties` has exactly
 three keys today: `changelogFile`, `liquibase.hub.mode: off`, `liquibase.headless: true`.
 `liquibase.hub.mode` is precisely the property the corrected guide flags as rejected by Liquibase 5
-— this is a live, present exposure, not a hypothetical.
+— this is a live, present exposure, not a hypothetical. Note: the changelog it points at,
+`pcfdlrm.xml`, is currently empty — no changesets, no tables (this module is scaffolding "in place
+ready for read-model wiring," per the repo's own `CLAUDE.md`). So the exposure here is scoped to the
+**deploy-job config itself failing to start** on an unsupported key, not to any data-migration risk
+— there is no real viewstore schema in this repo yet for a migration to corrupt.
 
 **Decision:** one small JUnit test in `pcfdlrm-viewstore-liquibase` (no `maven-enforcer-plugin`
 exists anywhere in this repo, confirming design note #3's fallback to plain JUnit) that loads
