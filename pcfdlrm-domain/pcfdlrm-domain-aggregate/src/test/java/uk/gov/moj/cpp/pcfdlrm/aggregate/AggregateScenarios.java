@@ -122,7 +122,9 @@ final class AggregateScenarios {
         return candidate.toString();
     }
 
-    // DD-43194 (FR7) — J25 parity pin: GMT/BST rows below, not a BC-08 carrier.
+    // DD-43194 (FR7) — J25 parity pin: GMT/BST rows below, not a BC-08 carrier. Consumed via
+    // @MethodSource by MigratedCaseFileAggregateTest#shouldDefaultHearingTimeTo10AmOnlyForFixedHearingWithNoWarnings,
+    // which is otherwise unchanged by this story.
     static Stream<Arguments> fixedHearingTimeDefaultingScenarios() {
         final List<ExpectedEvent> pastNoWarning = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
         pastNoWarning.add(warning("Hearing validation", "DATE_OF_HEARING_IN_THE_PAST : [2026-03-05]"));
