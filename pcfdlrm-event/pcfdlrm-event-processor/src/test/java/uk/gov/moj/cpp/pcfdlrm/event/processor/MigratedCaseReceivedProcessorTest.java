@@ -6,6 +6,7 @@ import static javax.json.JsonValue.NULL;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNull.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -69,8 +70,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -99,27 +98,46 @@ class MigratedCaseReceivedProcessorTest {
 
     // BC-08 (C3), AC5: courtProceedingsInitiated is excluded from the whole-payload comparison above
     // because ZonedDateTime.now() is non-deterministic — but excluding it entirely would let a
-    // payload-level regression through unnoticed (FR8). This regex targets the field wherever it
-    // appears in the real payload and pins its rendering (a bare "Z" suffix, confirmed on J17
-    // 2026-09-04 — see the unit-level pin in ProsecutionCaseFileMigratedDefendantToCCDefendantConverterTest)
-    // without needing the exact non-deterministic instant.
-    private static final Pattern COURT_PROCEEDINGS_INITIATED_FIELD = Pattern.compile("\"courtProceedingsInitiated\":\"([^\"]+)\"");
-
-    private static void assertExcludedCourtProceedingsInitiatedFieldsRenderAsZ(final String payloadJson, final List<String> exclusions) {
-        final long expectedOccurrences = exclusions.stream().filter(path -> path.endsWith("courtProceedingsInitiated")).count();
-        if (expectedOccurrences == 0) {
+    // payload-level regression through unnoticed (FR8). Rather than grepping the serialized payload
+    // as text, this walks the actual parsed JSON at each excluded path and pins its rendering (a bare
+    // "Z" suffix, confirmed on J17 2026-09-04 — see the unit-level pin in
+    // ProsecutionCaseFileMigratedDefendantToCCDefendantConverterTest) without needing the exact
+    // non-deterministic instant.
+    private static void assertExcludedCourtProceedingsInitiatedFieldsRenderAsZ(final String payloadJson, final List<String> exclusions) throws com.fasterxml.jackson.core.JsonProcessingException {
+        final List<String> courtProceedingsInitiatedPaths = exclusions.stream()
+                .filter(path -> path.endsWith("courtProceedingsInitiated"))
+                .toList();
+        if (courtProceedingsInitiatedPaths.isEmpty()) {
             return;
         }
-        final Matcher matcher = COURT_PROCEEDINGS_INITIATED_FIELD.matcher(payloadJson);
-        long actualOccurrences = 0;
-        while (matcher.find()) {
-            actualOccurrences++;
-            assertThat("courtProceedingsInitiated at the payload boundary", matcher.group(1), endsWith("Z"));
+
+        final JsonNode payload = new ObjectMapper().readTree(payloadJson);
+        for (final String path : courtProceedingsInitiatedPaths) {
+            final JsonNode value = nodeAt(payload, path);
+            assertThat(path + " missing from the actual payload — a rename or removal must not "
+                    + "silently pass this boundary check", value, is(notNullValue()));
+            assertThat("courtProceedingsInitiated at " + path, value.asText(), endsWith("Z"));
         }
-        assertThat("expected as many courtProceedingsInitiated fields in the real payload as this "
-                        + "scenario excluded from the whole-payload comparison — a rename or removal "
-                        + "must not silently pass this boundary check",
-                actualOccurrences, is(expectedOccurrences));
+    }
+
+    /** Resolves a {@code WholePayloadMatcher}-style exclusion path (e.g. {@code a.b[0].c}) against a parsed tree. */
+    private static JsonNode nodeAt(final JsonNode root, final String dottedPath) {
+        JsonNode current = root;
+        for (final String segment : dottedPath.split("\\.")) {
+            final int bracketIndex = segment.indexOf('[');
+            if (bracketIndex == -1) {
+                current = current.get(segment);
+            } else {
+                final String field = segment.substring(0, bracketIndex);
+                final int index = Integer.parseInt(segment.substring(bracketIndex + 1, segment.length() - 1));
+                final JsonNode arrayNode = current.get(field);
+                current = arrayNode == null ? null : arrayNode.get(index);
+            }
+            if (current == null) {
+                return null;
+            }
+        }
+        return current;
     }
 
     /**
@@ -148,7 +166,7 @@ class MigratedCaseReceivedProcessorTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("converterScenarios")
-    void shouldConvertAndSendInitiateCourtProceedings(final ConverterScenario scenario) {
+    void shouldConvertAndSendInitiateCourtProceedings(final ConverterScenario scenario) throws com.fasterxml.jackson.core.JsonProcessingException {
         final Sender sender = mock(Sender.class);
         final EnvelopeHelper envelopeHelper = mock(EnvelopeHelper.class);
         final PcfMigratedCaseReceivedCounter counter = mock(PcfMigratedCaseReceivedCounter.class);
