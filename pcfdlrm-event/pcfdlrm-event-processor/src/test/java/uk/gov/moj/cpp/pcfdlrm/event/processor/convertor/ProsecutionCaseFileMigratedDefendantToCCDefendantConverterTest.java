@@ -4,8 +4,10 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.when;
@@ -24,10 +26,14 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ParentGuardianInfor
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.PersonalInformation;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Prosecution;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -90,6 +96,46 @@ class ProsecutionCaseFileMigratedDefendantToCCDefendantConverterTest {
         assertThat(courtsDefendants.get(0).getOffences().get(0).getOffenceFacts().getAlcoholReadingMethodDescription(), is("Blood"));
         assertThat(courtsDefendants.get(0).getAssociatedPersons().get(0).getRole(), is("ParentGuardian"));
         assertNull(courtsDefendants.get(1).getAssociatedPersons());
+    }
+
+    // BC-08 (C3): ZonedDateTime.now(ZoneId.of("UTC")) is a region id, and the instant is
+    // non-deterministic by design — per FR6 this pins zone identity and rendering only, never the
+    // instant. Constructs a fresh ObjectMapperProducer rather than reflecting into the converter
+    // (02-design.md §A2); there is no static mapper field on this converter to reach anyway.
+    //
+    // Observed on J17 (2026-09-04): the region ZoneId.of("UTC") renders as a bare "Z" at write time
+    // (e.g. "2026-09-04T13:15:02.427Z") — not the region-bracketed "[UTC]" form originally assumed
+    // here. Corrected per FR1/decision 4 ("a J17 run outranks the report") after the first real run.
+    @Test
+    void shouldPinZoneIdentityOnCourtProceedingsInitiated() throws JsonProcessingException {
+        final ProsecutionWithReferenceData prosecutionWithReferenceData = buildProsecutionWithReferenceData(EITHER_WAY);
+        final List<MigratedDefendant> defendants = prosecutionWithReferenceData.getProsecution().getDefendants();
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName(XHIBIT);
+        paramsVO.setCaseId(prosecutionWithReferenceData.getProsecution().getCaseDetails().getCaseId());
+        paramsVO.setReferenceDataVO(prosecutionWithReferenceData.getReferenceDataVO());
+        paramsVO.setInitiationCode("J");
+
+        when(referenceDataQueryService.retrieveAlcoholLevelMethods()).thenReturn(asList(alcoholLevelMethodReferenceData().withMethodCode("A").withMethodDescription("Blood").build(),
+                alcoholLevelMethodReferenceData().withMethodCode("B").withMethodDescription("Breath").build()));
+
+        final List<Defendant> courtsDefendants = converter.convert(defendants, paramsVO);
+
+        final var courtProceedingsInitiated = courtsDefendants.get(0).getCourtProceedingsInitiated();
+        assertThat(courtProceedingsInitiated, is(notNullValue()));
+        assertThat(courtProceedingsInitiated.getZone(), is(ZoneId.of("UTC")));
+
+        final var objectMapper = new ObjectMapperProducer().objectMapper();
+        final String serialized = objectMapper.writeValueAsString(courtProceedingsInitiated);
+        assertThat("Expected a bare 'Z' zone suffix, not a region-bracketed form", serialized, endsWith("Z\""));
+
+        // FR6 — the round-trip read side. CONFIRMED on J17 (2026-09-04 run, twice, same result as
+        // carrier C1): the region identity survives the round trip — reading the "...Z"-suffixed
+        // string back produces ZoneId.of("UTC") (toString "UTC"), NOT ZoneOffset.UTC (toString "Z")
+        // as originally guessed here. This is precisely BC-08's target seam.
+        final ZonedDateTime roundTripped = objectMapper.readValue(serialized, ZonedDateTime.class);
+        assertThat("J17 read side: 'Z' currently resolves back to the region id ZoneId.of(\"UTC\"), not an offset",
+                roundTripped.getZone(), is(ZoneId.of("UTC")));
     }
 
     // AC-T4-4/FR10 — numPreviousConvictions renames onto core's numberOfPreviousConvictionsCited.

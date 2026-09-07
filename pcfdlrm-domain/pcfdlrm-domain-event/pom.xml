@@ -38,6 +38,25 @@
             <groupId>uk.gov.justice.services</groupId>
             <artifactId>messaging-core</artifactId>
         </dependency>
+
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- javax.json-api above is provided-scope (API only); a real JSON-P provider is needed to
+             actually parse a schema file in a test, same pattern as pcfdlrm-domain-aggregate's pom. -->
+        <dependency>
+            <groupId>org.glassfish</groupId>
+            <artifactId>javax.json</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

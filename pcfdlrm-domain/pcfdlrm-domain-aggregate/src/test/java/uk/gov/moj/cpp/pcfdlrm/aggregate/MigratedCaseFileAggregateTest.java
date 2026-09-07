@@ -298,6 +298,7 @@ class MigratedCaseFileAggregateTest {
         assertThat(hasCourtRoomIdWarning, is(true));
     }
 
+    // DD-43194 (FR7) — J25 parity pin, see AggregateScenarios#fixedHearingTimeDefaultingScenarios.
     @ParameterizedTest(name = "{2}")
     @MethodSource("uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios#fixedHearingTimeDefaultingScenarios")
     void shouldDefaultHearingTimeTo10AmOnlyForFixedHearingWithNoWarnings(

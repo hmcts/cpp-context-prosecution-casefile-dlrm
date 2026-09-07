@@ -46,7 +46,7 @@ Reference implementation: `cpp-context-users-groups` PR
 | BC | Seam | Weight |
 |---|---|---|
 | **BC-08** | Jackson `'Z'` → `ZoneOffset.UTC` identity drift — `ZonedDateTime` in **main** code: `MigratedCaseFileAggregate`, and both `…ToCC…Converter` classes building the outbound CC hearing/defendant payloads | **primary** |
-| **BC-11** | JSON-P provider collision (glassfish→Parsson) — 7 `javax.json` coordinates across domain-aggregate, domain-event, query-view, event-listener, command-handler | high |
+| BC-11 | *(Corrected 2026-08-26 — see `java-25-parity.pdf`.)* JSON-P provider collision was refuted by a real J17/J25 run on `cpp-context-notification-notify`: the shared `JsonObjects.createObjectBuilder()` helper already null-guards `add(key, value)` and throws `NullPointerException` identically on glassfish and Parsson. This repo's only JSON-P touchpoints in main code (`pcfdlrm-event-processor`'s `MetadataHelper`/`EnvelopeHelper`/`MaterialEventProcessor`) go through that same helper — confirmed by grep, no raw `javax.json.Json` provider or `ServiceLoader` usage anywhere in `src/main`. Re-weighted from the original "high" (provider-resolution test) down to a parity pin on the null-guard NPE | thin |
 | BC-03 | Drools 7→10 allow/deny — `command-receive-migrated-case-file-api.drl` (1 rule), `ReceiveMigratedCaseRuleTest` | high |
 | BC-20 | Drools harness rule-count gate | low (cheap) |
 | BC-21 | Codegen (reflections 0.9.10→0.10.2) — all 4 generator plugins + RAML | medium |
@@ -100,7 +100,9 @@ sitting in the aggregate and in the converters that assemble the payload sent on
   to follow; choosing the carrier field here is a stage-2 call.
 - **The report may be wrong in places, and a J17 run outranks it.** In the reference context three
   BC-04 tests were written to the report's claim and refuted by an actual J17 run. Expect at least one
-  such correction here and record it.
+  such correction here and record it. **BC-11 is that correction** — its original "provider collision"
+  framing was refuted by a real run elsewhere (`java-25-parity.pdf`, 2026-08-26) and this repo's own
+  code confirms the same code path applies here; see the Bucket A table above.
 - **Only 2 IT classes in this repo** against 105 unit tests. IT-tier parity items are authored-not-
   executed until Docker is available — mark them 🟡, not 🟢.
 - Owner is unassigned for `prosecution-casefile-dlrm` on the PEG-3296 tracker. Confirm with Platform
