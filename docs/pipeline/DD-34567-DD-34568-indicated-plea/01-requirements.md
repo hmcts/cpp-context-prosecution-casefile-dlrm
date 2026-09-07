@@ -1,8 +1,8 @@
 # 01 — Requirements
 
 - **Story:** [DD-34568](https://tools.hmcts.net/jira/browse/DD-34568) (epic
-  [DD-34567](https://tools.hmcts.net/jira/browse/DD-34568))
-- **Status:** Drafted from instruction + code investigation — pending Jira reconciliation.
+  [DD-34567](https://tools.hmcts.net/jira/browse/DD-34567))
+- **Status:** Requirements finalised — all open questions closed against the shipped implementation.
 
 ## Functional requirements
 
@@ -43,16 +43,26 @@
   - *Given* an `INDICATED_GUILTY` plea on an **XHIBIT** migration
   - *Then* the value stays on `plea` (`pleaValue = INDICATED_GUILTY`) and `indicatedPlea` is null.
 
-## Open questions (require PO / ticket confirmation)
+## Resolved questions
 
-1. **`source` value (BLOCKING for schema validity).** Courts `indicatedPlea.source` is a required
-   enum `ONLINE | IN_COURT`. Migrated legacy data carries no plea channel. **Assumption made:
-   `IN_COURT`** (see ADR `ADR-DD-34568-indicated-plea-source.md`). Confirm with the PO /
-   `progression` team.
-2. **`NO_INDICATION`.** The enum also allows `NO_INDICATION`. The story names only the two
-   indicated values, so `NO_INDICATION` is treated as a normal `plea` value (not moved to
-   `indicatedPlea`). Confirm this is correct, or whether a `NO_INDICATION` plea value can occur.
-3. **`originatingHearingId`.** Optional; not available from migrated data, so left unset. Confirm
-   `progression` does not need it for migrated cases.
-4. **Plea-value case/format.** Reference data supplies UPPER_SNAKE (`INDICATED_GUILTY`). Matching
-   is case-insensitive to be safe. Confirm no other spellings reach the converter.
+All four questions raised during drafting are now closed. Resolutions 2–4 are settled in the
+shipped implementation (`ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter`); resolution
+1 is a locked design assumption pending only a downstream sign-off that does not block delivery.
+
+1. **`source` value.** *Closed — assumption accepted.* Courts `indicatedPlea.source` is a required
+   enum `ONLINE | IN_COURT`; migrated legacy data carries no plea channel. Defaulted to
+   **`IN_COURT`** (see ADR `ADR-DD-34568-indicated-plea-source.md`,
+   `convertIndicatedPlea(...)` line ~446). Legacy cases originate from the court estate, so
+   `IN_COURT` is the faithful representation. The `progression` team confirmation is an audit
+   check only — if it ever comes back otherwise the fix is the one-line default in
+   `convertIndicatedPlea(...)`; it does not change the design.
+2. **`NO_INDICATION`.** *Closed — as designed.* `toIndicatedPleaValue(...)` maps only
+   `INDICATED_GUILTY` and `INDICATED_NOT_GUILTY`, returning `null` for everything else, so
+   `NO_INDICATION` (and any other value) stays on the `plea` object and is never diverted to
+   `indicatedPlea`. This matches the story, which names only the two indicated values.
+3. **`originatingHearingId`.** *Closed — left unset.* Optional in the courts schema and not
+   available from migrated data, so the field is not populated; the emitted `indicatedPlea`
+   validates without it.
+4. **Plea-value case/format.** *Closed — case-insensitive matching.* All plea-value comparisons in
+   the converter use `equalsIgnoreCase`, so the UPPER_SNAKE reference-data spelling
+   (`INDICATED_GUILTY`) matches regardless of any casing variance in the source data.
