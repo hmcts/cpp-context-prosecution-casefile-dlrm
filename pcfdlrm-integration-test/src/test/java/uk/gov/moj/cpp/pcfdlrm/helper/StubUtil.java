@@ -14,7 +14,7 @@ import static uk.gov.moj.cpp.pcfdlrm.helper.FileUtil.resourceToString;
 
 import uk.gov.justice.service.wiremock.testutil.InternalEndpointMockUtils;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 public class StubUtil {
 
