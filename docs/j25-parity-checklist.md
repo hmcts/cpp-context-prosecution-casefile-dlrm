@@ -9,6 +9,11 @@
 > gate actually covers. Every 🟢 below was run on `team/25.104.x`-equivalent J17 (`service-parent-pom
 > 17.104.1`-line, JDK 17) on 2026-09-07. Full task-by-task rationale lives in `03-stories.md`; this
 > file records outcomes, not the reasoning behind them.
+>
+> **J25 re-run (2026-09-09, Story A):** `mvn clean install` green on JDK 25, all 🟢 items above still
+> pass. BC-08's two round-trip assertions were re-pinned to `ZoneOffset.UTC` (was `ZoneId.of("UTC")`)
+> to match confirmed J25 Jackson behaviour — same fix already merged fleet-wide, see
+> `docs/analysis/j25-upgrade/j25-behavioural-change-investigation-report.md` §BC-08.
 
 **Whole-suite gate (AC2)**: `mvn -o clean install -DskipITs` → BUILD SUCCESS, 51 modules, 557 tests,
 0 failures, 0 skipped.

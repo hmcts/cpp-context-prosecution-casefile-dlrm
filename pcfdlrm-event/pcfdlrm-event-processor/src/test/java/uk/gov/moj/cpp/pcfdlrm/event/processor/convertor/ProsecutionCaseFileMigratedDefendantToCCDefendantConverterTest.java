@@ -27,6 +27,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Prosecution;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant;
 
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -121,9 +122,12 @@ class ProsecutionCaseFileMigratedDefendantToCCDefendantConverterTest {
         final String serialized = objectMapper.writeValueAsString(courtProceedingsInitiated);
 
         // FR6 round-trip read side — see 01-requirements.md FR6.
+        // BC-08, J25: Jackson 2.21.x resolves the 'Z' timezone token to ZoneOffset.UTC rather than
+        // the J17-era ZoneId.of("UTC") region id — confirmed, precedented fix across 5 repos
+        // (docs/analysis/j25-upgrade/j25-behavioural-change-investigation-report.md §BC-08).
         final ZonedDateTime roundTripped = objectMapper.readValue(serialized, ZonedDateTime.class);
-        assertThat("J17 read side: 'Z' currently resolves back to the region id ZoneId.of(\"UTC\"), not an offset",
-                roundTripped.getZone(), is(ZoneId.of("UTC")));
+        assertThat("J25 read side: 'Z' now resolves back to ZoneOffset.UTC, not the J17-era region id ZoneId.of(\"UTC\")",
+                roundTripped.getZone(), is(ZoneOffset.UTC));
     }
 
     @Test

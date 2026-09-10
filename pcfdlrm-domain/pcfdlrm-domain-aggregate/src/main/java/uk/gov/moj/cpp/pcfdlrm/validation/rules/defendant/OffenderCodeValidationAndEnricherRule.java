@@ -5,7 +5,7 @@ import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.OFFENDER_CODE_IS_INV
 import static uk.gov.moj.cpp.pcfdlrm.validation.Problems.newProblem;
 import static uk.gov.moj.cpp.pcfdlrm.validation.rules.FieldName.DEFENDANT_OFFENDER_CODE;
 import static uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult.VALID;
-import static uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult.newValidationResult;;
+import static uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult.newValidationResult;
 
 import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OffenderCodeReferenceData;

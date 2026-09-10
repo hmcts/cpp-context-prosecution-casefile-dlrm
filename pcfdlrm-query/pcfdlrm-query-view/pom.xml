@@ -4,7 +4,7 @@
     <parent>
         <groupId>uk.gov.moj.cpp.pcfdlrm</groupId>
         <artifactId>pcfdlrm-query</artifactId>
-        <version>17.104.24-DLRMJ25-SNAPSHOT</version>
+        <version>25.104.24-DLRMJ25-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -13,8 +13,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>javax</groupId>
-            <artifactId>javaee-api</artifactId>
+            <groupId>jakarta.platform</groupId>
+            <artifactId>jakarta.jakartaee-api</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -30,10 +30,6 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>pcfdlrm-datatypes-common</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>javax.json</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
