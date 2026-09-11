@@ -178,10 +178,12 @@ overstated.
 
 ### Acceptance criteria
 
-- [ ] **AC-B8 (maps to AC8)**: Given `liquibase.properties` with `liquibase.hub.mode: off` removed, when
+- [x] **AC-B8 (maps to AC8)**: Given `liquibase.properties` with `liquibase.hub.mode: off` removed, when
       Liquibase 5 is run against the file, then it accepts the file with no unknown-parameter failure.
       `liquibase.headless` verified the same way (lower-confidence item named explicitly in FR17;
-      confirm rather than assume).
+      confirm rather than assume). **Verified 2026-09-11**: `liquibase.headless` maps to
+      `GlobalConfiguration.HEADLESS`, still present (deprecated, not removed) in Liquibase 5.0.x —
+      confirmed via Liquibase's own 5.0 javadoc/deprecated-list, not assumed.
 
 ### Out of scope for this story
 
@@ -195,9 +197,10 @@ overstated.
 
 ### Definition of done
 
-- [ ] `liquibase.hub.mode` no longer present in `liquibase.properties`.
-- [ ] `liquibase.headless` verified (not assumed) to be accepted by Liquibase 5, with the verification
-      method recorded in the PR.
+- [x] `liquibase.hub.mode` no longer present in `liquibase.properties`.
+- [x] `liquibase.headless` verified (not assumed) to be accepted by Liquibase 5, with the verification
+      method recorded in the PR — still a valid (deprecated but not removed) `GlobalConfiguration` key
+      in Liquibase 5.0.x per its own javadoc/deprecated-list.
 - [ ] **No test to update — confirmed, not assumed.** `LiquibasePropertiesKeyInventoryTest` does not
       exist on this branch (verified by direct grep, 2026-09-09): the parity stage wrote it, ran it
       green, then deliberately reverted it. The earlier plan to "update the pinned key set in the same
