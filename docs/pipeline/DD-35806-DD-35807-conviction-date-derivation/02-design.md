@@ -2,72 +2,60 @@
 
 - **Story:** [DD-35807](https://tools.hmcts.net/jira/browse/DD-35807) (epic
   [DD-35806](https://tools.hmcts.net/jira/browse/DD-35806))
-- **Change scope:** `pcfdlrm-integration-test` fixtures + one IT parametrization only. No
-  production code, no schema/RAML/subscriptions-descriptor changes — the derivation logic already
-  exists and is source-system-agnostic (`00-input-brief.md`).
+- **Change scope:** `pcfdlrm-integration-test` fixtures + one IT parametrization + one shared
+  stub-data record. No production code, no schema/RAML/subscriptions-descriptor changes.
 
-## Layer analysis (the three-layer rule)
+## Layer analysis
 
-N/A for this story — nothing in command side, event listener, or event processor changes. The
-existing event-processor converter (`ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter`)
-is exercised as-is by the new/extended IT scenarios; it is not modified.
+N/A — the existing event-processor converter is exercised as-is; not modified.
 
 ## Components touched
 
-All under `pcfdlrm-integration-test/src/test/`:
-
 | File | Change |
 |------|--------|
-| `resources/json/xhibit/initiate-court-proceedings/libra-journey.json` | Extend the existing offence to assert `convictionDate` (AC-2, guilty). |
-| `resources/command-json/pcfdlrm.command.receive-migrated-case-file-libra-indicated-guilty-plea.json` | **New.** Clone of `...-libra-indicated-plea.json` with the plea `id` swapped to the `INDICATED_GUILTY` reference-data row (`9a1e0d34-5b2c-4f8e-bd6c-7a9f1e8d3c2b`, guilty flag `Yes`) instead of `INDICATED_NOT_GUILTY`'s. |
-| `resources/json/xhibit/initiate-court-proceedings/libra-indicated-guilty-plea.json` | **New.** Clone of `libra-indicated-plea.json` with `indicatedPlea.indicatedPleaValue = INDICATED_GUILTY` and a `convictionDate` added (AC-1, indicated guilty). |
-| `java/.../it/ReceiveMigratedCaseFileIT.java` | Add a third `@CsvSource` row to `receiveMigratedCaseFileWithoutMaterialInitiatesCourtProceedings`, pairing the new command/expected fixtures above. |
+| `resources/json/xhibit/initiate-court-proceedings/libra-journey.json` | Added `convictionDate`, `convictingCourt`, `plea` to the offence (AC-2). |
+| `resources/command-json/pcfdlrm.command.receive-migrated-case-file-libra-indicated-guilty-plea.json` | **New.** Clone of `...-libra-indicated-plea.json`, plea `id` swapped to the `INDICATED_GUILTY` row (`9a1e0d34-5b2c-4f8e-bd6c-7a9f1e8d3c2b`, guilty flag `Yes`). |
+| `resources/json/xhibit/initiate-court-proceedings/libra-indicated-guilty-plea.json` | **New.** `indicatedPleaValue: INDICATED_GUILTY`, plus `convictionDate` and `convictingCourt` (AC-1). |
+| `resources/stub-data/referencedata.query.plea-types.json` | Guilty (`G`) plea-type row: `jurisdiction` `CROWN` → `EITHER`. |
+| `java/.../it/ReceiveMigratedCaseFileIT.java` | Third `@CsvSource` row pairing the new fixtures. |
 
-No new IT class — this reuses the existing "journey" parametrized test per FR-3, matching the
-established pattern XHIBIT/LIBRA scenarios already use in this method.
+No new IT class (FR-3) — reuses the existing "journey" parametrized test.
 
-## Expected values — design assumption, to be confirmed against a real run
+## Root cause (found empirically, not by static reading)
 
-`getConvictionDate()` returns the plea date verbatim (no "default to today" fallback — that
-fallback is only in `convertPlea`/`convertIndicatedPlea` for *non*-guilty pleas). So on paper:
+`PleaDataRefDataEnricher.process()` only keeps a plea reference-data row if its `jurisdiction`
+matches the source system (XHIBIT→`CROWN`, else→`MAGISTRATES`), or is `EITHER`, or
+`pleaTypeCode == "IG"`. The shared plain-`GUILTY` row (id `7fbc9a21-...-8c01`) was
+`jurisdiction: CROWN` — so for a LIBRA case it was filtered out entirely, and `getConvictionDate()`
+never ran. This wasn't visible from reading the converter alone; it only surfaced on the first
+Docker IT run against the unmodified `libra-journey` fixture (`convictionDate` missing).
 
-- **`libra-journey` (guilty, plea date `2024-06-09`):** `convictionDate: "2024-06-09"`.
-- **New `libra-indicated-guilty-plea` (indicated-guilty, plea date `2024-06-09`):**
-  `indicatedPlea.indicatedPleaDate: "2024-06-09"` (unchanged from the not-guilty fixture's shape)
-  **and** `convictionDate: "2024-06-09"` at the offence level.
+Fix: widened that row to `jurisdiction: EITHER` — passes the filter for any source system, and is
+arguably the more correct value (a Guilty plea isn't jurisdiction-specific). Safe for the ~15 other
+XHIBIT fixtures sharing that id, since `EITHER` was already one of the filter's pass conditions;
+confirmed by a full `./runIntegrationTests.sh` run (28/28 green, no regressions).
 
-`WholePayloadMatcher` is a **STRICT** whole-payload compare (`pcfdlrm-test-support`) — an
-undeclared key in the actual payload fails the match, exclusions only skip *value* comparison for
-keys already present in both. `libra-journey.json` today declares neither `plea` nor
-`convictionDate` on its offence, yet it's a `GUILTY` plea — which should already populate both
-per the converter. That mismatch means either the fixture is currently under-asserting real output
-(the FR-1 gap this story exists to close) or plea reference-data enrichment doesn't resolve for
-this fixture's ids for some reason not visible from static reading alone.
+Fixing the stub also correctly resolved `plea`/`convictingCourt` for `libra-journey` and
+`convictingCourt` for `libra-indicated-guilty-plea` (guilty status also drives court-centre
+derivation from the hearing's `courtHearingLocation`, `getConvictingCourt()`). These fields were
+absent from both fixtures until this fix landed and had to be added. `convictingCourt` resolves to
+the same fixed record in both cases — the default org-unit and enforcement-area WireMock stubs
+return one record regardless of the code queried:
+```json
+{ "id": "f8254db1-...-b87fde5a0a23",
+  "lja": { "ljaCode": "1080", "ljaName": "Bedfordshire Magistrates' Court", "welshLjaName": "WELSH_NAME" },
+  "name": "Port Talbot", "welshName": "Welsh Name" }
+```
 
-**This must be resolved empirically, not assumed** (per `feedback: iterate-one-real-failure-at-a-time`):
-Stage 5 will first re-run the *current, unmodified* `libra-journey` case against the Docker IT
-stack to see the real actual payload, then edit the expected fixture to match reality — adding
-`convictionDate` and, if the real payload has it too, a `plea` object. The same empirical check
-applies to the new `libra-indicated-guilty-plea` fixture before locking in its expected JSON.
+## Test strategy (as executed)
 
-## Test strategy
-
-1. Baseline: run `receiveMigratedCaseFileWithoutMaterialInitiatesCourtProceedings[libra-journey]`
-   unmodified, capture the actual `initiate-court-proceedings` payload for offence
-   `550e8400-...-40001`.
-2. Update `libra-journey.json` to add `convictionDate` (and `plea`, if the baseline shows it) —
-   re-run until green.
-3. Add the new command + expected fixture pair and the third `@CsvSource` row for
-   `libra-indicated-guilty-plea`; run, then reconcile the expected `indicatedPlea`/`convictionDate`
-   values against the real payload — re-run until green.
-4. No production code change expected. If step 1 or 3 reveals the converter is *not* actually
-   deriving the conviction date for one of these cases, stop and flag it at this gate rather than
-   silently loosening the assertion — that would be a real defect, out of this story's
-   test-automation-only scope per FR-4.
-5. Full local check before PR: `mvn clean && ./runIntegrationTests.sh` (per the hard rule for
-   endpoint-adjacent IT coverage), plus the unaffected `mvn clean install` unit-test run.
+1. Baseline run against unmodified fixtures → 2 real failures: `libra-journey` missing
+   `convictionDate`; `libra-indicated-guilty-plea` had an unexpected `convictingCourt`.
+2. Root-caused to the stub jurisdiction filter (above) — fixed the one stub row.
+3. Rerun surfaced the follow-on `plea`/`convictingCourt` gaps (previously masked by the jurisdiction
+   bug) — added them to both fixtures.
+4. Final rerun: 28/28 green. No production code touched (FR-4 held).
 
 ## Open questions carried from Stage 1
 
-None newly opened. Stage-1 open questions 2–4 (plea-value breadth, verdict-derived dates, XHIBIT
-parity) remain out of scope, unchanged by this design.
+None newly opened. Stage-1 questions 2–4 remain out of scope, unaffected.
