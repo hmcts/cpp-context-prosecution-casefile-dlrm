@@ -32,6 +32,7 @@
             "offences": [
               {
                 "allocationDecision": {
+                  "allocationDecisionDate": "2025-03-17",
                   "motReasonCode": "02",
                   "motReasonDescription": "Indictable-only offence",
                   "motReasonId": "5aaecac5-222b-402d-9047-84803679edac",

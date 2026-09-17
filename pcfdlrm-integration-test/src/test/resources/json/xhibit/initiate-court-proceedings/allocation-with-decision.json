@@ -32,6 +32,7 @@
             "offences": [
               {
                 "allocationDecision": {
+                  "allocationDecisionDate": "2025-03-17",
                   "motReasonCode": "01",
                   "motReasonDescription": "Summary-only offence",
                   "motReasonId": "b8c37e33-defd-351c-b91e-1e03e51657da",
