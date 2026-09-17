@@ -284,10 +284,18 @@ public class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter implemen
                     .withMotReasonCode(modeOfTrialReason.getCode())
                     .withMotReasonDescription(modeOfTrialReason.getDescription())
                     .withSequenceNumber(valueOf(modeOfTrialReason.getSeqNum()))
+                    .withAllocationDecisionDate(getAllocationDecisionDate(offence))
                     .withCourtIndicatedSentence(buildCourtIndicatedSentence(offence))
                     .build();
         }
         return null;
+    }
+
+    private String getAllocationDecisionDate(final MigratedOffence offence) {
+        return ofNullable(offence.getAllocationDecision())
+                .map(MigratedAllocationDecision::getAllocationDecisionDate)
+                .map(this::getDate)
+                .orElse(null);
     }
 
     private CourtIndicatedSentence buildCourtIndicatedSentence(final MigratedOffence offence) {
