@@ -41,6 +41,7 @@ import uk.gov.moj.cpp.pcfdlrm.domain.OffenceIdsWithCourtHearingLocation;
 import uk.gov.moj.cpp.pcfdlrm.domain.ParamsVO;
 import uk.gov.moj.cpp.pcfdlrm.domain.ReferenceDataVO;
 import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ModeOfTrialReasonsReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OrganisationUnitReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.PleaReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.VehicleRelatedOffence;
@@ -62,6 +63,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -84,6 +86,8 @@ class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest {
     private final String OFFENCE_CODE_TVL_ABC = "TVL-ABC";
     private static final String NOT_GUILTY = "NOT GUILTY";
     private final String OUCODE_VALID = "C01BL00";
+    private static final LocalDate ALLOCATION_DECISION_DATE = LocalDate.of(2025, 3, 17);
+    private static final String ALLOCATION_DECISION_DATE_AS_STRING = "2025-03-17";
 
     @Mock
     private ReferenceDataQueryService referenceDataQueryService;
@@ -255,6 +259,123 @@ class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest {
         final List<uk.gov.justice.core.courts.Offence> coreOffences = converter.convert(offences, paramsVO);
         assertThat(coreOffences.get(0).getAllocationDecision(), is(notNullValue()));
         assertThat(coreOffences.get(0).getAllocationDecision().getMotReasonId(), is(motReasonId));
+    }
+
+    /**
+     * AC-001 / AC-002 / AC-003 (DD-34852) — Charge (C), Summons (S) and Postal Charge (Q) must all
+     * carry the allocation decision value (motReasonId / motReasonCode / motReasonDescription /
+     * sequenceNumber) AND the migrated allocationDecisionDate. FR-4 forbids per-case-type
+     * behaviour, so this is one parameterised test with identical assertions for all three.
+     */
+    @ParameterizedTest
+    @EnumSource(value = InitiationCode.class, names = {"C", "S", "Q"})
+    void shouldSetAllocationDecisionValueAndDateForChargeSummonsAndPostalChargeCases(final InitiationCode initiationCode) {
+        final UUID motReasonId = randomUUID();
+        final ReferenceDataVO referenceDataVO = buildReferenceDataWithOffenceAndModeOfTrial(SUMMARY, motReasonId.toString());
+        final ModeOfTrialReasonsReferenceData expectedModeOfTrialReason = referenceDataVO.getModeOfTrialReasonsReferenceData().get(1);
+        final UUID offenceId = randomUUID();
+
+        final List<MigratedOffence> offences = of(migratedOffence()
+                .withOffenceId(offenceId)
+                .withOffenceCode(OFFENCE_CODE_TVL_ABC)
+                .withOffenceCommittedDate(LocalDate.now())
+                .withAllocationDecision(migratedAllocationDecision()
+                        .withMotReasonId(motReasonId)
+                        .withAllocationDecisionDate(ALLOCATION_DECISION_DATE)
+                        .build())
+                .withReferenceData(offenceReferenceData()
+                        .withModeOfTrialDerived(SUMMARY)
+                        .build())
+                .build());
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setReferenceDataVO(referenceDataVO);
+        paramsVO.setInitiationCode(initiationCode.name());
+        paramsVO.setMigrationSourceSystemName(XHIBIT);
+
+        final List<uk.gov.justice.core.courts.Offence> coreOffences = converter.convert(offences, paramsVO);
+
+        final uk.gov.justice.core.courts.AllocationDecision allocationDecision = coreOffences.get(0).getAllocationDecision();
+        assertThat(allocationDecision, is(notNullValue()));
+        assertThat(allocationDecision.getOffenceId(), is(offenceId));
+        assertThat(allocationDecision.getMotReasonId(), is(motReasonId));
+        assertThat(allocationDecision.getMotReasonCode(), is(expectedModeOfTrialReason.getCode()));
+        assertThat(allocationDecision.getMotReasonDescription(), is(expectedModeOfTrialReason.getDescription()));
+        assertThat(allocationDecision.getSequenceNumber(), is(Integer.valueOf(expectedModeOfTrialReason.getSeqNum())));
+        assertThat(allocationDecision.getAllocationDecisionDate(), is(ALLOCATION_DECISION_DATE_AS_STRING));
+    }
+
+    /**
+     * AC-005 / FR-6 (DD-34852) — an allocation decision is emitted, but the migrated payload carries
+     * no allocationDecisionDate, so the emitted date must be null (and therefore omitted from the
+     * dispatched JSON). No fallback or derived date is permitted.
+     */
+    @Test
+    void shouldOmitAllocationDecisionDateWhenMigratedDateAbsent() {
+        final UUID motReasonId = randomUUID();
+        final ReferenceDataVO referenceDataVO = buildReferenceDataWithOffenceAndModeOfTrial(SUMMARY, motReasonId.toString());
+        final ModeOfTrialReasonsReferenceData expectedModeOfTrialReason = referenceDataVO.getModeOfTrialReasonsReferenceData().get(1);
+        final UUID offenceId = randomUUID();
+
+        final List<MigratedOffence> offences = of(migratedOffence()
+                .withOffenceId(offenceId)
+                .withOffenceCode(OFFENCE_CODE_TVL_ABC)
+                .withOffenceCommittedDate(LocalDate.now())
+                .withAllocationDecision(migratedAllocationDecision()
+                        .withMotReasonId(motReasonId)
+                        .build())
+                .withReferenceData(offenceReferenceData()
+                        .withModeOfTrialDerived(SUMMARY)
+                        .build())
+                .build());
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setReferenceDataVO(referenceDataVO);
+        paramsVO.setInitiationCode(InitiationCode.C.name());
+        paramsVO.setMigrationSourceSystemName(XHIBIT);
+
+        final List<uk.gov.justice.core.courts.Offence> coreOffences = converter.convert(offences, paramsVO);
+
+        final uk.gov.justice.core.courts.AllocationDecision allocationDecision = coreOffences.get(0).getAllocationDecision();
+        assertThat(allocationDecision, is(notNullValue()));
+        assertThat(allocationDecision.getMotReasonId(), is(motReasonId));
+        assertThat(allocationDecision.getMotReasonCode(), is(expectedModeOfTrialReason.getCode()));
+        assertThat(allocationDecision.getMotReasonDescription(), is(expectedModeOfTrialReason.getDescription()));
+        assertThat(allocationDecision.getSequenceNumber(), is(Integer.valueOf(expectedModeOfTrialReason.getSeqNum())));
+        assertThat(allocationDecision.getAllocationDecisionDate(), is(nullValue()));
+    }
+
+    /**
+     * AC-006 / FR-7 (DD-34852) — the summary-only fallback path, where the migrated offence has no
+     * allocationDecision object at all. The summary-only decision must still be emitted, with a null
+     * date and no NullPointerException from the new null-guarded date lookup.
+     */
+    @Test
+    void shouldNotSetAllocationDecisionDateForSummaryOnlyFallback() {
+        final ReferenceDataVO referenceDataVO = buildReferenceDataWithOffenceAndModeOfTrial(SUMMARY);
+        final UUID offenceId = randomUUID();
+
+        final List<MigratedOffence> offences = of(migratedOffence()
+                .withOffenceId(offenceId)
+                .withOffenceCode(OFFENCE_CODE_TVL_ABC)
+                .withCount(3)
+                .withOffenceCommittedDate(LocalDate.now())
+                .withReferenceData(offenceReferenceData()
+                        .withModeOfTrialDerived(SUMMARY)
+                        .build())
+                .build());
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setReferenceDataVO(referenceDataVO);
+        paramsVO.setInitiationCode(InitiationCode.O.name());
+        paramsVO.setMigrationSourceSystemName(XHIBIT);
+
+        final List<uk.gov.justice.core.courts.Offence> coreOffences = converter.convert(offences, paramsVO);
+
+        final uk.gov.justice.core.courts.AllocationDecision allocationDecision = coreOffences.get(0).getAllocationDecision();
+        assertThat(allocationDecision, is(notNullValue()));
+        assertThat(allocationDecision.getMotReasonId(), is(notNullValue()));
+        assertThat(allocationDecision.getAllocationDecisionDate(), is(nullValue()));
     }
 
     @ParameterizedTest
