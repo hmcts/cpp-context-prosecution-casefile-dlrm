@@ -54,6 +54,12 @@
                 "dvlaOffenceCode": "ABC123",
                 "endDate": "2018-10-10",
                 "id": "550e8400-e29b-41d4-a716-446655440001",
+                "indicatedPlea": {
+                  "offenceId": "550e8400-e29b-41d4-a716-446655440001",
+                  "indicatedPleaValue": "INDICATED_GUILTY",
+                  "indicatedPleaDate": "2024-06-09",
+                  "source": "IN_COURT"
+                },
                 "maxPenalty": "Max Penalty",
                 "modeOfTrial": "Summary",
                 "offenceCode": "OFCODE12",
@@ -68,11 +74,6 @@
                 },
                 "offenceTitle": "Obstruct person executing search warrant for TV receiver",
                 "orderIndex": 1,
-                "plea": {
-                  "offenceId": "550e8400-e29b-41d4-a716-446655440001",
-                  "pleaDate": "2024-06-09",
-                  "pleaValue": "GUILTY"
-                },
                 "startDate": "2018-09-10",
                 "wording": "TV Licence not paid"
               }
