@@ -10,6 +10,17 @@
       "verdictCode": "NGJAA",
       "jurySplitAvailable": "No",
       "cjsVerdictCode": "A"
+    },
+    {
+      "id": "6d6596ed-e63a-49be-b99d-e03d5aace50c",
+      "description": "Guilty",
+      "category": "Guilty",
+      "categoryType": "GUILTY",
+      "sequence": 10,
+      "jurisdiction": "EITHER",
+      "verdictCode": "G",
+      "jurySplitAvailable": "No",
+      "cjsVerdictCode": "G"
     }
   ]
 }
