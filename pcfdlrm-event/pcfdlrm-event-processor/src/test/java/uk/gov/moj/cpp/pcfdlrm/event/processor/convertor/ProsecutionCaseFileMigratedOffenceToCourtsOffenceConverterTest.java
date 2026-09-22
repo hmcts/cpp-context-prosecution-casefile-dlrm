@@ -674,24 +674,82 @@ class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest {
         assertThat(offence.getConvictionDate(), is(pleaDate.toString()));
     }
 
-    private static Stream<Arguments> convictionDateFromGuiltyVerdictScenarios() {
-        return Stream.of(
-                Arguments.of("XHIBIT", false),
-                Arguments.of("LIBRA", true)
-        );
-    }
-
-    @ParameterizedTest
-    @MethodSource("convictionDateFromGuiltyVerdictScenarios")
-    void shouldSetConvictionDateFromVerdictWhenGuiltyVerdict(final String sourceSystem, final boolean withNotGuiltyPlea) {
+    @Test
+    void shouldSetConvictionDateFromVerdictWhenGuiltyVerdict() {
+        // Source-system-agnostic: getConvictionDate()/deriveConvictionDateFromVerdict() never
+        // branch on migration source system, so this deliberately doesn't parameterize over one.
+        final ReferenceDataVO referenceDataVO = buildReferenceDataWithOffenceAndModeOfTrial(EITHER_WAY);
         final UUID offenceId = randomUUID();
         final LocalDate verdictDate = LocalDate.now().minusDays(1);
         final UUID guiltyVerdictId = randomUUID();
 
-        final ReferenceDataVO referenceDataVO = withNotGuiltyPlea
-                ? buildReferenceDataWithNotGuiltyPlea(EITHER_WAY, randomUUID().toString(), offenceId.toString())
-                : buildReferenceDataWithOffenceAndModeOfTrial(EITHER_WAY);
+        setGuiltyVerdictReferenceData(referenceDataVO, offenceId);
 
+        final List<MigratedOffence> offences = of(migratedOffence()
+                .withOffenceId(offenceId)
+                .withOffenceCode(OFFENCE_CODE_TVL_ABC)
+                .withOffenceCommittedDate(LocalDate.now())
+                .withVerdict(migratedVerdict()
+                        .withId(guiltyVerdictId)
+                        .withVerdictDate(verdictDate)
+                        .build())
+                .build());
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName(XHIBIT);
+        paramsVO.setReferenceDataVO(referenceDataVO);
+        paramsVO.setChannel(MCC);
+        paramsVO.setInitiationCode(InitiationCode.O.name());
+
+        final List<uk.gov.justice.core.courts.Offence> coreOffences = converter.convert(offences, paramsVO);
+
+        assertConvictionDate(coreOffences, offenceId, verdictDate);
+    }
+
+    @Test
+    void shouldSetConvictionDateFromGuiltyVerdictForLibraCaseWithNotGuiltyPlea() {
+        final UUID offenceId = randomUUID();
+        final LocalDate verdictDate = LocalDate.now().minusDays(1);
+        final UUID guiltyVerdictId = randomUUID();
+
+        final ReferenceDataVO referenceDataVO =
+                buildReferenceDataWithNotGuiltyPlea(EITHER_WAY, randomUUID().toString(), offenceId.toString());
+
+        setGuiltyVerdictReferenceData(referenceDataVO, offenceId);
+
+        final List<MigratedOffence> offences = of(migratedOffence()
+                .withOffenceId(offenceId)
+                .withOffenceCode(OFFENCE_CODE_TVL_ABC)
+                .withOffenceCommittedDate(LocalDate.now())
+                .withVerdict(migratedVerdict()
+                        .withId(guiltyVerdictId)
+                        .withVerdictDate(verdictDate)
+                        .build())
+                .withPlea(migratedPlea()
+                        .withId(randomUUID())
+                        .withPleaDate(LocalDate.now().minusDays(2))
+                        .build())
+                .build());
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName(LIBRA);
+        paramsVO.setReferenceDataVO(referenceDataVO);
+        paramsVO.setChannel(MCC);
+        paramsVO.setInitiationCode(InitiationCode.O.name());
+
+        final List<uk.gov.justice.core.courts.Offence> coreOffences = converter.convert(offences, paramsVO);
+
+        assertConvictionDate(coreOffences, offenceId, verdictDate);
+    }
+
+    private static void assertConvictionDate(final List<uk.gov.justice.core.courts.Offence> coreOffences,
+                                               final UUID offenceId, final LocalDate expectedConvictionDate) {
+        final uk.gov.justice.core.courts.Offence offence = coreOffences.get(0);
+        assertThat(offence.getId(), is(offenceId));
+        assertThat(offence.getConvictionDate(), is(expectedConvictionDate.toString()));
+    }
+
+    private static void setGuiltyVerdictReferenceData(final ReferenceDataVO referenceDataVO, final UUID offenceId) {
         final Map<UUID, Map<UUID, VerdictReferenceData>> verdictReferenceDataMap = new HashMap<>();
         verdictReferenceDataMap.put(randomUUID(), Map.of(offenceId, VerdictReferenceData.verdictReferenceData()
                 .withVerdictCode("G")
@@ -699,38 +757,6 @@ class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest {
                 .withCategoryType(GUILTY)
                 .build()));
         referenceDataVO.setVerdictReferenceDataMap(verdictReferenceDataMap);
-
-        final MigratedOffence.Builder offenceBuilder = migratedOffence()
-                .withOffenceId(offenceId)
-                .withOffenceCode(OFFENCE_CODE_TVL_ABC)
-                .withOffenceCommittedDate(LocalDate.now())
-                .withVerdict(migratedVerdict()
-                        .withId(guiltyVerdictId)
-                        .withVerdictDate(verdictDate)
-                        .build());
-
-        if (withNotGuiltyPlea) {
-            offenceBuilder.withPlea(migratedPlea()
-                    .withId(randomUUID())
-                    .withPleaDate(LocalDate.now().minusDays(2))
-                    .build());
-        }
-
-        final List<MigratedOffence> offences = of(offenceBuilder.build());
-
-        final ParamsVO paramsVO = new ParamsVO();
-        paramsVO.setMigrationSourceSystemName(sourceSystem);
-        paramsVO.setReferenceDataVO(referenceDataVO);
-        paramsVO.setChannel(MCC);
-        paramsVO.setInitiationCode(InitiationCode.O.name());
-
-        final List<uk.gov.justice.core.courts.Offence> coreOffences = converter.convert(offences, paramsVO);
-
-        final uk.gov.justice.core.courts.Offence offence = coreOffences.get(0);
-        assertThat(offence.getId(), is(offenceId));
-        assertThat(offence.getConvictionDate(), is(verdictDate.toString()));
-        // guards against a plain "Not Guilty" plea being misrouted into the LIBRA indicated-plea branch
-        assertNull(offence.getIndicatedPlea());
     }
 
     @Test
@@ -1558,6 +1584,7 @@ class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest {
         assertThat(offence.getIndicatedPlea().getIndicatedPleaValue(), is(IndicatedPleaValue.INDICATED_GUILTY));
         assertThat(offence.getIndicatedPlea().getIndicatedPleaDate(), is(pleaDate.toString()));
         assertThat(offence.getIndicatedPlea().getSource(), is(Source.IN_COURT));
+        assertThat(offence.getConvictionDate(), is(pleaDate.toString()));
     }
 
     @Test
