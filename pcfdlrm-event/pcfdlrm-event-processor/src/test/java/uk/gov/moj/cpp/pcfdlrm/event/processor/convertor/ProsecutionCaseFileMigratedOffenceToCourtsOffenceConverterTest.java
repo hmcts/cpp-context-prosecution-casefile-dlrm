@@ -674,10 +674,10 @@ class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest {
         assertThat(offence.getConvictionDate(), is(pleaDate.toString()));
     }
 
+    // Source-system-agnostic: getConvictionDate()/deriveConvictionDateFromVerdict() never
+    // branch on migration source system, so this deliberately doesn't parameterize over one.
     @Test
     void shouldSetConvictionDateFromVerdictWhenGuiltyVerdict() {
-        // Source-system-agnostic: getConvictionDate()/deriveConvictionDateFromVerdict() never
-        // branch on migration source system, so this deliberately doesn't parameterize over one.
         final ReferenceDataVO referenceDataVO = buildReferenceDataWithOffenceAndModeOfTrial(EITHER_WAY);
         final UUID offenceId = randomUUID();
         final LocalDate verdictDate = LocalDate.now().minusDays(1);
