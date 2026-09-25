@@ -8,6 +8,7 @@ import java.util.Collections;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -24,7 +25,9 @@ import uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseFileReceived;
 import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedCaseDetails;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedHearing;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedMaterial;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedTypeOfList;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ReceiveMigratedCaseFile;
 
 import java.util.ArrayList;
@@ -220,6 +223,41 @@ public class MigratedCaseToProsecutionCaseConverterTest {
         final CourtReferral courtReferral = convertedCourtProceedings.getInitiateCourtProceedings();
 
         assertThat(courtReferral.getProsecutionCases().size(), equalTo(1));
+        assertThat(convertedCourtProceedings.getTypeOfList(), nullValue());
+    }
+
+    @Test
+    void shouldSetTypeOfListFromFirstMigratedHearingThatHasOne() {
+        final var materials = CaseReceivedHelper.getMaterials(caseID);
+        final var migratedCaseDetails = CaseReceivedHelper.getMigratedCaseDetails(caseID);
+        final ReceiveMigratedCaseFile receiveMigratedCaseFile = new ReceiveMigratedCaseFile(DLRM_MIGRATION, materials, migratedCaseDetails, randomUUID());
+        final ReferenceDataVO referenceDataVO = CaseReceivedHelper.buildReferenceDataWithOffenceAndModeOfTrialWithCourtOrganisation("Either Way", courtId);
+        final UUID typeOfListId = randomUUID();
+
+        final MigratedHearingWithReferenceData hearingWithoutTypeOfList = new MigratedHearingWithReferenceData();
+        hearingWithoutTypeOfList.setMigratedDefendantWithOffences(new ArrayList<>());
+        hearingWithoutTypeOfList.setMigratedHearing(MigratedHearing.migratedHearing().withHearingType("SIT").build());
+
+        final MigratedHearingWithReferenceData hearingWithTypeOfList = new MigratedHearingWithReferenceData();
+        hearingWithTypeOfList.setMigratedDefendantWithOffences(new ArrayList<>());
+        hearingWithTypeOfList.setMigratedHearing(MigratedHearing.migratedHearing()
+                .withHearingType("SIT")
+                .withTypeOfList(MigratedTypeOfList.migratedTypeOfList()
+                        .withId(typeOfListId)
+                        .withDescription("Bench Warrant")
+                        .build())
+                .build());
+
+        final MigratedCaseFileReceived migratedCaseFileReceived = migratedCaseFileReceived()
+                .withMigratedCaseSubmission(receiveMigratedCaseFile)
+                .withReferenceDataVO(referenceDataVO)
+                .withMigratedHearingWithReferenceData(asList(hearingWithoutTypeOfList, hearingWithTypeOfList))
+                .build();
+
+        final InitiateCourtProceedings convertedCourtProceedings = migratedCaseToProsecutionCaseConverter.convert(migratedCaseFileReceived);
+
+        assertThat(convertedCourtProceedings.getTypeOfList().getId(), equalTo(typeOfListId));
+        assertThat(convertedCourtProceedings.getTypeOfList().getDescription(), equalTo("Bench Warrant"));
     }
 
     @Test

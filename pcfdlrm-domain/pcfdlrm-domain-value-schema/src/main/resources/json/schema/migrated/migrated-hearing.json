@@ -24,6 +24,10 @@
     "hearingType": {
       "type": "string"
     },
+    "typeOfList": {
+      "description": "Type of list, used when the hearing has no date or week commencing date and is listed as unscheduled",
+      "$ref": "http://cpp.moj.gov.uk/prosecution/casefile/dlrm/migrated/json/schemas/migrated-type-of-list.json"
+    },
     "listedDefendants": {
       "type": "array",
       "minItems": 1,

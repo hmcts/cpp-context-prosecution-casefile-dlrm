@@ -22,7 +22,9 @@ import uk.gov.justice.core.courts.Marker;
 import uk.gov.justice.core.courts.MigrationSourceSystem;
 import uk.gov.justice.core.courts.ProsecutionCase;
 import uk.gov.justice.core.courts.ProsecutionCaseIdentifier;
+import uk.gov.justice.core.courts.TypeOfList;
 import uk.gov.justice.services.common.converter.Converter;
+import uk.gov.moj.cpp.pcfdlrm.domain.MigratedHearingWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.domain.OffenceIdsWithCourtHearingLocation;
 import uk.gov.moj.cpp.pcfdlrm.domain.ParamsVO;
 import uk.gov.moj.cpp.pcfdlrm.domain.ReferenceDataVO;
@@ -33,6 +35,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OrganisationUnitRef
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OrganisationUnitWithCourtroomReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ProsecutorsReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedHearing;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -120,7 +123,22 @@ public class MigratedCaseToProsecutionCaseConverter implements Converter<Migrate
 
         return initiateCourtProceedings()
                 .withInitiateCourtProceedings(courtReferralBuilder.build())
+                .withTypeOfList(buildTypeOfList(source.getMigratedHearingWithReferenceDataList()))
                 .build();
+    }
+
+    private static TypeOfList buildTypeOfList(final List<MigratedHearingWithReferenceData> migratedHearingWithReferenceDataList) {
+        return ofNullable(migratedHearingWithReferenceDataList).orElseGet(List::of).stream()
+                .map(MigratedHearingWithReferenceData::getMigratedHearing)
+                .filter(Objects::nonNull)
+                .map(MigratedHearing::getTypeOfList)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .map(typeOfList -> TypeOfList.typeOfList()
+                        .withId(typeOfList.getId())
+                        .withDescription(typeOfList.getDescription())
+                        .build())
+                .orElse(null);
     }
 
     private MigrationSourceSystem buildMigrationSourceSystem(final uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigrationSourceSystem migrationSourceSystem) {
