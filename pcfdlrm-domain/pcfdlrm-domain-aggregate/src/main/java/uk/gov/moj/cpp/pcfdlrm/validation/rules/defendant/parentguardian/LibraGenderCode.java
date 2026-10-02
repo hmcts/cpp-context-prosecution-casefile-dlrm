@@ -12,11 +12,6 @@ import uk.gov.justice.core.courts.Gender;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * DD-43501: LIBRA numeric gender codes mapped to CP {@link Gender} names. A CP name (any case,
- * surrounding spaces ignored) is returned trimmed. Shared by {@link LibraParentGuardianGenderValidationRule} and
- * {@link LibraParentGuardianSanitiser} so the warning and the default cannot disagree.
- */
 public final class LibraGenderCode {
 
     private static final Map<String, String> LIBRA_GENDER_CODES = Map.of(

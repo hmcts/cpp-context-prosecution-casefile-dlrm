@@ -21,13 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-/**
- * DD-43501: the checks both LIBRA guardian address rules share, in this order: address1 (missing, blank or
- * over 35 characters, ignoring surrounding spaces), then address2–5 (present and blank or over 35), then postcode (non-blank and
- * over 8 characters, or matching neither {@link Constants#POST_CODE_REGEX} nor
- * {@link Constants#NO_FIXED_ABODE_POST_CODE}). Subclasses say where the address is and which codes and keys
- * to raise; whether a code rejects or nulls is {@link LibraParentGuardianOutcomes}' decision.
- */
 abstract class AbstractLibraParentGuardianAddressValidationRule implements ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService> {
 
     private static final int MAX_ADDRESS_LINE_LENGTH = 35;

@@ -8,10 +8,6 @@ import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationRule;
 
-/**
- * DD-43501: runs the delegate only when the defendant's guardian has the given {@link ParentGuardianShape},
- * so an organisation guardian never reaches an individual rule and vice versa.
- */
 public final class ParentGuardianShapeGate implements ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService> {
 
     private final ParentGuardianShape shape;

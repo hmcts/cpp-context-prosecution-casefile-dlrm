@@ -560,8 +560,6 @@ class MigratedCaseFileAggregateTest {
         assertEventsMatchExpected(actual, scenario.expected());
     }
 
-    // ======== DD-43501: LIBRA parent/guardian case-level rejection (FR-018, 02-design.md C7) ========
-
     private static final String ADDRESS1_INVALID = "PARENT_GUARDIAN_ADDRESS1_MISSING_OR_INVALID";
     private static final String ORG_ADDRESS1_INVALID = "PARENT_GUARDIAN_ORGANISATION_ADDRESS1_MISSING_OR_INVALID";
 
@@ -602,10 +600,6 @@ class MigratedCaseFileAggregateTest {
         );
     }
 
-    // AC-S3-009, AC-S4-001, AC-S4-004 (FR-018): one MigratedCaseFileProcessed(false) listing every distinct reason in
-    // defendant-then-rule order; nothing else after the per-defendant validation events — no warnings, no
-    // MaterialAdded, no MigratedCaseValidatedCreationPending, no MigratedCaseFileReceived. The processor
-    // republishes this event unchanged as public.pcfdlrm.migrated-case-file-processed.
     @ParameterizedTest(name = "{0}")
     @MethodSource("parentGuardianRejections")
     void shouldRejectLibraCaseOnceWithEveryParentGuardianReason(final String description, final ParentGuardianInformation[] guardians, final String expectedReasons) {
@@ -625,9 +619,6 @@ class MigratedCaseFileAggregateTest {
         assertThat(processed.get(0).getSubmissionId(), is(SUBMISSION_ID));
     }
 
-    // AC-S3-001 (XHIBIT: the invalid guardian postcode stays a warning, value shown as today), AC-S3-003 (LIBRA S, C
-    // and Q: rejected), plus LIBRA R/O (Q17) unchanged. LIBRA SJP (AC-S3-002) is covered in ProsecutionCaseFileHelperTest:
-    // the SJP case rule set needs a prosecutor and offences that this guardian-only scenario does not build.
     @ParameterizedTest(name = "{0} {1} -> rejected: {2}")
     @CsvSource({
             "LIBRA,  S, true",
@@ -649,8 +640,6 @@ class MigratedCaseFileAggregateTest {
         }
     }
 
-    // AC-S3-010 / AC-S1-002..005 / AC-S1-008 at aggregate level: accepted, the forwarded defendant is sanitised,
-    // exactly four guardian warnings, each naming the field and never the value.
     @Test
     void shouldAcceptLibraCaseWithSanitisedParentGuardianAndRedactedWarnings() {
         final CaseFileInput input = parentGuardianCaseInput(LIBRA, "C",

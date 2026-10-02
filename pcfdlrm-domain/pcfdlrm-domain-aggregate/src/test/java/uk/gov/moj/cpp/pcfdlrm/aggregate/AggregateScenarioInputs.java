@@ -100,12 +100,6 @@ final class AggregateScenarioInputs {
 
     static final String PARENT_GUARDIAN_CASE_URN = "PGURN00001";
 
-    /**
-     * DD-43501: a no-materials, no-hearings case for the given source system and initiation code, with one
-     * defendant per guardian ({@code null} = no guardian block), in order {@code DEFENDANT_ID}, {@code DEFENDANT_ID2}.
-     * The initiation code sits on both case-details objects because the aggregate validates defendants against
-     * the {@code Prosecution}'s and reports the outcome against the command's.
-     */
     static CaseFileInput parentGuardianCaseInput(final String sourceSystemName, final String initiationCode, final ParentGuardianInformation... guardians) {
         final List<UUID> defendantIds = List.of(DEFENDANT_ID, DEFENDANT_ID2);
         final MigratedCaseDetails migCaseDetails = MigratedCaseDetails.migratedCaseDetails()

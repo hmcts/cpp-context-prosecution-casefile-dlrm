@@ -31,17 +31,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-/**
- * DD-43501 — both LIBRA guardian address rules, one matrix each.
- * <ul>
- *     <li>{@link LibraIndividualParentGuardianAddressValidationRule}: address1 REJECT (FR-010, AC-S3-004..006, Q5 {@code NFA}),
- *     address2–5 NULL (FR-011, AC-S3-007), postcode REJECT unless absent/blank (FR-012, AC-S3-008, Q1, Q14).</li>
- *     <li>{@link LibraOrganisationParentGuardianAddressValidationRule}: address1 REJECT (FR-015, AC-S4-001/002/004),
- *     address2–5 NULL (FR-016, AC-S2-004), postcode NULL (FR-017, AC-S2-005).</li>
- * </ul>
- * Whether a code rejects or nulls is {@code LibraParentGuardianOutcomes}' decision, not the rule's — these
- * tests pin code, field key, rule order and redaction (value = key, AC-S2-006 / AC-S5-004).
- */
 class LibraParentGuardianAddressValidationRuleTest {
 
     private static final String CHARS_35 = "x".repeat(35);
@@ -123,7 +112,6 @@ class LibraParentGuardianAddressValidationRuleTest {
                 .map(p -> p.getCode() + " " + p.getValues().get(0).getKey() + " " + p.getValues().get(0).getValue())
                 .toList();
 
-        // value == key on every problem: redaction (NFR-001).
         assertThat(actual, is(expectedCodeAndKey.stream().map(codeAndKey -> codeAndKey + " " + codeAndKey.substring(codeAndKey.indexOf(' ') + 1)).toList()));
     }
 

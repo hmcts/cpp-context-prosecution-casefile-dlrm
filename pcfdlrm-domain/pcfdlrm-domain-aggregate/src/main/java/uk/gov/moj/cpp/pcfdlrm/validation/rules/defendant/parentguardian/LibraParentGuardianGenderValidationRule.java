@@ -14,11 +14,6 @@ import uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationRule;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ParentGuardianInformation;
 
-/**
- * DD-43501: an individual guardian's gender must be a LIBRA code or a CP gender name. Absent, blank
- * or unmappable raises a redacted {@code PARENT_GUARDIAN_GENDER_INVALID}; {@link LibraParentGuardianSanitiser}
- * applies the {@code NOT_KNOWN} default. Replaces the generic guardian-gender check in LIBRA scope.
- */
 public class LibraParentGuardianGenderValidationRule implements ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService> {
 
     @Override

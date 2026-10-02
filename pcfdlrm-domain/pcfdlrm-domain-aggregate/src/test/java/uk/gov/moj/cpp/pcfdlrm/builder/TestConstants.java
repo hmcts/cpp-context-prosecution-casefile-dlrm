@@ -13,11 +13,6 @@ public class TestConstants {
     public static final UUID CASE_ID = fromString("a4391799-f828-4515-a355-61f1d5d9690c");
     public static final UUID SUBMISSION_ID = fromString("e3e3e3e3-3333-4333-8333-333333333333");
 
-    /*
-     * DD-43501 — LIBRA parent/guardian field keys (02-design.md C8). Literal strings, not FieldName
-     * constants: the key text is the contract (it is what a redacted ProblemValue.value carries, NFR-001),
-     * so the tests pin the text itself rather than whatever the enum constant ends up being called.
-     */
     public static final String PG = "individual_parentGuardianInformation";
     public static final String PG_WORK = PG + "_personalInformation_contactDetails_work";
     public static final String PG_HOME = PG + "_personalInformation_contactDetails_home";

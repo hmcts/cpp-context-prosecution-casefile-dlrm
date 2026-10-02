@@ -468,11 +468,6 @@ public class MigratedCaseFileAggregate implements Aggregate {
         return false;
     }
 
-    /**
-     * DD-43501: one rejection listing every distinct LIBRA parent/guardian REJECT code, in defendant
-     * then rule order. Codes only — no values or identifiers — because stagingdlrm forwards the description
-     * externally; the per-defendant detail stays in DefendantValidationFailed.
-     */
     private boolean hasLibraParentGuardianRejections(final ReceiveMigratedCaseFile receiveMigratedCaseFile, final DefendantValidationOutcome defendantValidationOutcome,
                                                      final Stream.Builder<Object> builder, final MigratedCaseDetails migratedCaseDetails) {
         final List<Problem> rejections = defendantValidationOutcome.libraGuardianRejections();

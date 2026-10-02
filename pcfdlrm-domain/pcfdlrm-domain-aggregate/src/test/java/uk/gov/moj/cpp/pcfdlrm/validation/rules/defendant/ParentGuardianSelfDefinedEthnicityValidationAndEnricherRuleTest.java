@@ -90,7 +90,6 @@ class ParentGuardianSelfDefinedEthnicityValidationAndEnricherRuleTest {
         assertThat(optionalProblem.get().getValues().get(0).getValue(), is(ethnicityCode));
     }
 
-    // DD-43501 AC-S1-007 / AC-S1-008: wrapped for LIBRA S/C/Q — same code, value redacted to the field key.
     @Test
     public void shouldRedactSelfDefinedEthnicityWhenWrappedInRedactingValidationRule() {
         when(defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation().getSelfDefinedEthnicity()).thenReturn("Z9");

@@ -30,11 +30,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-/**
- * DD-43501 FR-004 (individual work/home/mobile, AC-S1-002) and FR-014 (organisation
- * companyTelephoneNumber, AC-S2-003) against {@code Constants.CP_TELEPHONE} {@code ^[0-9+ \-]{10,}$}.
- * Every problem is redacted: {@code ProblemValue.value} is the field key (AC-S1-008, AC-S2-006).
- */
 class LibraParentGuardianTelephoneValidationRuleTest {
 
     private static final Map<String, String> KEYS = Map.of("work", PG_WORK, "home", PG_HOME, "mobile", PG_MOBILE);
@@ -51,7 +46,7 @@ class LibraParentGuardianTelephoneValidationRuleTest {
             "mobile, (020) 7946 0000,   PARENT_GUARDIAN_MOBILE_TELEPHONE_INVALID",
             "home,   020.7946.0000,     PARENT_GUARDIAN_HOME_TELEPHONE_INVALID",
             "home,   '020\t79460000',   PARENT_GUARDIAN_HOME_TELEPHONE_INVALID",    // tab
-            "home,   '',                PARENT_GUARDIAN_HOME_TELEPHONE_INVALID"     // blank but present (D-1)
+            "home,   '',                PARENT_GUARDIAN_HOME_TELEPHONE_INVALID"
     })
     void shouldValidateIndividualGuardianTelephoneNumbers(final String field, final String value, final String expectedCode) {
         final ParentGuardianInformation guardian = individualParentGuardian(contactDetailsWith(field, value), validGuardianAddress().build()).build();
@@ -62,7 +57,6 @@ class LibraParentGuardianTelephoneValidationRuleTest {
         assertRedacted(problems);
     }
 
-    // AC-S1-002 exactly: work kept, home and mobile each raise their own problem, in field order.
     @Test
     void shouldRaiseOneProblemPerInvalidNumber() {
         final ContactDetails contactDetails = validGuardianContactDetails().withWork("+44 20 7946 0000").withHome("012345678").withMobile("07700-ABC-123").build();

@@ -46,12 +46,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 
-/**
- * DD-43501: the single table of LIBRA parent/guardian outcomes. Each problem code the LIBRA guardian
- * rules raise is REJECT (the case), NULL (the field, with a warning) or DEFAULT (the value, with a warning),
- * and each field key a NULL code can carry has the function that removes that field. Validation output,
- * {@link LibraParentGuardianSanitiser} and the aggregate's reject decision all read this table.
- */
 public final class LibraParentGuardianOutcomes {
 
     public enum Outcome {

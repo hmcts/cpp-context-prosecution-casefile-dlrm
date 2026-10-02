@@ -44,12 +44,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
-/**
- * DD-43501 C4 — {@link LibraParentGuardianOutcomes}, the single code → outcome table, and
- * {@link LibraParentGuardianSanitiser}, which applies it. Closes the FR-021 / S5 audit: every code this
- * story raises is classified exactly once, every NULL code has a working nulling function for each field
- * key it can carry, and REJECT fields are never touched (AC-S5-002).
- */
 class LibraParentGuardianOutcomesTest {
 
     @ParameterizedTest(name = "{0} -> {1}")
@@ -76,8 +70,6 @@ class LibraParentGuardianOutcomesTest {
         assertThat(LibraParentGuardianOutcomes.isReject(code.name()), is(expected == LibraParentGuardianOutcomes.Outcome.REJECT));
     }
 
-    // Scope guard: defendant-level codes outside the guardian block are not in the table, so LIBRA can
-    // never reject or null on them through this path (FR-020).
     @ParameterizedTest
     @CsvSource({"INVALID_DEFENDANT_POST_CODE", "INVALID_DEFENDANT_INDIVIDUAL_POST_CODE", "DEFENDANT_GENDER_INVALID", "OFFENCE_CODE_IS_INVALID"})
     void shouldNotClassifyNonGuardianCodes(final ProblemCode code) {
@@ -147,8 +139,6 @@ class LibraParentGuardianOutcomesTest {
         assertThat(sanitise(guardian, List.of(problem(code, key))), is(guardian));
     }
 
-    // AC-S1-005 sanitiser half: numeric codes are mapped with no problem present (AC-017); an unmappable
-    // or absent gender defaults to NOT_KNOWN; a valid CP name stays byte-for-byte (AC-043).
     @ParameterizedTest(name = "individual gender \"{0}\" -> {1}")
     @CsvSource(nullValues = "NONE", value = {
             "0,    NOT_KNOWN",
@@ -165,7 +155,6 @@ class LibraParentGuardianOutcomesTest {
         assertThat(sanitise(validIndividualParentGuardian().withGender(gender).build(), problems).getGender(), is(expected));
     }
 
-    // AC-S1-006 / Q13: gender is never read or written for an organisation guardian.
     @Test
     void shouldNeverTouchGenderOfOrganisationGuardian() {
         final ParentGuardianInformation organisation = organisationParentGuardian(validGuardianAddress().build()).build();
@@ -190,8 +179,6 @@ class LibraParentGuardianOutcomesTest {
                 arguments("NO_FIXED_ABODE_POST_CODE", "^[zZ][zZ]99 ?[0-9][a-zA-Z]{2}$", "ZZ99" + " ".repeat(50_000)));
     }
 
-    // AC-S5-003 (NFR-004): the three new Constants are exactly the reviewed single-character-class, bounded
-    // patterns (02-design.md C8), and an adversarial input fails fast rather than backtracking.
     @ParameterizedTest(name = "{0}")
     @MethodSource("reviewedRegexes")
     void shouldShipOnlyTheReviewedBoundedRegexes(final String constant, final String reviewedRegex, final String adversarialInput) {
