@@ -17,6 +17,8 @@ import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.guiltyPle
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.hearingDefendantMatchesNoOffencesInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.invalidOffenceCodeInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.invalidProsecutingAuthorityInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraInvalidCaseMarkerInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraInvalidProsecutingAuthorityInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.missingPleaDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.missingVerdictDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.noMatchingDefendantsForHearingInput;
@@ -31,6 +33,9 @@ import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.receivedW
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.validReceiptTypeInput;
 import static uk.gov.moj.cpp.pcfdlrm.builder.SourceSystem.sourceSystem;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.CASE_ID;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.LIBRA_PROSECUTOR_CASE_REFERENCE;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_LIBRA;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_LIBRA_IDENTIFIER;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_XHIBIT;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_XHIBIT_IDENDIFIER;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SUBMISSION_ID;
@@ -163,21 +168,32 @@ final class AggregateScenarios {
         final List<ExpectedEvent> libraExpected = new ArrayList<>(defendantValidationNoise);
         libraExpected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-no-materials-libra.json"));
 
+        final List<ExpectedEvent> libraCaseMarkerInvalidExpected = List.of(
+                new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-case-marker-invalid-libra.json"),
+                warning("Case validation", "CASE_MARKER_IS_INVALID : [ABC001]", LIBRA_PROSECUTOR_CASE_REFERENCE),
+                warning("Defendant validation", "DEFENDANT_SELF_DEFINED_ETHNICITY_INVALID : [British]", LIBRA_PROSECUTOR_CASE_REFERENCE),
+                warning("Defendant validation", "DEFENDANT_NATIONALITY_INVALID : [HUN]", LIBRA_PROSECUTOR_CASE_REFERENCE),
+                warning("Defendant validation", "DEFENDANT_ADDITIONAL_NATIONALITY_INVALID : [SVK]", LIBRA_PROSECUTOR_CASE_REFERENCE),
+                warning("Defendant validation", "DEFENDANT_CUSTODY_STATUS_INVALID : []", LIBRA_PROSECUTOR_CASE_REFERENCE),
+                new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-case-marker-invalid-libra.json"));
+
         return Stream.of(
                 new AggregateScenario("isXhibit() true for XHIBIT — MigratedCaseFileReceived reaches the stream",
                         noMaterialsInput(sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER)), xhibitExpected),
                 new AggregateScenario("No materials, LIBRA — MigratedCaseFileReceived reaches the stream too (T3 fix — was withheld)",
-                        noMaterialsInput(sourceSystem("LIBRA", "LIBRA-123")), libraExpected),
+                        noMaterialsInput(sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER)), libraExpected),
+                new AggregateScenario("Case marker with an unrecognised marker type code, LIBRA — warning, case accepted (DD-43499)",
+                        libraInvalidCaseMarkerInput(), libraCaseMarkerInvalidExpected),
                 new AggregateScenario("No materials present — materials list is null rather than empty, same isXhibit() outcome",
                         nullMaterialsInput(), xhibitExpectedNullMaterials)
         );
     }
 
     /**
-     * The nine cheapest, single-event fail-fast paths (03-stories.md PR3 background) — eight
+     * The cheapest, single-event fail-fast paths (03-stories.md PR3 background) — eight
      * converted from scenarios that already existed, one ("Invalid Prosecuting Authority",
      * {@code hasInvalidProsecutingAuthority()}) new: it did not exist before this story
-     * (02-design.md, Coverage).
+     * (02-design.md, Coverage), plus its LIBRA mirror (DD-43499).
      */
     private static Stream<AggregateScenario> failFastScenarios() {
         return Stream.of(
@@ -207,7 +223,10 @@ final class AggregateScenarios {
                         List.of(processedFailure("No matching defendants with hearings found for the hearing"))),
                 new AggregateScenario("Invalid Prosecuting Authority — hasInvalidProsecutingAuthority() (new scenario)",
                         invalidProsecutingAuthorityInput(),
-                        List.of(processedFailure("Invalid Prosecuting Authority")))
+                        List.of(processedFailure("Invalid Prosecuting Authority"))),
+                new AggregateScenario("Invalid Prosecuting Authority, LIBRA — rejected, as XHIBIT (DD-43499)",
+                        libraInvalidProsecutingAuthorityInput(),
+                        List.of(processedFailure("Invalid Prosecuting Authority", LIBRA_PROSECUTOR_CASE_REFERENCE)))
         );
     }
 
@@ -417,11 +436,24 @@ final class AggregateScenarios {
                 "{\"caseId\": \"%s\", \"type\": \"%s\", \"message\": \"%s\"}", CASE_ID, type, message), true, Map.of(), List.of());
     }
 
+    /** As {@link #warning(String, String)}, for a case that carries a {@code prosecutorCaseReference}. */
+    static ExpectedEvent warning(final String type, final String message, final String caseUrn) {
+        return new ExpectedEvent(MigratedCaseValidatedWithWarnings.class, String.format(
+                "{\"caseId\": \"%s\", \"caseUrn\": \"%s\", \"type\": \"%s\", \"message\": \"%s\"}", CASE_ID, caseUrn, type, message), true, Map.of(), List.of());
+    }
+
     /** A failed {@code MigratedCaseFileProcessed} event carrying a single failure {@code description}. */
     static ExpectedEvent processedFailure(final String description) {
         return new ExpectedEvent(MigratedCaseFileProcessed.class, String.format(
                 "{\"caseId\": \"%s\", \"description\": \"%s\", \"processingIsSuccessful\": false, \"submissionId\": \"%s\"}",
                 CASE_ID, description, SUBMISSION_ID), true, Map.of(), List.of());
+    }
+
+    /** As {@link #processedFailure(String)}, for a case that carries a {@code prosecutorCaseReference}. */
+    static ExpectedEvent processedFailure(final String description, final String caseUrn) {
+        return new ExpectedEvent(MigratedCaseFileProcessed.class, String.format(
+                "{\"caseId\": \"%s\", \"caseUrn\": \"%s\", \"description\": \"%s\", \"processingIsSuccessful\": false, \"submissionId\": \"%s\"}",
+                CASE_ID, caseUrn, description, SUBMISSION_ID), true, Map.of(), List.of());
     }
 
     private static List<ExpectedEvent> receiptTypeExpected(final String receiptType) {
