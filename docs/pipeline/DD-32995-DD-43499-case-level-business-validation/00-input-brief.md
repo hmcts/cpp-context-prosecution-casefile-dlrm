@@ -5,7 +5,7 @@
   level items"
 - **Repo:** `cpp-context-prosecution-casefile-dlrm` (`pcfdlrm`)
 
-> AC taken from the ticket export supplied by the user — no Jira fetch. Reconcile against the live
+> AC taken from the ticket export — no Jira fetch. Reconcile against the live
 > ticket before sign-off.
 
 ## Acceptance criteria (as given)
@@ -15,7 +15,7 @@ WHEN validation runs for the case elements and a business rule is not met, THEN 
 or accepts the case per the table below.
 
 > The ticket's note "invalid entries should be nulled and follow the required behaviour for missing
-> fields" is **wrong** per the user — BA to correct. Not used as a requirement.
+> fields" applies to **optional** fields only; invalid mandatory fields follow XHIBIT. BA to clarify.
 
 | Field | Format | Business rule | SJP / Summons / Charge / Postal Req | Ref data | Missing → |
 |---|---|---|---|---|---|

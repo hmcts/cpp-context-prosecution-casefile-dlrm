@@ -18,7 +18,7 @@ the existing XHIBIT mechanism.
 
 ## Functional requirements (pcfdlrm)
 
-Invalid values follow XHIBIT's existing handling (user decision). XHIBIT today, per case-level
+Invalid values follow XHIBIT's existing handling. XHIBIT today, per case-level
 problem code (`MigratedCaseFileAggregate` ~L214-287):
 
 | ID | Requirement | XHIBIT precedent |
@@ -29,7 +29,7 @@ problem code (`MigratedCaseFileAggregate` ~L214-287):
 | FR-4 | `initiationCode` not in refdata initiation-types → accept (problem raised, not acted on). | `CASE_INITIATION_CODE_INVALID` → ignored |
 | FR-5 | `originatingOrganisation`, `cpsOrganisation` → no business check. | no rule |
 | FR-6 | XHIBIT validation paths unchanged. | — |
-| FR-7 | Unit tests per outcome. No negative LIBRA ITs (user direction); existing ITs stay green. | — |
+| FR-7 | Unit tests for the two new outcomes (FR-2, FR-3). No negative LIBRA ITs; existing ITs stay green. | — |
 
 ## For a stagingdlrm story (schema)
 
@@ -47,7 +47,7 @@ problem code (`MigratedCaseFileAggregate` ~L214-287):
 ## Open questions
 
 1. ~~Invalid values~~ — **resolved:** mandatory field invalid → follow XHIBIT; **optional field
-   invalid → nullify** (ticket note, confirmed by user). **Diverges from ticket** in two places:
+   invalid → not sent** (ticket note). **Diverges from ticket** in two places:
    ticket says reject for a bad `originatingOrganisation` (FR-5: no check) and `initiationCode`
    (FR-4: accept; staging enum C/Q/J/R/S already blocks bad codes, so only a refdata mismatch
    reaches here). Confirm with BA.
@@ -60,7 +60,7 @@ problem code (`MigratedCaseFileAggregate` ~L214-287):
 5. ~~CPS `prosecutingAuthority` (A codes)~~ — **resolved:** same as XHIBIT — one
    `get.prosecutor.by.oucode` lookup, no separate cpsOrg handling.
 6. ~~`informant` Summons check — SV or BV?~~ — **resolved: BV in stagingdlrm** (S-3):
-   - The API schema is shared by XHIBIT and LIBRA and holds no source-system conditionals (ADR-002);
+   - The API schema is shared by XHIBIT and LIBRA and holds no source-system conditionals (stagingdlrm ADR-002);
      "required if LIBRA and `S`" would need nested draft-04 `anyOf`/`not` — the complication.
    - Precedent: per-source conditional rules already live in the rule engine — LIBRA hearing
      `RequiredFieldRule`s, XHIBIT `AtLeastOneOfRule` (`dateOfCommittal`/`dateOfSending`), and

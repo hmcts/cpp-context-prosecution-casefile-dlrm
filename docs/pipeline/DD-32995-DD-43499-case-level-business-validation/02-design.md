@@ -61,9 +61,9 @@ LIBRA test inputs carry no receipt type (XHIBIT-only field).
   `public.pcfdlrm.migrated-case-file-processed` (unchanged; already used for LIBRA hearing/offence
   rejects). No new subscription or schema.
 - Warning event has no processor subscription (event store only) — same as XHIBIT today.
-- **Invalid markers never reach progression** (user requirement): both received paths (~L362,
+- **Invalid markers never reach progression**: both received paths (~L362,
   ~L562) go through `MigratedCaseToProsecutionCaseConverter`, which keeps only refdata-matched
-  markers (~L180-184) — same as XHIBIT (user: follow XHIBIT). Unchanged, as XHIBIT: all-invalid →
+  markers (~L180-184) — same as XHIBIT. Unchanged, as XHIBIT: all-invalid →
   `caseMarkers: []`; rule matches case-insensitively, converter case-sensitively.
 - Side benefit: an unknown LIBRA prosecutor no longer reaches the processor converter, which
   dereferences `prosecutorsReferenceData` without a null check (`MigratedCaseToProsecutionCaseConverter`
@@ -76,7 +76,7 @@ LIBRA test inputs carry no receipt type (XHIBIT-only field).
 - **LIBRA SJP (`J`)** uses `SJP_CASE_RULE_SET_LIBRA`, which also includes
   `ProsecutorReferenceDataValidationRule` → unknown prosecutor rejects SJP too (as XHIBIT).
 - **Existing LIBRA fixtures** whose case markers aren't in the refdata stub would now also emit a
-  warning event. Non-blocking, but exact-event-list tests will need the warning added (see Tests).
+  warning event; none of the current unit fixtures do.
 
 ## Tests
 
@@ -84,7 +84,7 @@ LIBRA test inputs carry no receipt type (XHIBIT-only field).
 |---|---|
 | Unit — `AggregateScenarios` | Add LIBRA rows for "Invalid Prosecuting Authority" and the case-marker warning, built from a LIBRA-only case builder (ticket case-level fields only). |
 
-**No LIBRA ITs** — negative (invalid-input) LIBRA IT tests are not to be written (user direction).
+**No LIBRA ITs** — negative (invalid-input) LIBRA IT tests are not to be written (agreed scope).
 Both new outcomes are covered at unit level. No new endpoint or `@Handles`, so the per-endpoint IT
 rule doesn't apply. Existing ITs must stay green via `./runIntegrationTests.sh`.
 

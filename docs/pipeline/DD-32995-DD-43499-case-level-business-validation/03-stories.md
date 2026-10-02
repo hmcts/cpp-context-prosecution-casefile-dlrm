@@ -28,15 +28,16 @@ See `01-requirements.md` FR-1 – FR-6:
 
 ### Definition of done
 
-- [x] Prosecuting-authority reject moved outside the `isXhibit` gate; `isXhibit` removed from the case-marker warning gate; no other production change.
-- [x] `AggregateScenarios`: LIBRA rows for AC-1 and AC-2 (mirroring the XHIBIT rows); existing LIBRA
-      rows re-baselined if they gain a warning.
+- [x] Prosecuting-authority reject moved outside the `isXhibit` gate; `isXhibit` removed from the
+      case-marker warning gate; no other production change.
+- [x] `AggregateScenarios`: LIBRA rows for AC-1 and AC-2 (mirroring the XHIBIT rows); no existing LIBRA
+      rows needed re-baselining.
 - [x] Existing XHIBIT scenarios green unchanged (AC-4) — aggregate 336/336.
 - [x] `mvn clean install` green; `./runIntegrationTests.sh` green — 28/28 (existing ITs, no new LIBRA ITs).
 
 ### Out of scope
 
-- Negative LIBRA ITs (user direction — unit level only).
+- Negative LIBRA ITs (unit level only).
 - `originatingOrganisation` / `cpsOrganisation` checks — XHIBIT has none (Stage 1 OQ1; ticket
   divergence flagged to BA).
 - `prosecutorCaseReference` generation, source case-identifier uniqueness (Stage 1 OQ2, OQ3).
