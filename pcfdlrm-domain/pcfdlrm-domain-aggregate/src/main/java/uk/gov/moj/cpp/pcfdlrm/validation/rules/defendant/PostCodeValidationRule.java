@@ -32,10 +32,6 @@ public class PostCodeValidationRule implements ValidationRule<DefendantWithRefer
         this(true);
     }
 
-    /**
-     * @param validateParentGuardianPostCode false for LIBRA S/C/Q (DD-43501), where
-     *                                       {@code LibraIndividualParentGuardianAddressValidationRule} owns the guardian postcode
-     */
     public PostCodeValidationRule(final boolean validateParentGuardianPostCode) {
         this.validateParentGuardianPostCode = validateParentGuardianPostCode;
     }

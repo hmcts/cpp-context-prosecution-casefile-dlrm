@@ -15,10 +15,6 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ParentGuardianInfor
 
 import java.util.List;
 
-/**
- * DD-43501: address1 (REJECT, even though the LIBRA feed sends no organisation address today), address2–5
- * (NULL) and postcode (NULL) for an organisation guardian's {@code address}.
- */
 public class LibraOrganisationParentGuardianAddressValidationRule extends AbstractLibraParentGuardianAddressValidationRule {
 
     public LibraOrganisationParentGuardianAddressValidationRule() {

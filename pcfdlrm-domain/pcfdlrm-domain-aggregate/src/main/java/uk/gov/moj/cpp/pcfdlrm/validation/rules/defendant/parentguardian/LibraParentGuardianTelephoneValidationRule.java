@@ -31,10 +31,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-/**
- * DD-43501: individual work/home/mobile and organisation companyTelephoneNumber. A present
- * value, blank included, must match {@link Constants#CP_TELEPHONE}; each failure is one redacted problem.
- */
 public class LibraParentGuardianTelephoneValidationRule implements ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService> {
 
     private static final Pattern CP_TELEPHONE = Pattern.compile(Constants.CP_TELEPHONE.getValue());

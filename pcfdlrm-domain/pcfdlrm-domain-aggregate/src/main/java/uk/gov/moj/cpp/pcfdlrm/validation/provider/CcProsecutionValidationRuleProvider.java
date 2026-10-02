@@ -320,7 +320,6 @@ public class CcProsecutionValidationRuleProvider {
 
     private static final Map<String, List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>>> defendantValidationMapDlrm = defendantValidationMapSpi;
 
-    // DD-43501: LIBRA S/C/Q replaces the five generic guardian rules with the LIBRA guardian set below.
     private static final Set<Class<?>> GENERIC_PARENT_GUARDIAN_RULES = Set.of(
             ParentGuardianDateOfBirthValidationRule.class,
             ParentGuardianObservedEthnicityValidationAndEnricherRule.class,

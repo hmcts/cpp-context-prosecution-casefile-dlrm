@@ -302,12 +302,8 @@ class ProsecutionCaseFileHelperTest {
         assertThat(referenceDataVO.getBailStatusReferenceData().get(0).getStatusCode(), is("U"));
     }
 
-    // ======== DD-43501: LIBRA S/C/Q parent/guardian — validateDefendants(...) -> DefendantValidationOutcome ========
-
     private final Stream.Builder<Object> events = Stream.builder();
 
-    // AC-S1-001: no guardian block -> no guardian problem (in particular no generic PARENT_GUARDIAN_GENDER_INVALID),
-    // nothing rejected, defendant forwarded unchanged.
     @Test
     void shouldRaiseNoParentGuardianProblemWhenLibraDefendantHasNoParentGuardian() {
         final MigratedDefendant defendant = defendantWithParentGuardian(DEFENDANT_ID, null);
@@ -320,9 +316,6 @@ class ProsecutionCaseFileHelperTest {
         assertThat(outcome.migratedDefendantWithProblem().getMigratedDefendants().get(0), is(defendant));
     }
 
-    // AC-S3-010 (FR-019, cumulative with AC-S1-002/003/004/005) and AC-S1-008: invalid home number, invalid
-    // primary email, future date of birth, no gender -> those three fields removed, gender NOT_KNOWN, exactly four
-    // redacted guardian problems, nothing rejected, every other defendant field unchanged.
     @Test
     void shouldSanitiseIndividualParentGuardianAndRaiseOneRedactedProblemPerField() {
         final MigratedDefendant defendant = defendantWithParentGuardian(DEFENDANT_ID,
@@ -348,8 +341,6 @@ class ProsecutionCaseFileHelperTest {
         assertRedacted(defendantValidationFailedParentGuardianProblems());
     }
 
-    // AC-S1-005 end to end through the helper: the sanitiser maps 0/1/2/9 with no warning; anything unmappable
-    // or absent defaults to NOT_KNOWN with one warning. Gender never rejects.
     @ParameterizedTest(name = "gender \"{0}\" -> {1}, warning: {2}")
     @CsvSource(nullValues = "NONE", value = {
             "0,    NOT_KNOWN,     false",
@@ -367,10 +358,6 @@ class ProsecutionCaseFileHelperTest {
         assertThat(outcome.libraGuardianRejections(), is(empty()));
     }
 
-    // AC-S1-006, AC-S2-001, AC-S2-003, AC-S2-004, AC-S2-005: organisation guardian with no organisationName, an
-    // invalid company number, a 36-character address5 and an invalid postcode -> the three fields removed with
-    // one redacted warning each; no gender problem, no gender added; nothing rejected (organisation postcode
-    // never rejects, Q1 asymmetry).
     @Test
     void shouldSanitiseOrganisationParentGuardianWithoutTouchingGender() {
         final MigratedDefendant defendant = defendantWithParentGuardian(DEFENDANT_ID,
@@ -394,7 +381,6 @@ class ProsecutionCaseFileHelperTest {
         assertRedacted(parentGuardianProblems(outcome));
     }
 
-    // AC-S2-002 (FR-013): organisationName keeps today's schema-only behaviour — 255 characters is kept, no rule.
     @Test
     void shouldKeepOrganisationNameWithNoBusinessRule() {
         final MigratedDefendant defendant = defendantWithParentGuardian(DEFENDANT_ID,
@@ -406,7 +392,6 @@ class ProsecutionCaseFileHelperTest {
         assertThat(parentGuardianProblems(outcome), is(empty()));
     }
 
-    // AC-S3-007 (FR-011): an over-long address line is removed, not rejected.
     @Test
     void shouldRemoveOverlongIndividualAddressLineWithoutRejecting() {
         final DefendantValidationOutcome outcome = validateDefendants(LIBRA, "C", defendantWithParentGuardian(DEFENDANT_ID,
@@ -445,8 +430,6 @@ class ProsecutionCaseFileHelperTest {
         assertThat(outcome.libraGuardianRejections().stream().map(Problem::getCode).toList(), is(expectedRejectionCodes));
     }
 
-    // AC-S1-009, AC-S2-007, AC-S3-001, AC-S3-002, AC-S5-001 (FR-020): outside LIBRA S/C/Q nothing is rejected,
-    // nothing new is raised, values are kept and the generic guardian-gender check still runs.
     @ParameterizedTest(name = "{0} {1}")
     @CsvSource({"LIBRA, J", "LIBRA, R", "LIBRA, O", "XHIBIT, C", "XHIBIT, S"})
     void shouldKeepTodaysBehaviourOutsideLibraParentGuardianScope(final String sourceSystemName, final String initiationCode) {

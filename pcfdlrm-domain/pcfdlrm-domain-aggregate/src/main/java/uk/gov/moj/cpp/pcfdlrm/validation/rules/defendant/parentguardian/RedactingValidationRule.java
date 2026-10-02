@@ -12,10 +12,6 @@ import uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationRule;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Problem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ProblemValue;
 
-/**
- * DD-43501: replaces every {@link ProblemValue#getValue()} with its key, so warnings and
- * {@code DefendantValidationFailed} name the guardian field but never carry its data.
- */
 public final class RedactingValidationRule implements ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService> {
 
     private final ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService> delegate;

@@ -77,10 +77,6 @@ public class PostCodeValidationRuleTest {
         assertThat(problem.getValues().get(0).getValue(), is(INVALID_POST_CODE));
     }
 
-    // DD-43501 AC-S3-001 / AC-S1-009: the no-arg rule (XHIBIT, SPI, MCC, LIBRA J/R/O) still warns on an
-    // invalid guardian postcode, value kept. PostCodeValidationRule(false) is the LIBRA S/C/Q variant:
-    // the guardian postcode is owned by LibraIndividualParentGuardianAddressValidationRule there, while
-    // the defendant postcode check is unchanged.
     @ParameterizedTest(name = "validateParentGuardianPostCode={0}")
     @CsvSource({
             "true,  INVALID_DEFENDANT_POST_CODE|INVALID_GUARDIAN_POST_CODE",

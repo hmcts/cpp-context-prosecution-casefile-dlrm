@@ -114,11 +114,6 @@ public class ObjectBuilder {
         return Collections.singletonList(builder.build());
     }
 
-    /**
-     * DD-43501: a parent/guardian contact block in which every value passes the LIBRA guardian rules
-     * ({@code CP_TELEPHONE}, {@code LIBRA_GUARDIAN_EMAIL}). Tests break exactly one field with
-     * {@code withX(...)} so each case states only what it changes. Values are synthetic.
-     */
     public static ContactDetails.Builder validGuardianContactDetails() {
         return ContactDetails.contactDetails()
                 .withWork("+44 20 7946 0000")
@@ -128,7 +123,6 @@ public class ObjectBuilder {
                 .withSecondaryEmail("taylor.alt@example.org");
     }
 
-    /** DD-43501: a guardian address that passes both LIBRA guardian address rules. */
     public static Address.Builder validGuardianAddress() {
         return Address.address()
                 .withAddress1("1 Example Street")
@@ -136,7 +130,6 @@ public class ObjectBuilder {
                 .withPostcode("SW1A 1AA");
     }
 
-    /** DD-43501: an INDIVIDUAL-shape guardian ({@code ParentGuardianShape.of} → INDIVIDUAL). */
     public static ParentGuardianInformation.Builder individualParentGuardian(final ContactDetails contactDetails, final Address address) {
         return ParentGuardianInformation.parentGuardianInformation()
                 .withGender("MALE")
@@ -153,7 +146,6 @@ public class ObjectBuilder {
         return individualParentGuardian(validGuardianContactDetails().build(), validGuardianAddress().build());
     }
 
-    /** DD-43501: an ORGANISATION-shape guardian — no individual field is set. */
     public static ParentGuardianInformation.Builder organisationParentGuardian(final Address address) {
         return ParentGuardianInformation.parentGuardianInformation()
                 .withOrganisationName("Example Care Ltd")
@@ -161,7 +153,6 @@ public class ObjectBuilder {
                 .withAddress(address);
     }
 
-    /** DD-43501: a minimal individual defendant carrying the given guardian (null = no guardian block). */
     public static MigratedDefendant defendantWithParentGuardian(final UUID defendantId, final ParentGuardianInformation parentGuardianInformation) {
         return MigratedDefendant.migratedDefendant()
                 .withId(defendantId)

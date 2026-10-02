@@ -17,13 +17,6 @@ import java.util.Optional;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-/**
- * DD-43501 FR-007 (AC-S1-005) — {@link LibraGenderCode#normalise} and the rule built on it. Numeric LIBRA
- * codes {@code 0/1/2/9} and CP {@code Gender} names are valid (no warning, Q6); anything else, blank or
- * absent raises {@code PARENT_GUARDIAN_GENDER_INVALID} (DEFAULT {@code NOT_KNOWN}, applied by the
- * sanitiser). The rule never runs for an organisation guardian — that is the shape gate's job
- * (see {@code ParentGuardianShapeTest}, AC-S1-006).
- */
 class LibraParentGuardianGenderValidationRuleTest {
 
     @ParameterizedTest(name = "normalise(\"{0}\") -> {1}")
@@ -37,7 +30,7 @@ class LibraParentGuardianGenderValidationRuleTest {
             "NOT_SPECIFIED, NOT_SPECIFIED",
             "male,          male",            // CP enum name, case-insensitive, returned unchanged
             "' MALE ',      MALE",            // CP enum name, trimmed
-            "3,             NONE",            // what LIBRA actually sends for 3..8 (F-3)
+            "3,             NONE",
             "X,             NONE",
             "'',            NONE",
             "'  ',          NONE",

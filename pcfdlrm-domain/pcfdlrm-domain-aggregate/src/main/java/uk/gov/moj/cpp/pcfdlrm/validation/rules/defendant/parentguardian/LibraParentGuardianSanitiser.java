@@ -14,18 +14,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 
-/**
- * DD-43501: the LIBRA S/C/Q equivalent of the XHIBIT-only {@code applyRuleToDefendantFields}. Runs whether
- * or not there are problems, because valid numeric gender codes are mapped without a warning.
- * <ol>
- *     <li>Absent guardian: nothing changes.</li>
- *     <li>Individual guardian only: gender becomes {@link LibraGenderCode#normalise} or {@code NOT_KNOWN}
- *     (DEFAULT). An organisation guardian's gender is never read or written.</li>
- *     <li>Every problem whose code {@link LibraParentGuardianOutcomes} marks NULL removes the field named by
- *     its key.</li>
- *     <li>REJECT fields are never touched: the case is rejected, so the defendant never leaves the aggregate.</li>
- * </ol>
- */
 public final class LibraParentGuardianSanitiser {
 
     private LibraParentGuardianSanitiser() {

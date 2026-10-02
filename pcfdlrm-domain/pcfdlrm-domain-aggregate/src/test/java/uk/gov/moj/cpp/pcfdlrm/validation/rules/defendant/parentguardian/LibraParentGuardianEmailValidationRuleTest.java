@@ -24,11 +24,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-/**
- * DD-43501 FR-005 (AC-S1-003) — guardian primary/secondary email against the LIBRA-guardian-only
- * {@code Constants.LIBRA_GUARDIAN_EMAIL} {@code ^[0-9A-Za-z'._-]{1,127}@[0-9A-Za-z'._-]{1,127}$} (Q3).
- * Each value is run against both fields; problems are redacted (AC-S1-008).
- */
 class LibraParentGuardianEmailValidationRuleTest {
 
     private static final String LOCAL_127 = "a".repeat(127);
@@ -46,7 +41,7 @@ class LibraParentGuardianEmailValidationRuleTest {
                         arguments("first+tag@example.org", false),
                         arguments("no-at-sign.example.org", false),
                         arguments("two@@example.org", false),
-                        arguments("", false))                                    // blank but present (D-1)
+                        arguments("", false))
                 .flatMap(row -> Stream.of(
                         arguments("primaryEmail", row.get()[0], row.get()[1]),
                         arguments("secondaryEmail", row.get()[0], row.get()[1])));

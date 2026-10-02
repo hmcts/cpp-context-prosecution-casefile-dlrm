@@ -14,10 +14,6 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-/**
- * DD-43501: which of the two {@code oneOf} shapes a guardian block has. Blank strings count as
- * absent; if both shapes are populated (malformed data) INDIVIDUAL wins.
- */
 public enum ParentGuardianShape {
     INDIVIDUAL,
     ORGANISATION,

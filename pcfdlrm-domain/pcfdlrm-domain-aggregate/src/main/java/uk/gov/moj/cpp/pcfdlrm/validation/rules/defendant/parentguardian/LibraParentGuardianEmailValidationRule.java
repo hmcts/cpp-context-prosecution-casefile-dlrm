@@ -25,10 +25,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-/**
- * DD-43501: individual guardian primary/secondary email against the LIBRA-guardian-only
- * {@link Constants#LIBRA_GUARDIAN_EMAIL}. Reuses the generic guardian email codes; problems are redacted.
- */
 public class LibraParentGuardianEmailValidationRule implements ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService> {
 
     private static final Pattern LIBRA_GUARDIAN_EMAIL = Pattern.compile(Constants.LIBRA_GUARDIAN_EMAIL.getValue());

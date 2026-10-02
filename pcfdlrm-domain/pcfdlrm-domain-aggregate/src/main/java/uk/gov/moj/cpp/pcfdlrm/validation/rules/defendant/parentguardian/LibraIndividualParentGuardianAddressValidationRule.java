@@ -16,10 +16,6 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.PersonalInformation
 
 import java.util.List;
 
-/**
- * DD-43501: address1 (REJECT), address2–5 (NULL) and postcode (REJECT) for an
- * individual guardian's {@code personalInformation.address}.
- */
 public class LibraIndividualParentGuardianAddressValidationRule extends AbstractLibraParentGuardianAddressValidationRule {
 
     public LibraIndividualParentGuardianAddressValidationRule() {

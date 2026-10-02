@@ -513,8 +513,6 @@ class CcProsecutionValidationRuleProviderTest {
         )), classesOf(validationRules));
     }
 
-    // ---- DD-43501: LIBRA S/C/Q parent/guardian rule set (02-design.md C1, C3) ----
-
     /** The five generic guardian rules COMMON_DEFENDANT_RULE_SET carries; LIBRA S/C/Q filters them out. */
     private static final Set<Class<?>> GENERIC_PARENT_GUARDIAN_RULE_CLASSES = Set.of(
             ParentGuardianDateOfBirthValidationRule.class,
@@ -541,9 +539,6 @@ class CcProsecutionValidationRuleProviderTest {
                         AdditionalNationalityValidationAndEnricherRule.class)));
     }
 
-    // AC-S1-001..007 wiring: (COMMON minus the 5 generic guardian rules) + SPI + per-code set + the gated
-    // LIBRA guardian set. Every LIBRA guardian rule sits behind a ParentGuardianShapeGate for exactly one
-    // shape, and the three reused generic rules are wrapped in RedactingValidationRule (AC-S1-008).
     @ParameterizedTest(name = "LIBRA {0}")
     @MethodSource("libraInScopeInitiationCodes")
     void shouldValidateDefendantValidateDlrmLibraRules(final String initiationCode, final Set<Class<?>> perCodeRuleClasses) {
@@ -568,9 +563,6 @@ class CcProsecutionValidationRuleProviderTest {
                 "ORGANISATION LibraOrganisationParentGuardianAddressValidationRule"));
     }
 
-    // AC-S3-008 / design C1 step 2: in LIBRA S/C/Q the generic PostCodeValidationRule is the
-    // PostCodeValidationRule(false) variant — it no longer raises the guardian postcode as a warning, so the
-    // same code is never a warning and a rejection for one case (ADR hazard).
     @ParameterizedTest(name = "LIBRA {0}")
     @CsvSource({"S", "C", "Q"})
     void shouldNotValidateGuardianPostCodeInGenericPostCodeRuleForLibra(final String initiationCode) {
@@ -585,9 +577,6 @@ class CcProsecutionValidationRuleProviderTest {
         assertThat(postCodeRule.validate(new DefendantWithReferenceData(defendant, new ReferenceDataVO(), CaseDetails.caseDetails().build()), null).problems(), is(empty()));
     }
 
-    // AC-S1-009 / AC-S3-001 / AC-S3-002 / AC-S5-001 (FR-020): outside LIBRA S/C/Q the 4-arg overload gives
-    // exactly today's 3-arg rule list — XHIBIT, LIBRA J (SJP), R (Remittance, Q17), O, absent source
-    // system, and non-DLRM channels carrying a LIBRA name.
     @ParameterizedTest(name = "{0} {1} {2}")
     @CsvSource(nullValues = "NONE", value = {
             "DLRM_MIGRATION, LIBRA,  J",

@@ -70,7 +70,6 @@ public class ParentGuardianDateOfBirthValidationRuleTest {
         assertThat(optionalProblem.get().getValues().get(0).getValue(), is(DOB.toString()));
     }
 
-    // DD-43501 AC-S1-004: the boundary is "after today, Europe/London" — today itself is kept.
     @Test
     public void shouldReturnEmptyListWhenParentGuardianDateOfBirthIsToday() {
         when(defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation()
@@ -79,8 +78,6 @@ public class ParentGuardianDateOfBirthValidationRuleTest {
                 .problems().isEmpty(), is(true));
     }
 
-    // DD-43501 AC-S1-004 / AC-S1-008: in LIBRA S/C/Q scope the rule is wrapped, so the problem names the
-    // field and never carries the date.
     @Test
     public void shouldRedactDateOfBirthWhenWrappedInRedactingValidationRule() {
         when(defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation()

@@ -37,11 +37,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
-/**
- * DD-43501 FR-002 / Q4 — {@link ParentGuardianShape#of} and the {@link ParentGuardianShapeGate} decorator
- * every LIBRA guardian rule is wrapped in (AC-S1-001, AC-S1-006: an organisation guardian never reaches an
- * individual rule, and the reverse).
- */
 class ParentGuardianShapeTest {
 
     private static final ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService> ALWAYS_FAILS =

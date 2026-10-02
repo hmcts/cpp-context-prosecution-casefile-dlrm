@@ -9,11 +9,6 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel;
 
 import java.util.Set;
 
-/**
- * DD-43501: the LIBRA parent/guardian rules, sanitiser and rejection apply only to DLRM migration cases from
- * LIBRA (exact match, like {@code isXhibit}) whose resolved initiation code is Summons, Charge or
- * Requisition. SJP ({@code J}), Remittance ({@code R}) and Other keep today's behaviour.
- */
 public final class LibraParentGuardianScope {
 
     private static final String LIBRA = "LIBRA";

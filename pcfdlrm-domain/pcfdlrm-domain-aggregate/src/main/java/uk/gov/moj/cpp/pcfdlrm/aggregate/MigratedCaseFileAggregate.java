@@ -111,7 +111,6 @@ public class MigratedCaseFileAggregate implements Aggregate {
     public static final String COURT_RECORD_SHEET_NOT_PDF = "Court Record Sheet must be a PDF file";
     public static final String COURT_RECORD_SHEET_FILE_TYPE_INVALID = "Court Record Sheet file type is not valid for XHIBIT migration";
     public static final String COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANTS = "Number of Court Record Sheets exceeds number of defendants";
-    // Must not contain, or be contained in, any stagingdlrm stagingContextErrors marker (StagingDlrmEventProcessor).
     public static final String PARENT_GUARDIAN_VALIDATION_FAILED = "Parent guardian validation failed: ";
     private static final ZoneId LONDON = ZoneId.of("Europe/London");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss");
@@ -468,11 +467,6 @@ public class MigratedCaseFileAggregate implements Aggregate {
         return false;
     }
 
-    /**
-     * DD-43501: one rejection listing every distinct LIBRA parent/guardian REJECT code, in defendant
-     * then rule order. Codes only — no values or identifiers — because stagingdlrm forwards the description
-     * externally; the per-defendant detail stays in DefendantValidationFailed.
-     */
     private boolean hasLibraParentGuardianRejections(final ReceiveMigratedCaseFile receiveMigratedCaseFile, final DefendantValidationOutcome defendantValidationOutcome,
                                                      final Stream.Builder<Object> builder, final MigratedCaseDetails migratedCaseDetails) {
         final List<Problem> rejections = defendantValidationOutcome.libraGuardianRejections();
