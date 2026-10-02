@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.pcfdlrm.aggregate;
 
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Stream.builder;
 import static org.apache.commons.collections.CollectionUtils.isNotEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -9,7 +10,7 @@ import static uk.gov.justice.domain.aggregate.matcher.EventSwitcher.when;
 import static uk.gov.moj.cpp.pcfdlrm.CaseType.CC;
 import static uk.gov.moj.cpp.pcfdlrm.ProsecutionCaseFileHelper.buildDefendantWithReferenceData;
 import static uk.gov.moj.cpp.pcfdlrm.ProsecutionCaseFileHelper.buildMigratedHearingRefData;
-import static uk.gov.moj.cpp.pcfdlrm.ProsecutionCaseFileHelper.validateDefendantErrors;
+import static uk.gov.moj.cpp.pcfdlrm.ProsecutionCaseFileHelper.validateDefendants;
 import static uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseValidatedCreationPending.migratedCaseValidatedCreationPending;
 import static uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseValidatedWithWarnings.migratedCaseValidatedWithWarnings;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURT_LOCATION_OUCODE_INVALID;
@@ -38,6 +39,7 @@ import static uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCase
 import uk.gov.justice.domain.aggregate.Aggregate;
 import uk.gov.moj.cpp.pcfdlrm.CaseType;
 import uk.gov.moj.cpp.pcfdlrm.domain.CaseDocumentWithReferenceData;
+import uk.gov.moj.cpp.pcfdlrm.DefendantValidationOutcome;
 import uk.gov.moj.cpp.pcfdlrm.domain.DefendantsWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.domain.MigratedHearingWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.domain.MigratedMaterialsWithOriginatingSystem;
@@ -109,6 +111,8 @@ public class MigratedCaseFileAggregate implements Aggregate {
     public static final String COURT_RECORD_SHEET_NOT_PDF = "Court Record Sheet must be a PDF file";
     public static final String COURT_RECORD_SHEET_FILE_TYPE_INVALID = "Court Record Sheet file type is not valid for XHIBIT migration";
     public static final String COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANTS = "Number of Court Record Sheets exceeds number of defendants";
+    // Must not contain, or be contained in, any stagingdlrm stagingContextErrors marker (StagingDlrmEventProcessor).
+    public static final String PARENT_GUARDIAN_VALIDATION_FAILED = "Parent guardian validation failed: ";
     private static final ZoneId LONDON = ZoneId.of("Europe/London");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss");
     private final List<String> offenceProblems = List.of(ProblemCode.INVALID_PLEA.name(),ProblemCode.PLEA_DATE_ABSENT.name(),ProblemCode.PLEA_DATE_CANNOT_BE_FUTURE_DATE.name(),ProblemCode.CONVICTION_DATE_ABSENT.name(),
@@ -264,11 +268,16 @@ public class MigratedCaseFileAggregate implements Aggregate {
             return apply(builder.build());
         }
 
-        final MigratedDefendantWithProblem migratedDefendantWithProblem = validateDefendantErrors(prosecution.getCaseDetails(),
+        final DefendantValidationOutcome defendantValidationOutcome = validateDefendants(prosecution.getCaseDetails(),
                 prosecutionChannel, defendantsWithReferenceData,
                 referenceDataQueryService, builder, false, sourceSystemName);
+        final MigratedDefendantWithProblem migratedDefendantWithProblem = defendantValidationOutcome.migratedDefendantWithProblem();
 
         if (hasOffenceProblems(receiveMigratedCaseFile, migratedDefendantWithProblem, builder, migratedCaseDetails)) {
+            return apply(builder.build());
+        }
+
+        if (hasLibraParentGuardianRejections(receiveMigratedCaseFile, defendantValidationOutcome, builder, migratedCaseDetails)) {
             return apply(builder.build());
         }
 
@@ -459,6 +468,31 @@ public class MigratedCaseFileAggregate implements Aggregate {
         return false;
     }
 
+    /**
+     * DD-43501: one rejection listing every distinct LIBRA parent/guardian REJECT code, in defendant
+     * then rule order. Codes only — no values or identifiers — because stagingdlrm forwards the description
+     * externally; the per-defendant detail stays in DefendantValidationFailed.
+     */
+    private boolean hasLibraParentGuardianRejections(final ReceiveMigratedCaseFile receiveMigratedCaseFile, final DefendantValidationOutcome defendantValidationOutcome,
+                                                     final Stream.Builder<Object> builder, final MigratedCaseDetails migratedCaseDetails) {
+        final List<Problem> rejections = defendantValidationOutcome.libraGuardianRejections();
+        if (rejections.isEmpty()) {
+            return false;
+        }
+
+        final String reasons = rejections.stream()
+                .map(Problem::getCode)
+                .distinct()
+                .collect(joining(", "));
+        builder.add(MigratedCaseFileProcessed.migratedCaseFileProcessed()
+                .withDescription(PARENT_GUARDIAN_VALIDATION_FAILED + reasons)
+                .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
+                .withSubmissionId(receiveMigratedCaseFile.getSubmissionId())
+                .withProcessingIsSuccessful(false)
+                .withCaseUrn(migratedCaseDetails.getCaseDetails().getProsecutorCaseReference())
+                .build());
+        return true;
+    }
 
     private List<MigratedCaseValidatedWithWarnings> generateHearingsWarnings(UUID caseId, String caseUrn, final List<Problem> problems) {
 

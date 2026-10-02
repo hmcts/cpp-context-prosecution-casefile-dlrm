@@ -6,8 +6,10 @@ import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel.DLRM_MIGRATION;
 
 
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Address;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ContactDetails;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Individual;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ParentGuardianInformation;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.PersonalInformation;
@@ -110,6 +112,73 @@ public class ObjectBuilder {
         }
 
         return Collections.singletonList(builder.build());
+    }
+
+    /**
+     * DD-43501: a parent/guardian contact block in which every value passes the LIBRA guardian rules
+     * ({@code CP_TELEPHONE}, {@code LIBRA_GUARDIAN_EMAIL}). Tests break exactly one field with
+     * {@code withX(...)} so each case states only what it changes. Values are synthetic.
+     */
+    public static ContactDetails.Builder validGuardianContactDetails() {
+        return ContactDetails.contactDetails()
+                .withWork("+44 20 7946 0000")
+                .withHome("020 7946 0001")
+                .withMobile("07700 900000")
+                .withPrimaryEmail("taylor.parent@example.org")
+                .withSecondaryEmail("taylor.alt@example.org");
+    }
+
+    /** DD-43501: a guardian address that passes both LIBRA guardian address rules. */
+    public static Address.Builder validGuardianAddress() {
+        return Address.address()
+                .withAddress1("1 Example Street")
+                .withAddress2("Exampletown")
+                .withPostcode("SW1A 1AA");
+    }
+
+    /** DD-43501: an INDIVIDUAL-shape guardian ({@code ParentGuardianShape.of} → INDIVIDUAL). */
+    public static ParentGuardianInformation.Builder individualParentGuardian(final ContactDetails contactDetails, final Address address) {
+        return ParentGuardianInformation.parentGuardianInformation()
+                .withGender("MALE")
+                .withDateOfBirth(PARENT_GUARDIAN_DATE_OF_BIRTH)
+                .withPersonalInformation(PersonalInformation.personalInformation()
+                        .withFirstName("Taylor")
+                        .withLastName("Parent")
+                        .withContactDetails(contactDetails)
+                        .withAddress(address)
+                        .build());
+    }
+
+    public static ParentGuardianInformation.Builder validIndividualParentGuardian() {
+        return individualParentGuardian(validGuardianContactDetails().build(), validGuardianAddress().build());
+    }
+
+    /** DD-43501: an ORGANISATION-shape guardian — no individual field is set. */
+    public static ParentGuardianInformation.Builder organisationParentGuardian(final Address address) {
+        return ParentGuardianInformation.parentGuardianInformation()
+                .withOrganisationName("Example Care Ltd")
+                .withCompanyTelephoneNumber("0161 496 0000")
+                .withAddress(address);
+    }
+
+    /** DD-43501: a minimal individual defendant carrying the given guardian (null = no guardian block). */
+    public static MigratedDefendant defendantWithParentGuardian(final UUID defendantId, final ParentGuardianInformation parentGuardianInformation) {
+        return MigratedDefendant.migratedDefendant()
+                .withId(defendantId)
+                .withProsecutorDefendantId(defendantId.toString())
+                .withDocumentationLanguage("E")
+                .withHearingLanguage("E")
+                .withIndividual(Individual.individual()
+                        .withSelfDefinedInformation(SelfDefinedInformation.selfDefinedInformation()
+                                .withGender("MALE")
+                                .build())
+                        .withPersonalInformation(PersonalInformation.personalInformation()
+                                .withFirstName("Sam")
+                                .withLastName("Defendant")
+                                .build())
+                        .withParentGuardianInformation(parentGuardianInformation)
+                        .build())
+                .build();
     }
 
     public static Prosecution buildProsecution(final MigratedCaseDetails migratedCaseDetails) {

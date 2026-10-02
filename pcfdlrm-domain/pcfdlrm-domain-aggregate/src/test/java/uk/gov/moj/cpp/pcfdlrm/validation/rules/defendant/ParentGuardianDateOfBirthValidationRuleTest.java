@@ -10,8 +10,10 @@ import static uk.gov.moj.cpp.pcfdlrm.validation.rules.FieldName.PARENT_GUARDIAN_
 import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Problem;
 import uk.gov.moj.cpp.pcfdlrm.domain.DefendantWithReferenceData;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.RedactingValidationRule;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -66,6 +68,30 @@ public class ParentGuardianDateOfBirthValidationRuleTest {
         assertThat(optionalProblem.get().getCode(), is(DEFENDANT_PARENT_GUARDIAN_DATE_OF_BIRTH_IN_FUTURE.name()));
         assertThat(optionalProblem.get().getValues().get(0).getKey(), is(PARENT_GUARDIAN_DATE_OF_BIRTH.getValue()));
         assertThat(optionalProblem.get().getValues().get(0).getValue(), is(DOB.toString()));
+    }
+
+    // DD-43501 AC-S1-004: the boundary is "after today, Europe/London" — today itself is kept.
+    @Test
+    public void shouldReturnEmptyListWhenParentGuardianDateOfBirthIsToday() {
+        when(defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation()
+                .getDateOfBirth()).thenReturn(LocalDate.now(ZoneId.of("Europe/London")));
+        assertThat(new ParentGuardianDateOfBirthValidationRule().validate(defendantWithReferenceData, referenceDataQueryService)
+                .problems().isEmpty(), is(true));
+    }
+
+    // DD-43501 AC-S1-004 / AC-S1-008: in LIBRA S/C/Q scope the rule is wrapped, so the problem names the
+    // field and never carries the date.
+    @Test
+    public void shouldRedactDateOfBirthWhenWrappedInRedactingValidationRule() {
+        when(defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation()
+                .getDateOfBirth()).thenReturn(LocalDate.now(ZoneId.of("Europe/London")).plusDays(1));
+
+        final Problem problem = RedactingValidationRule.of(new ParentGuardianDateOfBirthValidationRule())
+                .validate(defendantWithReferenceData, referenceDataQueryService).problems().get(0);
+
+        assertThat(problem.getCode(), is(DEFENDANT_PARENT_GUARDIAN_DATE_OF_BIRTH_IN_FUTURE.name()));
+        assertThat(problem.getValues().get(0).getKey(), is(PARENT_GUARDIAN_DATE_OF_BIRTH.getValue()));
+        assertThat(problem.getValues().get(0).getValue(), is(PARENT_GUARDIAN_DATE_OF_BIRTH.getValue()));
     }
 
 }

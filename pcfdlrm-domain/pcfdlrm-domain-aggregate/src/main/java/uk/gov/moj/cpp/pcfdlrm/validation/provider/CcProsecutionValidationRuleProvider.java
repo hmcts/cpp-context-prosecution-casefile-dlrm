@@ -10,6 +10,9 @@ import static uk.gov.moj.cpp.pcfdlrm.validation.CaseType.OTHER;
 import static uk.gov.moj.cpp.pcfdlrm.validation.CaseType.REQUISITION;
 import static uk.gov.moj.cpp.pcfdlrm.validation.CaseType.SJP;
 import static uk.gov.moj.cpp.pcfdlrm.validation.CaseType.SUMMONS;
+import static uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.ParentGuardianShape.INDIVIDUAL;
+import static uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.ParentGuardianShape.ORGANISATION;
+import static uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.ParentGuardianShapeGate.onlyFor;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel.CIVIL;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel.DLRM_MIGRATION;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel.MCC;
@@ -68,6 +71,13 @@ import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.StatementOfFact
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.VehicleCodeValidationAndEnricherRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.plea.PleaValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.plea.VerdictValidationRule;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.LibraIndividualParentGuardianAddressValidationRule;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.LibraOrganisationParentGuardianAddressValidationRule;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.LibraParentGuardianEmailValidationRule;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.LibraParentGuardianGenderValidationRule;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.LibraParentGuardianScope;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.LibraParentGuardianTelephoneValidationRule;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.RedactingValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.hearing.CourtHearingLocationValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.hearing.DateOfHearingPastDateValidationAndEnricherRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.hearing.DateOfHearingValidationAndEnricherRule;
@@ -82,6 +92,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class CcProsecutionValidationRuleProvider {
@@ -309,6 +320,41 @@ public class CcProsecutionValidationRuleProvider {
 
     private static final Map<String, List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>>> defendantValidationMapDlrm = defendantValidationMapSpi;
 
+    // DD-43501: LIBRA S/C/Q replaces the five generic guardian rules with the LIBRA guardian set below.
+    private static final Set<Class<?>> GENERIC_PARENT_GUARDIAN_RULES = Set.of(
+            ParentGuardianDateOfBirthValidationRule.class,
+            ParentGuardianObservedEthnicityValidationAndEnricherRule.class,
+            ParentGuardianSelfDefinedEthnicityValidationAndEnricherRule.class,
+            ParentGuardianPrimaryEmailAddressValidationRule.class,
+            ParentGuardianSecondaryEmailAddressValidationRule.class);
+
+    // Filtered, not copied, so it keeps exact parity with COMMON_DEFENDANT_RULE_SET.
+    private static final List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> COMMON_DEFENDANT_RULE_SET_LIBRA = COMMON_DEFENDANT_RULE_SET.stream()
+            .filter(rule -> !GENERIC_PARENT_GUARDIAN_RULES.contains(rule.getClass()))
+            .toList();
+
+    // The guardian postcode is owned by LibraIndividualParentGuardianAddressValidationRule in LIBRA S/C/Q.
+    private static final List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> SPI_DEFENDANT_RULE_SET_LIBRA = SPI_DEFENDANT_RULE_SET.stream()
+            .map(rule -> rule instanceof PostCodeValidationRule ? new PostCodeValidationRule(false) : rule)
+            .toList();
+
+    // Each rule runs only for its guardian shape; the reused generic rules are redacted (value = field key).
+    private static final List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> LIBRA_PARENT_GUARDIAN_RULE_SET = List.of(
+            onlyFor(INDIVIDUAL, new LibraParentGuardianTelephoneValidationRule(INDIVIDUAL)),
+            onlyFor(ORGANISATION, new LibraParentGuardianTelephoneValidationRule(ORGANISATION)),
+            onlyFor(INDIVIDUAL, new LibraParentGuardianEmailValidationRule()),
+            onlyFor(INDIVIDUAL, RedactingValidationRule.of(new ParentGuardianDateOfBirthValidationRule())),
+            onlyFor(INDIVIDUAL, RedactingValidationRule.of(new ParentGuardianObservedEthnicityValidationAndEnricherRule())),
+            onlyFor(INDIVIDUAL, RedactingValidationRule.of(new ParentGuardianSelfDefinedEthnicityValidationAndEnricherRule())),
+            onlyFor(INDIVIDUAL, new LibraParentGuardianGenderValidationRule()),
+            onlyFor(INDIVIDUAL, new LibraIndividualParentGuardianAddressValidationRule()),
+            onlyFor(ORGANISATION, new LibraOrganisationParentGuardianAddressValidationRule()));
+
+    private static final Map<String, List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>>> defendantValidationMapDlrmLibra = of(
+            SUMMONS.getCode(), Stream.of(COMMON_DEFENDANT_RULE_SET_LIBRA, SPI_DEFENDANT_RULE_SET_LIBRA, SUMMONS_DEFENDANT_RULE_SET, LIBRA_PARENT_GUARDIAN_RULE_SET).flatMap(Collection::stream).collect(toList()),
+            CHARGE.getCode(), Stream.of(COMMON_DEFENDANT_RULE_SET_LIBRA, SPI_DEFENDANT_RULE_SET_LIBRA, CHARGE_DEFENDANT_RULE_SET, LIBRA_PARENT_GUARDIAN_RULE_SET).flatMap(Collection::stream).collect(toList()),
+            REQUISITION.getCode(), Stream.of(COMMON_DEFENDANT_RULE_SET_LIBRA, SPI_DEFENDANT_RULE_SET_LIBRA, REQUISITION_DEFENDANT_RULE_SET, LIBRA_PARENT_GUARDIAN_RULE_SET).flatMap(Collection::stream).collect(toList()));
+
 
     private static final String XHIBIT = "XHIBIT";
 
@@ -329,7 +375,15 @@ public class CcProsecutionValidationRuleProvider {
 
     public static List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> getDefendantValidationRules(final String defendantInitiationCode,
                                                                                                                           final Channel channel, final Boolean isGroupCase) {
-        if (nonNull(channel) && SPI.equals(channel)) {
+        return getDefendantValidationRules(defendantInitiationCode, channel, isGroupCase, null);
+    }
+
+    public static List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> getDefendantValidationRules(final String defendantInitiationCode,
+                                                                                                                          final Channel channel, final Boolean isGroupCase,
+                                                                                                                          final String migrationSourceSystemName) {
+        if (LibraParentGuardianScope.applies(channel, migrationSourceSystemName, defendantInitiationCode)) {
+            return defendantValidationMapDlrmLibra.get(defendantInitiationCode);
+        } else if (nonNull(channel) && SPI.equals(channel)) {
             return getValidationRules(defendantInitiationCode, COMMON_DEFENDANT_RULE_SET, SPI_DEFENDANT_RULE_SET, defendantValidationMapSpi);
         } else if (nonNull(channel) && MCC.equals(channel)) {
             return getValidationRules(defendantInitiationCode, COMMON_DEFENDANT_RULE_SET, SPI_DEFENDANT_RULE_SET, defendantValidationMapMCC);

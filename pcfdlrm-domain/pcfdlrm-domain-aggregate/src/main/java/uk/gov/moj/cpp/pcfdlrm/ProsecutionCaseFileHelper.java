@@ -31,6 +31,9 @@ import uk.gov.moj.cpp.pcfdlrm.refdata.defendant.DefendantRefDataEnricher;
 import uk.gov.moj.cpp.pcfdlrm.refdata.hearing.MigratedHearingRefDataEnricher;
 import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
 import uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.LibraParentGuardianOutcomes;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.LibraParentGuardianSanitiser;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.LibraParentGuardianScope;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.BailStatusReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel;
@@ -82,8 +85,20 @@ public class ProsecutionCaseFileHelper {
                                                                        final Stream.Builder<Object> builder,
                                                                        final Boolean isGroupCase,
                                                                        final String migrationSourceSystemName) {
+        return validateDefendants(caseDetails, channel, defendantsWithReferenceData, referenceDataQueryService, builder, isGroupCase, migrationSourceSystemName)
+                .migratedDefendantWithProblem();
+    }
+
+    public static DefendantValidationOutcome validateDefendants(final CaseDetails caseDetails,
+                                                                final Channel channel,
+                                                                final DefendantsWithReferenceData defendantsWithReferenceData,
+                                                                final ReferenceDataQueryService referenceDataQueryService,
+                                                                final Stream.Builder<Object> builder,
+                                                                final Boolean isGroupCase,
+                                                                final String migrationSourceSystemName) {
         final List<DefendantProblem> defendantErrors = new ArrayList<>();
         final List<MigratedDefendant> migratedDefendants = new ArrayList<>();
+        final List<Problem> libraGuardianRejections = new ArrayList<>();
 
         defendantsWithReferenceData.getDefendants().forEach(defendant -> {
             MigratedDefendant.Builder migratedDefendantBuilder = MigratedDefendant.migratedDefendant()
@@ -93,10 +108,13 @@ public class ProsecutionCaseFileHelper {
             final String defendantInitiationCode = defendant.getInitiationCode();
             final String initiationCode = defendantInitiationCode != null && isValidInitiationCode(defendantInitiationCode) ? defendant.getInitiationCode() : caseDetails.getInitiationCode();
 
-            final List<Problem> defendantProblemList =
-                    validate(defendantWithReferenceData, referenceDataQueryService, getDefendantValidationRules(initiationCode, channel, isGroupCase));
+            final boolean libraParentGuardianScope = LibraParentGuardianScope.applies(channel, migrationSourceSystemName, initiationCode);
 
-            validateGenderAndLanguage(defendant, defendantProblemList);
+            final List<Problem> defendantProblemList =
+                    validate(defendantWithReferenceData, referenceDataQueryService, getDefendantValidationRules(initiationCode, channel, isGroupCase, migrationSourceSystemName));
+
+            // In LIBRA guardian scope LibraParentGuardianGenderValidationRule replaces the generic guardian-gender check.
+            validateGenderAndLanguage(defendant, defendantProblemList, !libraParentGuardianScope);
             validateCustodyTimeLimit(defendant, defendantProblemList);
 
             if (CollectionUtils.isNotEmpty(defendantProblemList)) {
@@ -127,13 +145,19 @@ public class ProsecutionCaseFileHelper {
                             .build());
                 }
             }
+            if (libraParentGuardianScope) {
+                LibraParentGuardianSanitiser.sanitise(migratedDefendantBuilder, defendantProblemList);
+                defendantProblemList.stream()
+                        .filter(problem -> LibraParentGuardianOutcomes.isReject(problem.getCode()))
+                        .forEach(libraGuardianRejections::add);
+            }
             migratedDefendants.add(migratedDefendantBuilder.build());
         });
 
-        return MigratedDefendantWithProblem.migratedDefendantWithProblem()
+        return new DefendantValidationOutcome(MigratedDefendantWithProblem.migratedDefendantWithProblem()
                 .withDefendantProblems(defendantErrors)
                 .withMigratedDefendants(migratedDefendants)
-                .build();
+                .build(), libraGuardianRejections);
 
     }
 
@@ -340,7 +364,7 @@ public class ProsecutionCaseFileHelper {
                 .build();
     }
 
-    private static void validateGenderAndLanguage(final MigratedDefendant defendant, final List<Problem> defendantProblemList) {
+    private static void validateGenderAndLanguage(final MigratedDefendant defendant, final List<Problem> defendantProblemList, final boolean checkParentGuardianGender) {
         final String defendantGender = nonNull(defendant.getIndividual()) && nonNull(defendant.getIndividual().getSelfDefinedInformation()) ?
                 defendant.getIndividual().getSelfDefinedInformation().getGender() : DEFENDANT_SELFINFO_NOT_PROVIDED;
 
@@ -351,7 +375,7 @@ public class ProsecutionCaseFileHelper {
             defendantProblemList.add(getProblem(DEFENDANT_GENDER_INVALID, DEFENDANT_GENDER, defendantGender));
         }
 
-        if (matchGenderEnum(parentGender) && !PARENTGUARDIAN_NOT_PROVIDED.equals(parentGender)) {
+        if (checkParentGuardianGender && matchGenderEnum(parentGender) && !PARENTGUARDIAN_NOT_PROVIDED.equals(parentGender)) {
             defendantProblemList.add(getProblem(PARENT_GUARDIAN_GENDER_INVALID, PARENT_GUARDIAN_GENDER, parentGender));
         }
 

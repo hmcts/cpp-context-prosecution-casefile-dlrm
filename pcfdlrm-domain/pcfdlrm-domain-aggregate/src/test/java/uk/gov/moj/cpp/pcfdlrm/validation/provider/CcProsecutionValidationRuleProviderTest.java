@@ -1,16 +1,28 @@
 package uk.gov.moj.cpp.pcfdlrm.validation.provider;
 
+import static java.lang.Boolean.FALSE;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
+import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.defendantWithParentGuardian;
+import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.individualParentGuardian;
+import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.validGuardianAddress;
+import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.validGuardianContactDetails;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.LIBRA;
 import static uk.gov.moj.cpp.pcfdlrm.validation.CaseType.CHARGE;
 import static uk.gov.moj.cpp.pcfdlrm.validation.CaseType.OTHER;
 import static uk.gov.moj.cpp.pcfdlrm.validation.CaseType.REQUISITION;
 import static uk.gov.moj.cpp.pcfdlrm.validation.CaseType.SJP;
 import static uk.gov.moj.cpp.pcfdlrm.validation.CaseType.SUMMONS;
 
-import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
-import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel;
 import uk.gov.moj.cpp.pcfdlrm.domain.DefendantWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.domain.ProsecutionWithReferenceData;
+import uk.gov.moj.cpp.pcfdlrm.domain.ReferenceDataVO;
+import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.CaseInitiationValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.CaseMarkersValidationAndEnricherRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.PoliceForceCodeValidationRule;
@@ -60,8 +72,14 @@ import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.StatementOfFact
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.VehicleCodeValidationAndEnricherRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.plea.PleaValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.plea.VerdictValidationRule;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.LibraParentGuardianScope;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.ParentGuardianShapeGate;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.RedactingValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.prosecutors.ProsecutorAOCPValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.prosecutors.ProsecutorSJPValidationRule;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseDetails;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant;
 
 import java.util.List;
 import java.util.Set;
@@ -70,6 +88,10 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -489,6 +511,136 @@ class CcProsecutionValidationRuleProviderTest {
                 ChargeDateValidationRule.class,
                 CustodyStatusValidationAndEnricherRule.class
         )), classesOf(validationRules));
+    }
+
+    // ---- DD-43501: LIBRA S/C/Q parent/guardian rule set (02-design.md C1, C3) ----
+
+    /** The five generic guardian rules COMMON_DEFENDANT_RULE_SET carries; LIBRA S/C/Q filters them out. */
+    private static final Set<Class<?>> GENERIC_PARENT_GUARDIAN_RULE_CLASSES = Set.of(
+            ParentGuardianDateOfBirthValidationRule.class,
+            ParentGuardianObservedEthnicityValidationAndEnricherRule.class,
+            ParentGuardianSelfDefinedEthnicityValidationAndEnricherRule.class,
+            ParentGuardianPrimaryEmailAddressValidationRule.class,
+            ParentGuardianSecondaryEmailAddressValidationRule.class
+    );
+
+    static Stream<Arguments> libraInScopeInitiationCodes() {
+        return Stream.of(
+                arguments(SUMMONS.getCode(), Set.of(
+                        AdditionalNationalityValidationAndEnricherRule.class,
+                        StatementOfFactsValidationRule.class,
+                        StatementOfFactsWelshValidationRule.class)),
+                arguments(CHARGE.getCode(), Set.of(
+                        BailConditionsValidationAndEnricherRule.class,
+                        ArrestDateValidationRule.class,
+                        ChargeDateValidationRule.class,
+                        AdditionalNationalityValidationAndEnricherRule.class,
+                        CustodyStatusValidationAndEnricherRule.class)),
+                arguments(REQUISITION.getCode(), Set.of(
+                        ChargeDateValidationRule.class,
+                        AdditionalNationalityValidationAndEnricherRule.class)));
+    }
+
+    // AC-S1-001..007 wiring: (COMMON minus the 5 generic guardian rules) + SPI + per-code set + the gated
+    // LIBRA guardian set. Every LIBRA guardian rule sits behind a ParentGuardianShapeGate for exactly one
+    // shape, and the three reused generic rules are wrapped in RedactingValidationRule (AC-S1-008).
+    @ParameterizedTest(name = "LIBRA {0}")
+    @MethodSource("libraInScopeInitiationCodes")
+    void shouldValidateDefendantValidateDlrmLibraRules(final String initiationCode, final Set<Class<?>> perCodeRuleClasses) {
+        final List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> validationRules = CcProsecutionValidationRuleProvider
+                .getDefendantValidationRules(initiationCode, Channel.DLRM_MIGRATION, FALSE, LIBRA);
+
+        final Set<Class<?>> commonWithoutGenericGuardianRules = COMMON_DEFENDANT_RULE_CLASSES.stream()
+                .filter(ruleClass -> !GENERIC_PARENT_GUARDIAN_RULE_CLASSES.contains(ruleClass))
+                .collect(Collectors.toSet());
+        assertEquals(union(commonWithoutGenericGuardianRules, SPI_DEFENDANT_RULE_CLASSES, perCodeRuleClasses, Set.of(ParentGuardianShapeGate.class)),
+                classesOf(validationRules));
+
+        assertThat(gatedRules(validationRules), containsInAnyOrder(
+                "INDIVIDUAL LibraParentGuardianTelephoneValidationRule",
+                "ORGANISATION LibraParentGuardianTelephoneValidationRule",
+                "INDIVIDUAL LibraParentGuardianEmailValidationRule",
+                "INDIVIDUAL redacted ParentGuardianDateOfBirthValidationRule",
+                "INDIVIDUAL redacted ParentGuardianObservedEthnicityValidationAndEnricherRule",
+                "INDIVIDUAL redacted ParentGuardianSelfDefinedEthnicityValidationAndEnricherRule",
+                "INDIVIDUAL LibraParentGuardianGenderValidationRule",
+                "INDIVIDUAL LibraIndividualParentGuardianAddressValidationRule",
+                "ORGANISATION LibraOrganisationParentGuardianAddressValidationRule"));
+    }
+
+    // AC-S3-008 / design C1 step 2: in LIBRA S/C/Q the generic PostCodeValidationRule is the
+    // PostCodeValidationRule(false) variant — it no longer raises the guardian postcode as a warning, so the
+    // same code is never a warning and a rejection for one case (ADR hazard).
+    @ParameterizedTest(name = "LIBRA {0}")
+    @CsvSource({"S", "C", "Q"})
+    void shouldNotValidateGuardianPostCodeInGenericPostCodeRuleForLibra(final String initiationCode) {
+        final ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService> postCodeRule = CcProsecutionValidationRuleProvider
+                .getDefendantValidationRules(initiationCode, Channel.DLRM_MIGRATION, FALSE, LIBRA).stream()
+                .filter(PostCodeValidationRule.class::isInstance)
+                .findFirst().orElseThrow();
+
+        final MigratedDefendant defendant = defendantWithParentGuardian(DEFENDANT_ID,
+                individualParentGuardian(validGuardianContactDetails().build(), validGuardianAddress().withPostcode("NOT A POSTCODE").build()).build());
+
+        assertThat(postCodeRule.validate(new DefendantWithReferenceData(defendant, new ReferenceDataVO(), CaseDetails.caseDetails().build()), null).problems(), is(empty()));
+    }
+
+    // AC-S1-009 / AC-S3-001 / AC-S3-002 / AC-S5-001 (FR-020): outside LIBRA S/C/Q the 4-arg overload gives
+    // exactly today's 3-arg rule list — XHIBIT, LIBRA J (SJP), R (Remittance, Q17), O, absent source
+    // system, and non-DLRM channels carrying a LIBRA name.
+    @ParameterizedTest(name = "{0} {1} {2}")
+    @CsvSource(nullValues = "NONE", value = {
+            "DLRM_MIGRATION, LIBRA,  J",
+            "DLRM_MIGRATION, LIBRA,  R",
+            "DLRM_MIGRATION, LIBRA,  O",
+            "DLRM_MIGRATION, LIBRA,  NONE",
+            "DLRM_MIGRATION, XHIBIT, S",
+            "DLRM_MIGRATION, XHIBIT, C",
+            "DLRM_MIGRATION, XHIBIT, Q",
+            "DLRM_MIGRATION, NONE,   C",
+            "DLRM_MIGRATION, libra,  C",
+            "SPI,            LIBRA,  C",
+            "MCC,            LIBRA,  Q"
+    })
+    void shouldKeepTodaysDefendantRulesOutsideLibraScope(final Channel channel, final String sourceSystemName, final String initiationCode) {
+        final List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> today = CcProsecutionValidationRuleProvider
+                .getDefendantValidationRules(initiationCode, channel, FALSE);
+        final List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> withSource = CcProsecutionValidationRuleProvider
+                .getDefendantValidationRules(initiationCode, channel, FALSE, sourceSystemName);
+
+        assertEquals(classesOf(today), classesOf(withSource));
+        assertThat(gatedRules(withSource), is(empty()));
+    }
+
+    @ParameterizedTest(name = "{0} {1} {2} -> {3}")
+    @CsvSource(nullValues = "NONE", value = {
+            "DLRM_MIGRATION, LIBRA,  S,    true",
+            "DLRM_MIGRATION, LIBRA,  C,    true",
+            "DLRM_MIGRATION, LIBRA,  Q,    true",
+            "DLRM_MIGRATION, LIBRA,  J,    false",
+            "DLRM_MIGRATION, LIBRA,  R,    false",
+            "DLRM_MIGRATION, LIBRA,  O,    false",
+            "DLRM_MIGRATION, LIBRA,  NONE, false",
+            "DLRM_MIGRATION, XHIBIT, C,    false",
+            "DLRM_MIGRATION, NONE,   C,    false",
+            "DLRM_MIGRATION, libra,  C,    false",
+            "SPI,            LIBRA,  C,    false",
+            "NONE,           LIBRA,  C,    false"
+    })
+    void shouldApplyLibraParentGuardianScopeOnlyToDlrmLibraSummonsChargeRequisition(final Channel channel, final String sourceSystemName,
+                                                                                    final String initiationCode, final boolean expected) {
+        assertThat(LibraParentGuardianScope.applies(channel, sourceSystemName, initiationCode), is(expected));
+    }
+
+    /** "SHAPE delegate" for every gated rule; "redacted X" when the delegate is a RedactingValidationRule. */
+    private static List<String> gatedRules(final List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> validationRules) {
+        return validationRules.stream()
+                .filter(ParentGuardianShapeGate.class::isInstance)
+                .map(ParentGuardianShapeGate.class::cast)
+                .map(gate -> gate.shape() + " " + (gate.delegate() instanceof RedactingValidationRule redacting
+                        ? "redacted " + redacting.delegate().getClass().getSimpleName()
+                        : gate.delegate().getClass().getSimpleName()))
+                .toList();
     }
 
     @SafeVarargs

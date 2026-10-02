@@ -7,6 +7,7 @@ import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.PLEA_DATE_ANCH
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildMigratedCaseDetails;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildProsecution;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildReceiveMigratedCaseFile;
+import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.defendantWithParentGuardian;
 import static uk.gov.moj.cpp.pcfdlrm.builder.SourceSystem.sourceSystem;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.CASE_ID;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID;
@@ -26,6 +27,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseMarker;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Individual;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OffenceReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OrganisationUnitReferenceData;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ParentGuardianInformation;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.PleaReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Prosecution;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Prosecutor;
@@ -45,6 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 /**
  * The per-scenario {@link CaseFileInput} builders feeding {@link AggregateScenarios}' scenario
@@ -93,6 +96,36 @@ final class AggregateScenarioInputs {
         final Prosecution prosecution = buildProsecution(migCaseDetails);
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, List.of());
         return new CaseFileInput(receiveMigratedCase, new ProsecutionWithReferenceData(prosecution));
+    }
+
+    static final String PARENT_GUARDIAN_CASE_URN = "PGURN00001";
+
+    /**
+     * DD-43501: a no-materials, no-hearings case for the given source system and initiation code, with one
+     * defendant per guardian ({@code null} = no guardian block), in order {@code DEFENDANT_ID}, {@code DEFENDANT_ID2}.
+     * The initiation code sits on both case-details objects because the aggregate validates defendants against
+     * the {@code Prosecution}'s and reports the outcome against the command's.
+     */
+    static CaseFileInput parentGuardianCaseInput(final String sourceSystemName, final String initiationCode, final ParentGuardianInformation... guardians) {
+        final List<UUID> defendantIds = List.of(DEFENDANT_ID, DEFENDANT_ID2);
+        final MigratedCaseDetails migCaseDetails = MigratedCaseDetails.migratedCaseDetails()
+                .withValuesFrom(buildMigratedCaseDetails("MALE", "MALE", E.name(), E.name(), null, null, null, sourceSystem(sourceSystemName, sourceSystemName + "-123")))
+                .withCaseDetails(CaseDetails.caseDetails()
+                        .withCaseId(CASE_ID)
+                        .withProsecutorCaseReference(PARENT_GUARDIAN_CASE_URN)
+                        .withInitiationCode(initiationCode)
+                        .build())
+                .withDefendants(IntStream.range(0, guardians.length)
+                        .mapToObj(i -> defendantWithParentGuardian(defendantIds.get(i), guardians[i]))
+                        .toList())
+                .build();
+        final Prosecution prosecution = buildProsecution(migCaseDetails, CaseDetails.caseDetails()
+                .withCaseId(CASE_ID)
+                .withProsecutorCaseReference(PARENT_GUARDIAN_CASE_URN)
+                .withInitiationCode(initiationCode)
+                .withReceiptType("Either way case")
+                .build());
+        return new CaseFileInput(buildReceiveMigratedCaseFile(migCaseDetails, List.of()), new ProsecutionWithReferenceData(prosecution));
     }
 
     static CaseFileInput nullMaterialsInput() {

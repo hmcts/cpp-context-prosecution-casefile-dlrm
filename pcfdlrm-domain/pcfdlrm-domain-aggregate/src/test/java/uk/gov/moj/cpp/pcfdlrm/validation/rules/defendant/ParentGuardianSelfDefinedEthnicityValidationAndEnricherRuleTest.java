@@ -15,6 +15,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Problem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.SelfdefinedEthnicityReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.domain.DefendantWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.domain.ReferenceDataVO;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.parentguardian.RedactingValidationRule;
 
 import java.util.Optional;
 
@@ -88,4 +89,19 @@ class ParentGuardianSelfDefinedEthnicityValidationAndEnricherRuleTest {
         assertThat(optionalProblem.get().getValues().get(0).getKey(), is( PARENT_GUARDIAN_SELF_DEFINED_ETHNICITY.getValue()));
         assertThat(optionalProblem.get().getValues().get(0).getValue(), is(ethnicityCode));
     }
+
+    // DD-43501 AC-S1-007 / AC-S1-008: wrapped for LIBRA S/C/Q — same code, value redacted to the field key.
+    @Test
+    public void shouldRedactSelfDefinedEthnicityWhenWrappedInRedactingValidationRule() {
+        when(defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation().getSelfDefinedEthnicity()).thenReturn("Z9");
+        when(defendantWithReferenceData.getReferenceDataVO()).thenReturn(new ReferenceDataVO());
+
+        final Problem problem = RedactingValidationRule.of(new ParentGuardianSelfDefinedEthnicityValidationAndEnricherRule())
+                .validate(defendantWithReferenceData, referenceDataQueryService).problems().get(0);
+
+        assertThat(problem.getCode(), is(DEFENDANT_PARENT_GUARDIAN_SELF_DEFINED_ETHNICITY_INVALID.name()));
+        assertThat(problem.getValues().get(0).getKey(), is(PARENT_GUARDIAN_SELF_DEFINED_ETHNICITY.getValue()));
+        assertThat(problem.getValues().get(0).getValue(), is(PARENT_GUARDIAN_SELF_DEFINED_ETHNICITY.getValue()));
+    }
+
 }
