@@ -4,15 +4,24 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.PARENT_GUARDIAN_CASE_URN;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.parentGuardianCaseInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.createMigratedMaterials;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.noMaterialsInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_DATE_OF_HEARING_EXCLUSIONS;
@@ -25,9 +34,22 @@ import static uk.gov.moj.cpp.pcfdlrm.aggregate.MigratedCaseFileAggregate.HEARING
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildMigratedCaseDetails;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildProsecution;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildReceiveMigratedCaseFile;
+import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.individualParentGuardian;
+import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.organisationParentGuardian;
+import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.validGuardianAddress;
+import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.validGuardianContactDetails;
+import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.validIndividualParentGuardian;
 import static uk.gov.moj.cpp.pcfdlrm.builder.SourceSystem.sourceSystem;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_XHIBIT;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.CASE_ID;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.LIBRA;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.PG;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.PG_DATE_OF_BIRTH;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.PG_GENDER;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.PG_HOME;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.PG_PRIMARY_EMAIL;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_XHIBIT_IDENDIFIER;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SUBMISSION_ID;
 import static uk.gov.moj.cpp.pcfdlrm.test.FixtureLoader.fixture;
 import static uk.gov.moj.cpp.pcfdlrm.test.WholePayloadMatcher.matchesWholePayload;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURTROOM_ID_INVALID;
@@ -35,6 +57,7 @@ import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Language.W;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant.migratedDefendant;
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
+import uk.gov.moj.cpp.json.schemas.prosecution.casefile.dlrm.events.DefendantValidationPassed;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.pcfdlrm.domain.ProsecutionWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseFileReceived;
@@ -51,6 +74,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.DocumentTypeAccessR
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.HearingType;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.HearingTypes;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OrganisationUnitWithCourtroomsReferenceData;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ParentGuardianInformation;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Prosecution;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ListedDefendant;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedCaseDetails;
@@ -60,14 +84,19 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedMa
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedWeekCommencingDate;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigrationSourceSystem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ReceiveMigratedCaseFile;
+import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.DefendantValidationFailed;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialAddedPendingProcess;
+import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseFileProcessed;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseNotFoundInAutomation;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,6 +104,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -527,6 +558,119 @@ class MigratedCaseFileAggregateTest {
         final List<Object> actual = receiveMigratedCaseFile(scenario.input().receiveMigratedCaseFile(), scenario.input().prosecutionWithReferenceData());
 
         assertEventsMatchExpected(actual, scenario.expected());
+    }
+
+    private static final String ADDRESS1_INVALID = "PARENT_GUARDIAN_ADDRESS1_MISSING_OR_INVALID";
+    private static final String ORG_ADDRESS1_INVALID = "PARENT_GUARDIAN_ORGANISATION_ADDRESS1_MISSING_OR_INVALID";
+
+    /** Blank address1 (REJECT in LIBRA S/C/Q) and an invalid postcode (REJECT in scope, a plain warning everywhere else). */
+    private static ParentGuardianInformation guardianWithBlankAddress1AndInvalidPostCode() {
+        return individualParentGuardian(validGuardianContactDetails().build(), validGuardianAddress().withAddress1(" ").withPostcode("NOT A POSTCODE").build()).build();
+    }
+
+    // Description constraint: stagingdlrm treats a failure as a staging-context error when any of its
+    // stagingContextErrors markers matches the description as a substring in either direction.
+    @ParameterizedTest
+    @ValueSource(strings = {"JSON_SCHEMA", "DUPLICATE_SUBMISSION_ID", "CASE_ALREADY_EXISTS_IN_PROGRESSION", "VALIDATION_FAILED"})
+    void shouldPinParentGuardianRejectionDescriptionClearOfStagingDlrmMarkers(final String marker) {
+        final String prefix = MigratedCaseFileAggregate.PARENT_GUARDIAN_VALIDATION_FAILED;
+        final String longest = prefix + String.join(", ", ADDRESS1_INVALID, "INVALID_GUARDIAN_POST_CODE", ORG_ADDRESS1_INVALID);
+
+        assertThat(prefix, is("Parent guardian validation failed: "));
+        for (final String description : List.of(prefix, longest, prefix.toUpperCase(), longest.toUpperCase())) {
+            assertThat(description + " contains " + marker, description.contains(marker), is(false));
+            assertThat(marker + " contains " + description, marker.contains(description), is(false));
+        }
+    }
+
+    static Stream<Arguments> parentGuardianRejections() {
+        return Stream.of(
+                arguments("AC-S3-009: defendant 1 valid, defendant 2 blank address1 + invalid postcode",
+                        new ParentGuardianInformation[]{validIndividualParentGuardian().build(), guardianWithBlankAddress1AndInvalidPostCode()},
+                        ADDRESS1_INVALID + ", INVALID_GUARDIAN_POST_CODE"),
+                arguments("S4 DoD: individual with no address + organisation with no address, defendant order",
+                        new ParentGuardianInformation[]{individualParentGuardian(validGuardianContactDetails().build(), null).build(), organisationParentGuardian(null).build()},
+                        ADDRESS1_INVALID + ", " + ORG_ADDRESS1_INVALID),
+                arguments("same reason on both defendants is listed once",
+                        new ParentGuardianInformation[]{individualParentGuardian(validGuardianContactDetails().build(), null).build(), individualParentGuardian(validGuardianContactDetails().build(), null).build()},
+                        ADDRESS1_INVALID),
+                arguments("AC-S4-004: organisation guardian shaped exactly as the LIBRA feed sends it (no address, F-2/Q18)",
+                        new ParentGuardianInformation[]{organisationParentGuardian(null).build()},
+                        ORG_ADDRESS1_INVALID)
+        );
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("parentGuardianRejections")
+    void shouldRejectLibraCaseOnceWithEveryParentGuardianReason(final String description, final ParentGuardianInformation[] guardians, final String expectedReasons) {
+        final CaseFileInput input = parentGuardianCaseInput(LIBRA, "C", guardians);
+
+        final List<Object> events = receiveMigratedCaseFile(input.receiveMigratedCaseFile(), input.prosecutionWithReferenceData());
+
+        assertThat(events.stream().map(Object::getClass).toList(),
+                everyItem(is(in(List.of(DefendantValidationFailed.class, DefendantValidationPassed.class, MigratedCaseFileProcessed.class)))));
+        final List<MigratedCaseFileProcessed> processed = events.stream().filter(MigratedCaseFileProcessed.class::isInstance).map(MigratedCaseFileProcessed.class::cast).toList();
+        assertThat(processed, hasSize(1));
+        assertThat(events.get(events.size() - 1), instanceOf(MigratedCaseFileProcessed.class));
+        assertThat(processed.get(0).getProcessingIsSuccessful(), is(false));
+        assertThat(processed.get(0).getDescription(), is(MigratedCaseFileAggregate.PARENT_GUARDIAN_VALIDATION_FAILED + expectedReasons));
+        assertThat(processed.get(0).getCaseId(), is(CASE_ID));
+        assertThat(processed.get(0).getCaseUrn(), is(PARENT_GUARDIAN_CASE_URN));
+        assertThat(processed.get(0).getSubmissionId(), is(SUBMISSION_ID));
+    }
+
+    @ParameterizedTest(name = "{0} {1} -> rejected: {2}")
+    @CsvSource({
+            "LIBRA,  S, true",
+            "LIBRA,  C, true",
+            "LIBRA,  Q, true",
+            "LIBRA,  R, false",
+            "LIBRA,  O, false",
+            "XHIBIT, C, false"
+    })
+    void shouldRejectOnParentGuardianOnlyInLibraScope(final String sourceSystemName, final String initiationCode, final boolean rejected) {
+        final CaseFileInput input = parentGuardianCaseInput(sourceSystemName, initiationCode, guardianWithBlankAddress1AndInvalidPostCode());
+
+        final List<Object> events = receiveMigratedCaseFile(input.receiveMigratedCaseFile(), input.prosecutionWithReferenceData());
+
+        assertThat(events.stream().anyMatch(MigratedCaseFileProcessed.class::isInstance), is(rejected));
+        assertThat(events.stream().anyMatch(MigratedCaseFileReceived.class::isInstance), is(!rejected));
+        if (!rejected) {
+            assertThat(warningMessages(events), hasItem("INVALID_GUARDIAN_POST_CODE : [NOT A POSTCODE]"));
+        }
+    }
+
+    @Test
+    void shouldAcceptLibraCaseWithSanitisedParentGuardianAndRedactedWarnings() {
+        final CaseFileInput input = parentGuardianCaseInput(LIBRA, "C",
+                individualParentGuardian(validGuardianContactDetails().withHome("012345678").withPrimaryEmail("first+tag@example.org").build(), validGuardianAddress().build())
+                        .withDateOfBirth(LocalDate.now(ZoneId.of("Europe/London")).plusDays(1))
+                        .withGender(null)
+                        .build());
+
+        final List<Object> events = receiveMigratedCaseFile(input.receiveMigratedCaseFile(), input.prosecutionWithReferenceData());
+
+        assertThat(events.stream().anyMatch(MigratedCaseFileProcessed.class::isInstance), is(false));
+        final MigratedCaseFileReceived received = events.stream().filter(MigratedCaseFileReceived.class::isInstance).map(MigratedCaseFileReceived.class::cast).findFirst().orElseThrow();
+        assertThat(received.getReceiveMigratedCaseFile().getMigratedCaseDetails().getDefendants().get(0).getIndividual().getParentGuardianInformation(),
+                is(individualParentGuardian(validGuardianContactDetails().withHome(null).withPrimaryEmail(null).build(), validGuardianAddress().build())
+                        .withDateOfBirth(null)
+                        .withGender("NOT_KNOWN")
+                        .build()));
+        assertThat(warningMessages(events).stream().filter(message -> message.contains(PG)).toList(), containsInAnyOrder(
+                "PARENT_GUARDIAN_HOME_TELEPHONE_INVALID : [" + PG_HOME + "]",
+                "DEFENDANT_PARENT_GUARDIAN_PRIMARY_EMAIL_ADDRESS_INVALID : [" + PG_PRIMARY_EMAIL + "]",
+                "DEFENDANT_PARENT_GUARDIAN_DATE_OF_BIRTH_IN_FUTURE : [" + PG_DATE_OF_BIRTH + "]",
+                "PARENT_GUARDIAN_GENDER_INVALID : [" + PG_GENDER + "]"));
+        assertThat(warningMessages(events), not(hasItem(containsString("012345678"))));
+    }
+
+    private static List<String> warningMessages(final List<Object> events) {
+        return events.stream()
+                .filter(MigratedCaseValidatedWithWarnings.class::isInstance)
+                .map(MigratedCaseValidatedWithWarnings.class::cast)
+                .map(MigratedCaseValidatedWithWarnings::getMessage)
+                .toList();
     }
 
     /**

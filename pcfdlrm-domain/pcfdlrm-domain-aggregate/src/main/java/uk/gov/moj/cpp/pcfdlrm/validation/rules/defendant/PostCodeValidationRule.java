@@ -26,17 +26,33 @@ public class PostCodeValidationRule implements ValidationRule<DefendantWithRefer
 
     private static final Pattern POST_CODE_FORMAT = Pattern.compile(Constants.POST_CODE_REGEX.getValue());
 
+    private final boolean validateParentGuardianPostCode;
+
+    public PostCodeValidationRule() {
+        this(true);
+    }
+
+    /**
+     * @param validateParentGuardianPostCode false for LIBRA S/C/Q, where
+     *                                       {@code LibraIndividualParentGuardianAddressValidationRule} owns the guardian postcode
+     */
+    public PostCodeValidationRule(final boolean validateParentGuardianPostCode) {
+        this.validateParentGuardianPostCode = validateParentGuardianPostCode;
+    }
+
     @SuppressWarnings("squid:MethodCyclomaticComplexity")
     @Override
     public ValidationResult validate(final DefendantWithReferenceData defendantWithReferenceData, final ReferenceDataQueryService referenceDataQueryService) {
 
-        if (isDefendantPostCodeAbsent(defendantWithReferenceData) && isParentGuardianPostCodeAbsent(defendantWithReferenceData) && isDefendantIndividualPostCodeAbsent(defendantWithReferenceData)) {
+        final boolean parentGuardianPostCodeAbsent = !validateParentGuardianPostCode || isParentGuardianPostCodeAbsent(defendantWithReferenceData);
+
+        if (isDefendantPostCodeAbsent(defendantWithReferenceData) && parentGuardianPostCodeAbsent && isDefendantIndividualPostCodeAbsent(defendantWithReferenceData)) {
             return ValidationResult.VALID;
         }
 
         final String postcode = isDefendantPostCodeAbsent(defendantWithReferenceData) ? null : defendantWithReferenceData.getDefendant().getAddress().getPostcode();
 
-        final String parentGuardianPostCode = isParentGuardianPostCodeAbsent(defendantWithReferenceData) ? null : defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation().getPersonalInformation().getAddress().getPostcode();
+        final String parentGuardianPostCode = parentGuardianPostCodeAbsent ? null : defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation().getPersonalInformation().getAddress().getPostcode();
 
         final String defendantIndividualPostCode = isDefendantIndividualPostCodeAbsent(defendantWithReferenceData) ? null : defendantWithReferenceData.getDefendant().getIndividual().getPersonalInformation().getAddress().getPostcode();
 
@@ -48,7 +64,7 @@ public class PostCodeValidationRule implements ValidationRule<DefendantWithRefer
                 null :
                 Problems.newProblem(ProblemCode.INVALID_DEFENDANT_INDIVIDUAL_POST_CODE, new ProblemValue(null, FieldName.DEFENDANT_INDIVIDUAL_POST_CODE.getValue(), defendantIndividualPostCode));
 
-        final Problem guardianPostCodeProblem = isParentGuardianPostCodeAbsent(defendantWithReferenceData) || POST_CODE_FORMAT.matcher(parentGuardianPostCode).matches() ?
+        final Problem guardianPostCodeProblem = parentGuardianPostCodeAbsent || POST_CODE_FORMAT.matcher(parentGuardianPostCode).matches() ?
                 null :
                 Problems.newProblem(ProblemCode.INVALID_GUARDIAN_POST_CODE, new ProblemValue(null, FieldName.PARENT_GUARDIAN_POST_CODE.getValue(), parentGuardianPostCode));
 

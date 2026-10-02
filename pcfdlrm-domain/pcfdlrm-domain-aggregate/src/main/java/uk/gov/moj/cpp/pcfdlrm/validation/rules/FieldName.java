@@ -73,7 +73,23 @@ public enum FieldName {
     FILE_TYPE("fileType"),
     FILE_NAME("fileName"),
     LISTED_DEFENDANTS("listedDefendants"),
-    COURT_ROOM_ID("courtRoomId"),;
+    COURT_ROOM_ID("courtRoomId"),
+    PARENT_GUARDIAN_GENDER("individual_parentGuardianInformation_gender"),
+    PARENT_GUARDIAN_WORK_TELEPHONE("individual_parentGuardianInformation_personalInformation_contactDetails_work"),
+    PARENT_GUARDIAN_HOME_TELEPHONE("individual_parentGuardianInformation_personalInformation_contactDetails_home"),
+    PARENT_GUARDIAN_MOBILE_TELEPHONE("individual_parentGuardianInformation_personalInformation_contactDetails_mobile"),
+    PARENT_GUARDIAN_ADDRESS1("individual_parentGuardianInformation_personalInformation_address_address1"),
+    PARENT_GUARDIAN_ADDRESS2("individual_parentGuardianInformation_personalInformation_address_address2"),
+    PARENT_GUARDIAN_ADDRESS3("individual_parentGuardianInformation_personalInformation_address_address3"),
+    PARENT_GUARDIAN_ADDRESS4("individual_parentGuardianInformation_personalInformation_address_address4"),
+    PARENT_GUARDIAN_ADDRESS5("individual_parentGuardianInformation_personalInformation_address_address5"),
+    PARENT_GUARDIAN_COMPANY_TELEPHONE_NUMBER("individual_parentGuardianInformation_companyTelephoneNumber"),
+    PARENT_GUARDIAN_ORGANISATION_ADDRESS1("individual_parentGuardianInformation_address_address1"),
+    PARENT_GUARDIAN_ORGANISATION_ADDRESS2("individual_parentGuardianInformation_address_address2"),
+    PARENT_GUARDIAN_ORGANISATION_ADDRESS3("individual_parentGuardianInformation_address_address3"),
+    PARENT_GUARDIAN_ORGANISATION_ADDRESS4("individual_parentGuardianInformation_address_address4"),
+    PARENT_GUARDIAN_ORGANISATION_ADDRESS5("individual_parentGuardianInformation_address_address5"),
+    PARENT_GUARDIAN_ORGANISATION_POST_CODE("individual_parentGuardianInformation_address_postcode"),;
 
 
 
