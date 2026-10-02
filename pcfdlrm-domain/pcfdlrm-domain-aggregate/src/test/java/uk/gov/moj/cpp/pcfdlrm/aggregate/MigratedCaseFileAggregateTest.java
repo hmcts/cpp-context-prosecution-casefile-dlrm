@@ -26,6 +26,8 @@ import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildMigratedCaseDeta
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildProsecution;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildReceiveMigratedCaseFile;
 import static uk.gov.moj.cpp.pcfdlrm.builder.SourceSystem.sourceSystem;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_LIBRA;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_LIBRA_IDENTIFIER;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_XHIBIT;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_XHIBIT_IDENDIFIER;
 import static uk.gov.moj.cpp.pcfdlrm.test.FixtureLoader.fixture;
@@ -194,10 +196,10 @@ class MigratedCaseFileAggregateTest {
         assertEquals("File type matching cps bundle code is not found in map", exception.getMessage());
     }
 
-    // Call-argument check, not output — isXhibit guards discard case problems for LIBRA either way.
+    // Call-argument check, not output — LIBRA must resolve to the LIBRA case rule set.
     @Test
     void shouldPassLibraSourceSystemNameToCaseValidationRules() {
-        final CaseFileInput input = noMaterialsInput(sourceSystem("LIBRA", "LIBRA-123"));
+        final CaseFileInput input = noMaterialsInput(sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER));
         prosecutionWithReferenceData = input.prosecutionWithReferenceData();
 
         try (MockedStatic<CcProsecutionValidationRuleProvider> mockedProvider =
@@ -205,7 +207,7 @@ class MigratedCaseFileAggregateTest {
 
             receiveMigratedCaseFile(input.receiveMigratedCaseFile(), prosecutionWithReferenceData);
 
-            mockedProvider.verify(() -> CcProsecutionValidationRuleProvider.getCaseValidationRules(any(), eq("LIBRA")));
+            mockedProvider.verify(() -> CcProsecutionValidationRuleProvider.getCaseValidationRules(any(), eq(SOURCE_SYSTEM_LIBRA)));
         }
     }
 

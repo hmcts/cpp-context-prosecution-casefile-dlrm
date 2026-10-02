@@ -4,6 +4,7 @@ import static java.util.Collections.singletonList;
 import static uk.gov.justice.core.courts.Gender.FEMALE;
 import static uk.gov.justice.core.courts.Gender.MALE;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.PLEA_DATE_ANCHOR;
+import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildLibraMigratedCaseDetails;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildMigratedCaseDetails;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildProsecution;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildReceiveMigratedCaseFile;
@@ -11,6 +12,9 @@ import static uk.gov.moj.cpp.pcfdlrm.builder.SourceSystem.sourceSystem;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.CASE_ID;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID2;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.LIBRA_PROSECUTOR_CASE_REFERENCE;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_LIBRA;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_LIBRA_IDENTIFIER;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_XHIBIT;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_XHIBIT_IDENDIFIER;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Language.E;
@@ -437,6 +441,47 @@ final class AggregateScenarioInputs {
         final Prosecution prosecution = buildProsecution(migCaseDetails);
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, migratedMaterials);
         return new CaseFileInput(receiveMigratedCase, new ProsecutionWithReferenceData(prosecution));
+    }
+
+    static CaseFileInput libraInvalidProsecutingAuthorityInput() {
+        // No resolved prosecutor: the refdata enricher leaves it null for an unrecognised OU code.
+        return libraInput(libraCaseDetails()
+                .withProsecutor(Prosecutor.prosecutor().withProsecutingAuthority("B99ZZ99").build())
+                .build(), null);
+    }
+
+    static CaseFileInput libraInvalidCaseMarkerInput() {
+        // Resolved prosecutor present, so only the case marker is invalid.
+        return libraInput(libraCaseDetails()
+                .withCaseMarkers(List.of(CaseMarker.caseMarker()
+                        .withMarkerTypeId(UUID.fromString("c1c1c1c1-1111-4111-8111-111111111111"))
+                        .withMarkerTypeCode("ABC001")
+                        .withMarkerTypeDescription("Test Code")
+                        .build()))
+                .build(), ProsecutorsReferenceData.prosecutorsReferenceData().build());
+    }
+
+    /** Only the LIBRA case-level fields from the DD-43499 field table, all valid. */
+    private static CaseDetails.Builder libraCaseDetails() {
+        return CaseDetails.caseDetails()
+                .withCaseId(CASE_ID)
+                .withProsecutorCaseReference(LIBRA_PROSECUTOR_CASE_REFERENCE)
+                .withOriginatingOrganisation("B01NM00")
+                .withInitiationCode("C")
+                .withCpsOrganisation("A30AB00")
+                .withProsecutor(Prosecutor.prosecutor().withProsecutingAuthority("GAEAA01").build());
+    }
+
+    private static CaseFileInput libraInput(final CaseDetails caseDetails, final ProsecutorsReferenceData resolvedProsecutor) {
+        final MigratedCaseDetails migCaseDetails = buildLibraMigratedCaseDetails(caseDetails, sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER));
+        final Prosecution prosecution = buildProsecution(migCaseDetails, caseDetails);
+        final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, List.of());
+        final ReferenceDataVO referenceDataVO = new ReferenceDataVO();
+        referenceDataVO.setInitiationTypes(List.of("C"));
+        referenceDataVO.setProsecutorsReferenceData(resolvedProsecutor);
+        final ProsecutionWithReferenceData prosecutionWithReferenceData = new ProsecutionWithReferenceData(prosecution);
+        prosecutionWithReferenceData.setReferenceDataVO(referenceDataVO);
+        return new CaseFileInput(receiveMigratedCase, prosecutionWithReferenceData);
     }
 }
 
