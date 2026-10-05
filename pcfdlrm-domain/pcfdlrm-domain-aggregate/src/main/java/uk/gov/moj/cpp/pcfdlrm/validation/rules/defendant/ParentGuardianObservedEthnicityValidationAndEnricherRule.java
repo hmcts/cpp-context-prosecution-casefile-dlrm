@@ -24,11 +24,12 @@ public class ParentGuardianObservedEthnicityValidationAndEnricherRule implements
     public ValidationResult validate(final DefendantWithReferenceData defendantWithReferenceData, final ReferenceDataQueryService referenceDataQueryService) {
         if (defendantWithReferenceData.getDefendant().getIndividual() == null ||
                 defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation() == null ||
-                defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation().getObservedEthnicity() == null) {
+                defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation().getPersonalInformation() == null ||
+                defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation().getPersonalInformation().getObservedEthnicity() == null) {
             return VALID;
         }
 
-        final String observedEthnicity = defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation().getObservedEthnicity();
+        final String observedEthnicity = defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation().getPersonalInformation().getObservedEthnicity().toString();
         final ReferenceDataVO referenceDataVO = defendantWithReferenceData.getReferenceDataVO();
 
         Optional<ObservedEthnicityReferenceData> observedEthnicityReferenceDataOptional = referenceDataVO.getObservedEthnicityReferenceData().stream().filter(observedEthnicityReferenceData -> observedEthnicityReferenceData.getEthnicityCode().equalsIgnoreCase(observedEthnicity)).findAny();

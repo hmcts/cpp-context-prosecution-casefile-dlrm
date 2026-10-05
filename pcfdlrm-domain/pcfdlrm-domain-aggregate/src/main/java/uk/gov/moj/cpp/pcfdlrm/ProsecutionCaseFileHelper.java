@@ -10,6 +10,9 @@ import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_TI
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_GENDER_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_NATIONALITY_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_OBSERVED_ETHNICITY_INVALID;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_PARENT_GUARDIAN_DATE_OF_BIRTH_IN_FUTURE;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_PARENT_GUARDIAN_OBSERVED_ETHNICITY_INVALID;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_PARENT_GUARDIAN_SELF_DEFINED_ETHNICITY_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_SELF_DEFINED_ETHNICITY_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DOCUMENTATION_LANGUAGE_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.HEARING_LANGUAGE_INVALID;
@@ -56,6 +59,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import com.google.common.base.Strings;
@@ -71,6 +75,8 @@ public class ProsecutionCaseFileHelper {
     private static final String PARENTGUARDIAN_NOT_PROVIDED = "PARENTGUARDIAN_NOT_PROVIDED";
     private static final String DEFENDANT_SELFINFO_NOT_PROVIDED = "DEFENDANT_SELFINFO_NOT_PROVIDED";
     private static final String IN_CUSTODY="C";
+    private static final String XHIBIT = "XHIBIT";
+    private static final String LIBRA = "LIBRA";
 
     private ProsecutionCaseFileHelper() {
     }
@@ -115,8 +121,10 @@ public class ProsecutionCaseFileHelper {
                             .withCaseType(caseDetails.getInitiationCode())
                             .withPoliceSystemId(caseDetails.getPoliceSystemId()).build());
 
-                    if ("XHIBIT".equals(migrationSourceSystemName)) {
+                    if (XHIBIT.equals(migrationSourceSystemName)) {
                         applyRuleToDefendantFields(migratedDefendantBuilder, referenceDataQueryService, defendantWithReferenceData, defendantProblemList);
+                    } else if (LIBRA.equals(migrationSourceSystemName)) {
+                        applyParentGuardianRules(migratedDefendantBuilder, defendantProblemList);
                     }
                 }
             } else {
@@ -272,15 +280,41 @@ public class ProsecutionCaseFileHelper {
                     .build());
         }
 
-        if (hasProblem(defendantProblemList, PARENT_GUARDIAN_GENDER_INVALID)) {
-            builder.withIndividual(Individual.individual()
-                    .withValuesFrom(builder.build().getIndividual())
-                    .withParentGuardianInformation(ParentGuardianInformation.parentGuardianInformation()
-                            .withValuesFrom(builder.build().getIndividual().getParentGuardianInformation())
-                            .withGender(NOT_KNOWN.name())
-                            .build())
-                    .build());
+        applyParentGuardianGenderRule(builder, defendantProblemList);
+    }
+
+    private static void applyParentGuardianRules(MigratedDefendant.Builder builder, List<Problem> defendantProblemList) {
+        applyParentGuardianGenderRule(builder, defendantProblemList);
+
+        if (hasProblem(defendantProblemList, DEFENDANT_PARENT_GUARDIAN_DATE_OF_BIRTH_IN_FUTURE)) {
+            updateParentGuardian(builder, parentGuardian -> parentGuardian.withDateOfBirth(null));
         }
+
+        if (hasProblem(defendantProblemList, DEFENDANT_PARENT_GUARDIAN_OBSERVED_ETHNICITY_INVALID)) {
+            final ParentGuardianInformation parentGuardianInformation = builder.build().getIndividual().getParentGuardianInformation();
+            updateParentGuardian(builder, parentGuardian -> parentGuardian.withPersonalInformation(PersonalInformation.personalInformation()
+                    .withValuesFrom(parentGuardianInformation.getPersonalInformation())
+                    .withObservedEthnicity(null)
+                    .build()));
+        }
+
+        if (hasProblem(defendantProblemList, DEFENDANT_PARENT_GUARDIAN_SELF_DEFINED_ETHNICITY_INVALID)) {
+            updateParentGuardian(builder, parentGuardian -> parentGuardian.withSelfDefinedEthnicity(null));
+        }
+    }
+
+    private static void applyParentGuardianGenderRule(MigratedDefendant.Builder builder, List<Problem> defendantProblemList) {
+        if (hasProblem(defendantProblemList, PARENT_GUARDIAN_GENDER_INVALID)) {
+            updateParentGuardian(builder, parentGuardian -> parentGuardian.withGender(NOT_KNOWN.name()));
+        }
+    }
+
+    private static void updateParentGuardian(MigratedDefendant.Builder builder, UnaryOperator<ParentGuardianInformation.Builder> update) {
+        builder.withIndividual(Individual.individual()
+                .withValuesFrom(builder.build().getIndividual())
+                .withParentGuardianInformation(update.apply(ParentGuardianInformation.parentGuardianInformation()
+                        .withValuesFrom(builder.build().getIndividual().getParentGuardianInformation())).build())
+                .build());
     }
 
 

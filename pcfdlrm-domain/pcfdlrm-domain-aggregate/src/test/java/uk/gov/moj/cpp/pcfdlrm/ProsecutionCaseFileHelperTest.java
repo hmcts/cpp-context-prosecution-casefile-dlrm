@@ -34,6 +34,8 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedHe
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedOffence;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ListedDefendant;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -42,6 +44,8 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -244,6 +248,47 @@ class ProsecutionCaseFileHelperTest {
 
         assertMigratedDefendantMatchesFixture(result.getMigratedDefendants().get(0),
                 "json/prosecution-case-file-helper/migrated-defendant-gender-and-language-normalised.json");
+    }
+
+    @ParameterizedTest
+    @CsvSource({"LIBRA, true", "XHIBIT, false"})
+    void shouldDefaultGenderAndClearInvalidParentGuardianFieldsForLibra(final String migrationSourceSystemName, final boolean libra) {
+        final LocalDate futureDateOfBirth = LocalDate.now(ZoneId.of("Europe/London")).plusDays(1);
+        final MigratedDefendant defendant = migratedDefendant()
+                .withDocumentationLanguage("E")
+                .withHearingLanguage("ZZ")
+                .withIndividual(Individual.individual()
+                        .withPersonalInformation(PersonalInformation.personalInformation().build())
+                        .withSelfDefinedInformation(SelfDefinedInformation.selfDefinedInformation()
+                                .withGender("MALE")
+                                .build())
+                        .withParentGuardianInformation(ParentGuardianInformation.parentGuardianInformation()
+                                .withGender("YYY")
+                                .withDateOfBirth(futureDateOfBirth)
+                                .withPersonalInformation(PersonalInformation.personalInformation()
+                                        .withObservedEthnicity(99)
+                                        .build())
+                                .withSelfDefinedEthnicity("Z9")
+                                .build())
+                        .build())
+                .build();
+
+        final CaseDetails caseDetails = CaseDetails.caseDetails().withCaseId(UUID.randomUUID()).build();
+        final DefendantsWithReferenceData defendantsWithReferenceData = new DefendantsWithReferenceData(List.of(defendant));
+        defendantsWithReferenceData.setReferenceDataVO(new ReferenceDataVO());
+        defendantsWithReferenceData.setCaseDetails(caseDetails);
+
+        final MigratedDefendant result = ProsecutionCaseFileHelper.validateDefendantErrors(
+                caseDetails, DLRM_MIGRATION, defendantsWithReferenceData, referenceDataQueryService,
+                Stream.builder(), false, migrationSourceSystemName).getMigratedDefendants().get(0);
+
+        final ParentGuardianInformation parentGuardian = result.getIndividual().getParentGuardianInformation();
+        assertAll(
+                () -> assertThat(parentGuardian.getGender(), is("NOT_KNOWN")),
+                () -> assertThat(parentGuardian.getDateOfBirth(), is(libra ? null : futureDateOfBirth)),
+                () -> assertThat(parentGuardian.getPersonalInformation().getObservedEthnicity(), is(libra ? null : 99)),
+                () -> assertThat(parentGuardian.getSelfDefinedEthnicity(), is(libra ? null : "Z9")),
+                () -> assertThat(result.getHearingLanguage(), is(libra ? "ZZ" : "E")));
     }
 
     @Test
