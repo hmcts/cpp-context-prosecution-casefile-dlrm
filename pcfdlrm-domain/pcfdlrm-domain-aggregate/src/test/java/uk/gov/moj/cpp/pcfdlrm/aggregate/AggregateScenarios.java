@@ -150,11 +150,11 @@ final class AggregateScenarios {
     }
 
     static Stream<AggregateScenario> aggregateScenarios() {
-        return Stream.of(xhibitGateScenarios(), failFastScenarios(), hasOffenceProblemsGateScenarios(), materialsMainPathScenarios(), defendantProblemsScenarios(), pleaScenarios(), genderCourtMarkerScenarios())
+        return Stream.of(sourceSystemGateScenarios(), failFastScenarios(), hasOffenceProblemsGateScenarios(), materialsMainPathScenarios(), defendantProblemsScenarios(), pleaScenarios(), genderCourtMarkerScenarios())
                 .flatMap(s -> s);
     }
 
-    private static Stream<AggregateScenario> xhibitGateScenarios() {
+    private static Stream<AggregateScenario> sourceSystemGateScenarios() {
         final List<ExpectedEvent> defendantValidationNoise = new ArrayList<>();
         defendantValidationNoise.add(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-no-materials.json"));
         defendantValidationNoise.addAll(DEFENDANT_ETHNICITY_NATIONALITY_CUSTODY_NOISE);
