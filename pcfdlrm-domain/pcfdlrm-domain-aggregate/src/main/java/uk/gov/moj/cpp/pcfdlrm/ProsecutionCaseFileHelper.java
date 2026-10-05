@@ -78,17 +78,6 @@ public class ProsecutionCaseFileHelper {
     private ProsecutionCaseFileHelper() {
     }
 
-    public static MigratedDefendantWithProblem validateDefendantErrors(final CaseDetails caseDetails,
-                                                                       final Channel channel,
-                                                                       final DefendantsWithReferenceData defendantsWithReferenceData,
-                                                                       final ReferenceDataQueryService referenceDataQueryService,
-                                                                       final Stream.Builder<Object> builder,
-                                                                       final Boolean isGroupCase,
-                                                                       final String migrationSourceSystemName) {
-        return validateDefendants(caseDetails, channel, defendantsWithReferenceData, referenceDataQueryService, builder, isGroupCase, migrationSourceSystemName)
-                .migratedDefendantWithProblem();
-    }
-
     public static DefendantValidationOutcome validateDefendants(final CaseDetails caseDetails,
                                                                 final Channel channel,
                                                                 final DefendantsWithReferenceData defendantsWithReferenceData,

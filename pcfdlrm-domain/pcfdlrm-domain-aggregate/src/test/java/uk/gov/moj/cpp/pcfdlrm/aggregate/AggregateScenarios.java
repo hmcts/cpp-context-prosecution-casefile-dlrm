@@ -215,7 +215,7 @@ final class AggregateScenarios {
      * The three remaining R3a scenarios behind the {@code hasOffenceProblems()} gate — none existed
      * before this story (02-design.md, Coverage). Each is a defendant-level offence problem the
      * aggregate turns into a single fail-fast {@link MigratedCaseFileProcessed}, but only after
-     * {@code validateDefendantErrors} has already added one {@link DefendantValidationFailed} for
+     * {@code validateDefendants} has already added one {@link DefendantValidationFailed} for
      * the same defendant — hence two events, not one.
      */
     private static Stream<AggregateScenario> hasOffenceProblemsGateScenarios() {

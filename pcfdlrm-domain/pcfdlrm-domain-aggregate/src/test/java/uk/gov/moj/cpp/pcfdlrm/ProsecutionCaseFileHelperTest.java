@@ -232,9 +232,9 @@ class ProsecutionCaseFileHelperTest {
                 bailStatusReferenceData().withStatusCode("U").build()
         ));
 
-        final MigratedDefendantWithProblem result = ProsecutionCaseFileHelper.validateDefendantErrors(
+        final MigratedDefendantWithProblem result = ProsecutionCaseFileHelper.validateDefendants(
                 caseDetails, DLRM_MIGRATION, defendantsWithReferenceData, referenceDataQueryService,
-                Stream.builder(), false, "XHIBIT");
+                Stream.builder(), false, "XHIBIT").migratedDefendantWithProblem();
 
         assertMigratedDefendantMatchesFixture(result.getMigratedDefendants().get(0),
                 "json/prosecution-case-file-helper/migrated-defendant-custody-status-normalised.json");
@@ -262,9 +262,9 @@ class ProsecutionCaseFileHelperTest {
         defendantsWithReferenceData.setReferenceDataVO(referenceDataVO);
         defendantsWithReferenceData.setCaseDetails(caseDetails);
 
-        final MigratedDefendantWithProblem result = ProsecutionCaseFileHelper.validateDefendantErrors(
+        final MigratedDefendantWithProblem result = ProsecutionCaseFileHelper.validateDefendants(
                 caseDetails, DLRM_MIGRATION, defendantsWithReferenceData, referenceDataQueryService,
-                Stream.builder(), false, "XHIBIT");
+                Stream.builder(), false, "XHIBIT").migratedDefendantWithProblem();
 
         assertMigratedDefendantMatchesFixture(result.getMigratedDefendants().get(0),
                 "json/prosecution-case-file-helper/migrated-defendant-gender-and-language-normalised.json");
@@ -294,7 +294,7 @@ class ProsecutionCaseFileHelperTest {
                 bailStatusReferenceData().withStatusCode("U").build()
         ));
 
-        ProsecutionCaseFileHelper.validateDefendantErrors(
+        ProsecutionCaseFileHelper.validateDefendants(
                 caseDetails, DLRM_MIGRATION, defendantsWithReferenceData, referenceDataQueryService,
                 Stream.builder(), false, "XHIBIT");
 

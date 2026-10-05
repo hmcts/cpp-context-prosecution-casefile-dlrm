@@ -78,7 +78,7 @@ not in the predicate.
 | C2 | `validation/rules/defendant/PostCodeValidationRule.java` | Changed | New constructor `PostCodeValidationRule(boolean validateParentGuardianPostCode)`. The no-arg constructor stays `true`, so XHIBIT, SPI, MCC and LIBRA J/R/O keep today's behaviour. |
 | C3 | `validation/rules/defendant/parentguardian/` (new package) | New | LIBRA guardian rules, the shape resolver, the shape gate, the redacting decorator and the gender code mapping (table below). |
 | C4 | `validation/rules/defendant/parentguardian/LibraParentGuardianOutcomes.java` | New | The single table of outcomes: `ProblemCode` → `REJECT` / `NULL` / `DEFAULT`, plus field key → nulling function. Both the sanitiser and the reject collection read it. |
-| C5 | `ProsecutionCaseFileHelper.java` | Changed | New `validateDefendants(...)` returns `DefendantValidationOutcome`. The existing `validateDefendantErrors(...)` delegates to it and returns `.migratedDefendantWithProblem()`, so existing callers and tests are unchanged. LIBRA scope skips the generic guardian-gender check and runs the sanitiser. |
+| C5 | `ProsecutionCaseFileHelper.java` | Changed | New `validateDefendants(...)` returns `DefendantValidationOutcome`. It replaces `validateDefendantErrors(...)`, which is removed; the aggregate and the existing helper tests call `validateDefendants(...)` instead. LIBRA scope skips the generic guardian-gender check and runs the sanitiser. |
 | C6 | `DefendantValidationOutcome.java` (package `uk.gov.moj.cpp.pcfdlrm`, next to `ProsecutionCaseFileHelper`) | New | A hand-written value class (like `DefendantsWithReferenceData`), not a generated schema class: `MigratedDefendantWithProblem` plus `List<Problem> libraGuardianRejections`, in defendant order. |
 | C7 | `aggregate/MigratedCaseFileAggregate.java` | Changed | New `hasLibraParentGuardianRejections(...)` after `hasOffenceProblems(...)`. It emits one `MigratedCaseFileProcessed(false)`. |
 | C8 | `validation/ProblemCode.java`, `validation/rules/FieldName.java`, `validation/Constants.java` | Changed (additive) | New codes, field keys and regexes (lists below). |
@@ -600,7 +600,7 @@ revert.
 - [ ] `PostCodeValidationRule(boolean)` constructor; the no-arg constructor is unchanged.
 - [ ] Provider: `defendantValidationMapDlrmLibra` (S, C, Q) plus the 4-arg overload.
 - [ ] Helper: `validateDefendants(...)` → `DefendantValidationOutcome`;
-      `validateDefendantErrors(...)` delegates; `validateGenderAndLanguage` gets the guardian-gender
+      `validateDefendantErrors(...)` removed; `validateGenderAndLanguage` gets the guardian-gender
       flag; call the sanitiser; collect rejections.
 - [ ] Aggregate: call `validateDefendants`; add `hasLibraParentGuardianRejections`; add the
       description constant.
