@@ -4,6 +4,8 @@ import static java.util.UUID.fromString;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.CASE_ID;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel.DLRM_MIGRATION;
+import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Language.E;
+import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Language.W;
 
 
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseDetails;
@@ -59,6 +61,21 @@ public class ObjectBuilder {
                         .build())
                 .withDefendants(getMigratedDefendants(defendantGender, parentGuardianGender, documentationLanguage, hearingLanguage, offenceCode, pleaCode, pleaDate))
 
+                .build();
+    }
+
+    /**
+     * A LIBRA case carries only the LIBRA case-level fields (DD-43499) in {@code libraCaseDetails} —
+     * no courts, receipt type or XHIBIT dates.
+     */
+    public static MigratedCaseDetails buildLibraMigratedCaseDetails(final CaseDetails libraCaseDetails, final SourceSystem sourceSystem) {
+        return MigratedCaseDetails.migratedCaseDetails()
+                .withCaseDetails(libraCaseDetails)
+                .withMigrationSourceSystem(MigrationSourceSystem.migrationSourceSystem()
+                        .withMigrationSourceSystemCaseIdentifier(sourceSystem.migrationSourceSystemCaseIdentifier())
+                        .withMigrationSourceSystemName(sourceSystem.migrationSourceSystemName())
+                        .build())
+                .withDefendants(getMigratedDefendants("MALE", "MALE", E.name(), W.name(), null, null, null))
                 .build();
     }
 

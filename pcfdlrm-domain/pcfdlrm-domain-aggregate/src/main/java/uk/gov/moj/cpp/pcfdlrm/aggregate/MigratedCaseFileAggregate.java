@@ -236,18 +236,19 @@ public class MigratedCaseFileAggregate implements Aggregate {
 
                 return apply(builder.build());
             }
+        }
 
-            if (hasInvalidProsecutingAuthority(caseProblems)) {
-                builder.add(MigratedCaseFileProcessed.migratedCaseFileProcessed()
-                        .withDescription("Invalid Prosecuting Authority")
-                        .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
-                        .withSubmissionId(receiveMigratedCaseFile.getSubmissionId())
-                        .withProcessingIsSuccessful(false)
-                        .withCaseUrn(migratedCaseDetails.getCaseDetails().getProsecutorCaseReference())
-                        .build());
+        // No isXhibit guard here (DD-43499): an unrecognised prosecuting authority rejects LIBRA cases too.
+        if (hasInvalidProsecutingAuthority(caseProblems)) {
+            builder.add(MigratedCaseFileProcessed.migratedCaseFileProcessed()
+                    .withDescription("Invalid Prosecuting Authority")
+                    .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
+                    .withSubmissionId(receiveMigratedCaseFile.getSubmissionId())
+                    .withProcessingIsSuccessful(false)
+                    .withCaseUrn(migratedCaseDetails.getCaseDetails().getProsecutorCaseReference())
+                    .build());
 
-                return apply(builder.build());
-            }
+            return apply(builder.build());
         }
 
         final HearingValidationResult hearingValidationResult = validateHearings(receiveMigratedCaseFile, referenceDataQueryService, migratedHearingRefDataEnrichers, migratedCaseDetails, migratedHearingWithReferenceDataList);
@@ -272,7 +273,7 @@ public class MigratedCaseFileAggregate implements Aggregate {
             return apply(builder.build());
         }
 
-        if (isNotEmpty(caseProblems) && isXhibit(receiveMigratedCaseFile)) {
+        if (isNotEmpty(caseProblems)) {
             final List<MigratedCaseValidatedWithWarnings> caseValidationWarningsList = caseProblems.stream()
                     .filter(problem -> problem.getCode().equalsIgnoreCase(ProblemCode.CASE_MARKER_IS_INVALID.name()))
                     .map(problem -> migratedCaseValidatedWithWarnings()

@@ -10,6 +10,9 @@ public class TestConstants {
     public static final UUID DEFENDANT_ID2 = fromString("9924e40f-0289-4221-8854-346eb28c8f27");
     public static final String SOURCE_SYSTEM_XHIBIT = "XHIBIT";
     public static final String SOURCE_SYSTEM_XHIBIT_IDENDIFIER = "XHIBIT-123";
+    public static final String SOURCE_SYSTEM_LIBRA = "LIBRA";
+    public static final String SOURCE_SYSTEM_LIBRA_IDENTIFIER = "LIBRA-123";
+    public static final String LIBRA_PROSECUTOR_CASE_REFERENCE = "LIBRA55117D";
     public static final UUID CASE_ID = fromString("a4391799-f828-4515-a355-61f1d5d9690c");
     public static final UUID SUBMISSION_ID = fromString("e3e3e3e3-3333-4333-8333-333333333333");
 
