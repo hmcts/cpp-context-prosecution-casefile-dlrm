@@ -68,7 +68,7 @@ type or a past date, lists without a room if the court room doesn't match (FR-2)
 
 | Level | Change |
 |---|---|
-| Unit — `AggregateScenarios` | LIBRA row reusing the XHIBIT no-matching-defendants input (source system now a parameter). |
+| Unit — `AggregateScenarios` | LIBRA rows reusing the XHIBIT no-matching-defendants inputs — no listed defendants, and offence mismatch (source system now a parameter). |
 | Unit — `MigratedCaseFileAggregateTest` | XHIBIT unscheduled-hearing test parameterised over XHIBIT + LIBRA. LIBRA received fixture differs only where XHIBIT-only defendant fix-ups apply (custody status default, invalid ethnicity / nationality removal). |
 
 No LIBRA ITs (agreed scope). No new endpoint or `@Handles`. Existing ITs must stay green via
