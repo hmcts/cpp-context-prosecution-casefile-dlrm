@@ -1,39 +1,22 @@
 {
   "receiveMigratedCaseFile": {
     "channel": "DLRM_MIGRATION",
-    "materials": [],
     "migratedCaseDetails": {
       "caseDetails": {
         "caseId": "a4391799-f828-4515-a355-61f1d5d9690c",
-        "cpsOrganisation": "A30AB00",
-        "initiationCode": "C",
-        "originatingOrganisation": "B01NM00",
-        "prosecutor": {
-          "prosecutingAuthority": "GAEAA01"
-        },
-        "prosecutorCaseReference": "LIBRA55117D"
+        "dateOfSending": "2024-01-15",
+        "receivingCourt": "C50EX00",
+        "sendingCourt": "B01LY00"
       },
       "defendants": [
         {
-          "documentationLanguage": "E",
+          "documentationLanguage": "W",
           "hearingLanguage": "W",
           "id": "9824e40f-0289-4221-8854-346eb28c8f27",
           "individual": {
-            "parentGuardianInformation": {
-              "dateOfBirth": "1980-06-01",
-              "gender": "MALE"
-            },
-            "personalInformation": {
-              "firstName": "John",
-              "lastName": "Smith",
-              "title": "Mr"
-            },
-            "selfDefinedInformation": {
-              "additionalNationality": "SVK",
-              "ethnicity": "British",
-              "gender": "MALE",
-              "nationality": "HUN"
-            }
+            "parentGuardianInformation": { "dateOfBirth": "1980-06-01", "gender": "FEMALE" },
+            "personalInformation": { "firstName": "John", "lastName": "Smith", "title": "Mr" },
+            "selfDefinedInformation": { "additionalNationality": "SVK", "ethnicity": "British", "gender": "MALE", "nationality": "HUN" }
           },
           "offences": [],
           "prosecutorDefendantId": "DEF-001"
@@ -43,18 +26,10 @@
         {
           "courtHearingLocation": "C50EX00",
           "hearingType": "SIT",
-          "listedDefendants": [
-            {
-              "listedOffences": [],
-              "prosecutorDefendantId": "DEF-001"
-            }
-          ]
+          "listedDefendants": [ { "listedOffences": [], "prosecutorDefendantId": "DEF-001" } ]
         }
       ],
-      "migrationSourceSystem": {
-        "migrationSourceSystemCaseIdentifier": "LIBRA-123",
-        "migrationSourceSystemName": "LIBRA"
-      }
+      "migrationSourceSystem": { "migrationSourceSystemCaseIdentifier": "LIBRA-123", "migrationSourceSystemName": "LIBRA" }
     },
     "submissionId": "e3e3e3e3-3333-4333-8333-333333333333"
   },
@@ -62,29 +37,22 @@
     "countryNationalityReferenceData": [],
     "selfdefinedEthnicityReferenceData": [],
     "organisationUnitReferenceData": [],
-    "initiationTypes": [
-      "C"
-    ],
+    "initiationTypes": [],
     "offenceReferenceData": [],
     "caseMarkers": [],
     "observedEthnicityReferenceData": [],
     "vehicleCodesReferenceData": [],
     "offenderCodeReferenceData": [],
     "bailStatusReferenceData": [],
-    "modeOfTrialReasonsReferenceData": [],
-    "prosecutorsReferenceData": {}
+    "modeOfTrialReasonsReferenceData": []
   },
   "migratedHearingWithReferenceDataList": [
     {
       "caseDetails": {
         "caseId": "a4391799-f828-4515-a355-61f1d5d9690c",
-        "cpsOrganisation": "A30AB00",
-        "initiationCode": "C",
-        "originatingOrganisation": "B01NM00",
-        "prosecutor": {
-          "prosecutingAuthority": "GAEAA01"
-        },
-        "prosecutorCaseReference": "LIBRA55117D"
+        "dateOfSending": "2024-01-15",
+        "receivingCourt": "C50EX00",
+        "sendingCourt": "B01LY00"
       },
       "referenceDataVO": {
         "countryNationalityReferenceData": [],
@@ -103,35 +71,18 @@
       "migratedHearing": {
         "courtHearingLocation": "C50EX00",
         "hearingType": "SIT",
-        "listedDefendants": [
-          {
-            "listedOffences": [],
-            "prosecutorDefendantId": "DEF-001"
-          }
-        ]
+        "listedDefendants": [ { "listedOffences": [], "prosecutorDefendantId": "DEF-001" } ]
       },
       "migratedDefendantWithOffences": [
         {
           "defendant": {
-            "documentationLanguage": "E",
+            "documentationLanguage": "W",
             "hearingLanguage": "W",
             "id": "9824e40f-0289-4221-8854-346eb28c8f27",
             "individual": {
-              "parentGuardianInformation": {
-                "dateOfBirth": "1980-06-01",
-                "gender": "MALE"
-              },
-              "personalInformation": {
-                "firstName": "John",
-                "lastName": "Smith",
-                "title": "Mr"
-              },
-              "selfDefinedInformation": {
-                "additionalNationality": "SVK",
-                "ethnicity": "British",
-                "gender": "MALE",
-                "nationality": "HUN"
-              }
+              "parentGuardianInformation": { "dateOfBirth": "1980-06-01", "gender": "FEMALE" },
+              "personalInformation": { "firstName": "John", "lastName": "Smith", "title": "Mr" },
+              "selfDefinedInformation": { "additionalNationality": "SVK", "ethnicity": "British", "gender": "MALE", "nationality": "HUN" }
             },
             "offences": [],
             "prosecutorDefendantId": "DEF-001"

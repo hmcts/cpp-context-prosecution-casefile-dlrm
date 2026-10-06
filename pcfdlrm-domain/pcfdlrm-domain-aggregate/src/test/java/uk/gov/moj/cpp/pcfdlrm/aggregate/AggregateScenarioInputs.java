@@ -130,8 +130,8 @@ final class AggregateScenarioInputs {
         return new CaseFileInput(receiveMigratedCase, new ProsecutionWithReferenceData(prosecution));
     }
 
-    static CaseFileInput noMatchingDefendantsForHearingInput() {
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails("MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
+    static CaseFileInput noMatchingDefendantsForHearingInput(final SourceSystem sourceSystem) {
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails("MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem);
         final MigratedCaseDetails migCaseDetailsWithHearing = MigratedCaseDetails.migratedCaseDetails().withValuesFrom(migCaseDetails)
                 .withHearings(List.of(MigratedHearing.migratedHearing().withListedDefendants(List.of()).build())).build();
         final Prosecution prosecution = buildProsecution(migCaseDetailsWithHearing);
@@ -139,8 +139,8 @@ final class AggregateScenarioInputs {
         return new CaseFileInput(receiveMigratedCase, new ProsecutionWithReferenceData(prosecution));
     }
 
-    static CaseFileInput hearingDefendantMatchesNoOffencesInput() {
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails("MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
+    static CaseFileInput hearingDefendantMatchesNoOffencesInput(final SourceSystem sourceSystem) {
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails("MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem);
         final MigratedDefendant defendantWithNonMatchingOffences = migratedDefendant().withId(DEFENDANT_ID).withProsecutorDefendantId("DEF-001")
                 .withOffences(List.of(migratedOffence().withOffenceId(UUID.fromString("b1b1b1b1-1111-4111-8111-111111111111")).withProsecutorOffenceId("OFF-001").withOffenceSequenceNumber(1).build())).build();
         final MigratedDefendant secondDefendantWithNonMatchingOffences = migratedDefendant().withId(DEFENDANT_ID2).withProsecutorDefendantId("DEF-002")
@@ -461,24 +461,6 @@ final class AggregateScenarioInputs {
                 .build(), ProsecutorsReferenceData.prosecutorsReferenceData().build());
     }
 
-    static CaseFileInput libraNoMatchingDefendantsForHearingInput() {
-        return libraInput(libraCaseDetails().build(), ProsecutorsReferenceData.prosecutorsReferenceData().build(),
-                List.of(MigratedHearing.migratedHearing().withListedDefendants(List.of()).build()));
-    }
-
-    /** Unscheduled hearing whose court location isn't in refdata; its one listed defendant matches. */
-    static CaseFileInput libraUnresolvedCourtHearingLocationInput() {
-        return libraInput(libraCaseDetails().build(), ProsecutorsReferenceData.prosecutorsReferenceData().build(),
-                List.of(MigratedHearing.migratedHearing()
-                        .withCourtHearingLocation("C50EX00")
-                        .withHearingType("SIT")
-                        .withListedDefendants(List.of(ListedDefendant.listedDefendant()
-                                .withProsecutorDefendantId("DEF-001")
-                                .withListedOffences(List.of())
-                                .build()))
-                        .build()));
-    }
-
     /** Only the LIBRA case-level fields from the DD-43499 field table, all valid. */
     private static CaseDetails.Builder libraCaseDetails() {
         return CaseDetails.caseDetails()
@@ -491,21 +473,7 @@ final class AggregateScenarioInputs {
     }
 
     private static CaseFileInput libraInput(final CaseDetails caseDetails, final ProsecutorsReferenceData resolvedProsecutor) {
-        return libraInput(caseDetails, resolvedProsecutor, null);
-    }
-
-    /** Non-null {@code hearings} also replaces the defendants with a single offence-less DEF-001, so listed defendants can match. */
-    private static CaseFileInput libraInput(final CaseDetails caseDetails, final ProsecutorsReferenceData resolvedProsecutor, final List<MigratedHearing> hearings) {
-        final MigratedCaseDetails libraCaseDetails = buildLibraMigratedCaseDetails(caseDetails, sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER));
-        final MigratedCaseDetails migCaseDetails = hearings == null ? libraCaseDetails : MigratedCaseDetails.migratedCaseDetails()
-                .withValuesFrom(libraCaseDetails)
-                .withDefendants(List.of(migratedDefendant()
-                        .withValuesFrom(libraCaseDetails.getDefendants().get(0))
-                        .withProsecutorDefendantId("DEF-001")
-                        .withOffences(List.of())
-                        .build()))
-                .withHearings(hearings)
-                .build();
+        final MigratedCaseDetails migCaseDetails = buildLibraMigratedCaseDetails(caseDetails, sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER));
         final Prosecution prosecution = buildProsecution(migCaseDetails, caseDetails);
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, List.of());
         final ReferenceDataVO referenceDataVO = new ReferenceDataVO();

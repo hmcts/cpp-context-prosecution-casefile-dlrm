@@ -27,7 +27,7 @@ See `01-requirements.md` FR-1 – FR-6a:
 
 - [x] `isXhibit` removed from both hearing gates; `generateXhibitHearingWarnings` renamed to
       `generateHearingWarnings`; no other production change.
-- [x] LIBRA unit tests for AC-1 (`AggregateScenarios` row) and AC-2 (standalone test); no existing rows re-baselined.
+- [x] LIBRA unit tests for AC-1 and AC-2 reuse the XHIBIT hearing inputs/fixtures; no existing expectations re-baselined.
 - [x] Existing XHIBIT scenarios green unchanged (AC-3) — aggregate 338/338.
 - [x] `mvn clean install` green; `./runIntegrationTests.sh` green — 28/28 (existing ITs, no new LIBRA ITs).
 
