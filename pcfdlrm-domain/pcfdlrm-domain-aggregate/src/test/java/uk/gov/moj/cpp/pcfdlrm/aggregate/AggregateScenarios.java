@@ -19,6 +19,7 @@ import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.invalidOf
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.invalidProsecutingAuthorityInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraInvalidCaseMarkerInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraInvalidProsecutingAuthorityInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraNoMatchingDefendantsForHearingInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.missingPleaDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.missingVerdictDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.noMatchingDefendantsForHearingInput;
@@ -221,6 +222,9 @@ final class AggregateScenarios {
                 new AggregateScenario("Hearing defendant matches but no offences match — No matching defendants with hearings found for the hearing",
                         hearingDefendantMatchesNoOffencesInput(),
                         List.of(processedFailure("No matching defendants with hearings found for the hearing"))),
+                new AggregateScenario("Hearing has no listed defendants, LIBRA — rejected, as XHIBIT (DD-43500)",
+                        libraNoMatchingDefendantsForHearingInput(),
+                        List.of(processedFailure("No matching defendants with hearings found for the hearing", LIBRA_PROSECUTOR_CASE_REFERENCE))),
                 new AggregateScenario("Invalid Prosecuting Authority — hasInvalidProsecutingAuthority() (new scenario)",
                         invalidProsecutingAuthorityInput(),
                         List.of(processedFailure("Invalid Prosecuting Authority"))),
