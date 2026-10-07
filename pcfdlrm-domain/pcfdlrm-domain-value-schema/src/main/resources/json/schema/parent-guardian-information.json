@@ -19,9 +19,6 @@
         },
         "selfDefinedEthnicity": {
           "type": "string"
-        },
-        "observedEthnicity": {
-          "type": "string"
         }
       },
       "additionalProperties": false

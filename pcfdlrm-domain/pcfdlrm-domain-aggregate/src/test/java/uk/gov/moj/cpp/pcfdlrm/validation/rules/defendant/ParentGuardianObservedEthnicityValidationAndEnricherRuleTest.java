@@ -34,7 +34,7 @@ public class ParentGuardianObservedEthnicityValidationAndEnricherRuleTest {
 
     @Test
     public void shouldReturnEmptyListWhenNoParentGuardianObservedEthnicity() {
-        when(defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation().getObservedEthnicity()).thenReturn(null);
+        when(defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation().getPersonalInformation().getObservedEthnicity()).thenReturn(null);
         final Optional<Problem> optionalProblem = new ParentGuardianObservedEthnicityValidationAndEnricherRule().validate(defendantWithReferenceData, referenceDataQueryService)
                 .problems().stream().findFirst();
         assertThat(optionalProblem.isPresent(), is(false));
@@ -52,7 +52,7 @@ public class ParentGuardianObservedEthnicityValidationAndEnricherRuleTest {
         final ReferenceDataVO referenceDataVO = new ReferenceDataVO();
         referenceDataVO.setObservedEthnicityReferenceData(asList(observedEthnicityReferenceData));
 
-        when(defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation().getObservedEthnicity()).thenReturn(ethnicityCode);
+        when(defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation().getPersonalInformation().getObservedEthnicity()).thenReturn(Integer.valueOf(ethnicityCode));
         when(defendantWithReferenceData.getReferenceDataVO()).thenReturn(referenceDataVO);
 
         final Optional<Problem> optionalProblem = new ParentGuardianObservedEthnicityValidationAndEnricherRule().validate(defendantWithReferenceData, referenceDataQueryService)
@@ -72,7 +72,7 @@ public class ParentGuardianObservedEthnicityValidationAndEnricherRuleTest {
         final ReferenceDataVO referenceDataVO = new ReferenceDataVO();
         referenceDataVO.setObservedEthnicityReferenceData(asList(observedEthnicityReferenceData));
 
-        when(defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation().getObservedEthnicity()).thenReturn(ethnicityCode);
+        when(defendantWithReferenceData.getDefendant().getIndividual().getParentGuardianInformation().getPersonalInformation().getObservedEthnicity()).thenReturn(Integer.valueOf(ethnicityCode));
         when(defendantWithReferenceData.getReferenceDataVO()).thenReturn(new ReferenceDataVO());
         when(referenceDataQueryService.retrieveObservedEthnicity()).thenReturn(asList(observedEthnicityReferenceData));
 

@@ -42,6 +42,8 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -172,8 +174,9 @@ class ProsecutionCaseFileHelperTest {
         assertTrue(result.getMigratedDefendantWithOffences().isEmpty());
     }
 
-    @Test
-    void shouldValidateDefendantErrorsWhenCustodyStatusInvalidOnXhibitSetsStatusToUAndPreservesObservedEthnicity() {
+    @ParameterizedTest
+    @ValueSource(strings = {"XHIBIT", "LIBRA"})
+    void shouldValidateDefendantErrorsWhenCustodyStatusInvalidForMigrationSourceSystemSetsStatusToUAndPreservesObservedEthnicity(final String migrationSourceSystemName) {
         final Integer observedEthnicityCode = 12;
 
         final MigratedDefendant defendant = migratedDefendant()
@@ -210,14 +213,15 @@ class ProsecutionCaseFileHelperTest {
 
         final MigratedDefendantWithProblem result = ProsecutionCaseFileHelper.validateDefendantErrors(
                 caseDetails, DLRM_MIGRATION, defendantsWithReferenceData, referenceDataQueryService,
-                Stream.builder(), false, "XHIBIT");
+                Stream.builder(), false, migrationSourceSystemName);
 
         assertMigratedDefendantMatchesFixture(result.getMigratedDefendants().get(0),
                 "json/prosecution-case-file-helper/migrated-defendant-custody-status-normalised.json");
     }
 
-    @Test
-    void shouldApplyRuleToDefendantFieldsNormalisingGenderAndLanguageOnXhibitPath() {
+    @ParameterizedTest
+    @ValueSource(strings = {"XHIBIT", "LIBRA"})
+    void shouldApplyRuleToDefendantFieldsNormalisingGenderAndLanguageForMigrationSourceSystem(final String migrationSourceSystemName) {
         final MigratedDefendant defendant = migratedDefendant()
                 .withDocumentationLanguage("ZZ")
                 .withHearingLanguage("ZZ")
@@ -240,14 +244,15 @@ class ProsecutionCaseFileHelperTest {
 
         final MigratedDefendantWithProblem result = ProsecutionCaseFileHelper.validateDefendantErrors(
                 caseDetails, DLRM_MIGRATION, defendantsWithReferenceData, referenceDataQueryService,
-                Stream.builder(), false, "XHIBIT");
+                Stream.builder(), false, migrationSourceSystemName);
 
         assertMigratedDefendantMatchesFixture(result.getMigratedDefendants().get(0),
                 "json/prosecution-case-file-helper/migrated-defendant-gender-and-language-normalised.json");
     }
 
-    @Test
-    void shouldValidateDefendantErrorsWhenCustodyStatusInvalidOnXhibitAndUStatusFoundAddsUBailStatusToReferenceDataVO() {
+    @ParameterizedTest
+    @ValueSource(strings = {"XHIBIT", "LIBRA"})
+    void shouldValidateDefendantErrorsWhenCustodyStatusInvalidForMigrationSourceSystemAndUStatusFoundAddsUBailStatusToReferenceDataVO(final String migrationSourceSystemName) {
         final MigratedDefendant defendant = migratedDefendant()
                 .withDocumentationLanguage("E")
                 .withHearingLanguage("E")
@@ -272,7 +277,7 @@ class ProsecutionCaseFileHelperTest {
 
         ProsecutionCaseFileHelper.validateDefendantErrors(
                 caseDetails, DLRM_MIGRATION, defendantsWithReferenceData, referenceDataQueryService,
-                Stream.builder(), false, "XHIBIT");
+                Stream.builder(), false, migrationSourceSystemName);
 
         assertThat(referenceDataVO.getBailStatusReferenceData().size(), is(1));
         assertThat(referenceDataVO.getBailStatusReferenceData().get(0).getStatusCode(), is("U"));

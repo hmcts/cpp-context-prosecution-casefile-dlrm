@@ -43,7 +43,9 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
     public static Stream<Arguments> data() {
         return Stream.of(
                 Arguments.of("W", "WELSH"),
-                Arguments.of("E", "ENGLISH")
+                Arguments.of("E", "ENGLISH"),
+                Arguments.of("w", "WELSH"),
+                Arguments.of("e", "ENGLISH")
 
         );
     }

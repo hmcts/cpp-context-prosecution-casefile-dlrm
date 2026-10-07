@@ -34,8 +34,9 @@ public class ObservedEthnicityRefDataEnricher implements DefendantRefDataEnriche
             final List<String> ethnicityParentGuardianList = defendantsWithReferenceData.getDefendants().stream()
                     .filter(x -> x.getIndividual() != null
                             && x.getIndividual().getParentGuardianInformation() != null
-                            && x.getIndividual().getParentGuardianInformation().getObservedEthnicity() != null
-                    ).map(x -> x.getIndividual().getParentGuardianInformation().getObservedEthnicity())
+                            && x.getIndividual().getParentGuardianInformation().getPersonalInformation() != null
+                            && x.getIndividual().getParentGuardianInformation().getPersonalInformation().getObservedEthnicity() != null
+                    ).map(x -> x.getIndividual().getParentGuardianInformation().getPersonalInformation().getObservedEthnicity().toString())
                     .collect(toList());
 
             if (!ethnicityList.isEmpty() || !ethnicityParentGuardianList.isEmpty()) {

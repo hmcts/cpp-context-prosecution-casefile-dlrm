@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.pcfdlrm.event.processor.utils.CaseReceivedHelper.buildDefendantWithCustodyStatus;
 import static uk.gov.moj.cpp.pcfdlrm.event.processor.utils.CaseReceivedHelper.buildDefendantWithTitle;
+import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant.migratedDefendant;
 
 import uk.gov.justice.core.courts.HearingLanguage;
 import uk.gov.justice.core.courts.PersonDefendant;
@@ -22,6 +23,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -199,6 +202,21 @@ public class ProsecutionMigrationCaseToCCPersonDefendantConverterTest {
 
         assertNotNull(personDefendant);
         assertNull(personDefendant.getPersonDetails().getSpecificRequirements());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"e, ENGLISH", "w, WELSH"})
+    void shouldConvertLowercaseLanguages(final String language, final HearingLanguage expected) {
+        final MigratedDefendant defendant = migratedDefendant()
+                .withValuesFrom(buildDefendantWithTitle("MR"))
+                .withHearingLanguage(language)
+                .withDocumentationLanguage(language)
+                .build();
+        converter = new ProsecutionMigrationCaseToCCPersonDefendantConverter();
+        PersonDefendant personDefendant = converter.convert(defendant, referenceDataVO);
+
+        assertThat(personDefendant.getPersonDetails().getHearingLanguageNeeds(), is(expected));
+        assertThat(personDefendant.getPersonDetails().getDocumentationLanguageNeeds(), is(expected));
     }
 
     @Test

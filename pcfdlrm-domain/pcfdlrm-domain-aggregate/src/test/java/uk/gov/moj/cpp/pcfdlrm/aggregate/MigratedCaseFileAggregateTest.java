@@ -487,8 +487,7 @@ class MigratedCaseFileAggregateTest {
     }
 
     // LIBRA row: hearing warning raised for LIBRA too (DD-43500). Its received fixture differs only by
-    // XHIBIT-only defendant fix-ups (ProsecutionCaseFileHelper): no "U" custodyStatus default, and
-    // ethnicity / nationality not stripped.
+    // migrationSourceSystem, since LIBRA now gets the same defendant fix-ups as XHIBIT.
     @ParameterizedTest
     @MethodSource("xhibitAndLibra")
     void shouldNotDefaultHearingTimeForUnscheduledHearing(final SourceSystem sourceSystem, final String receivedFixture) {
