@@ -58,7 +58,7 @@ type or a past date, lists without a room if the court room doesn't match (FR-2)
 - **Past hearings** are common in migrated LIBRA data → each gets a `DATE_OF_HEARING_IN_THE_PAST`
   warning. Expected, as XHIBIT.
 - **A hearing with any problem doesn't get the 10:00 default** (~L387 requires `problems.isEmpty()`).
-  Not reachable for LIBRA: stagingdlrm rejects a missing time.
+  Not applicable to LIBRA — `timeOfHearing` is mandatory in the LIBRA intake schema.
 - **Partial defendant match** — one unmatched listed defendant/offence empties the whole match
   (`ProsecutionCaseFileHelper` ~L164) → reject. As XHIBIT.
 - **Existing tests:** no current LIBRA unit input carries hearings, and all LIBRA IT fixtures with

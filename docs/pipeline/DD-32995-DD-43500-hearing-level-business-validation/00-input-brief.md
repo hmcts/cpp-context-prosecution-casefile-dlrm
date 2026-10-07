@@ -31,8 +31,9 @@ stagingdlrm read from `origin/team/libra1`.
 
 ### stagingdlrm
 
-**Schema** (`migrated-hearing.json`, shared by XHIBIT and LIBRA) already enforces every Format entry
-except `courtRoomId`:
+**Schema** (LIBRA's own intake schema `libra.case-submission.json`, `TimerTriggerJava` ~L408) already
+enforces every Format entry except `courtRoomId`, and makes `courtRoomId`, `dateOfHearing` and
+`timeOfHearing` required:
 
 | Field | Schema today |
 |---|---|
@@ -44,11 +45,11 @@ except `courtRoomId`:
 | `hearingType` | required, maxLength 10 |
 
 A schema failure rejects the whole submission, so "invalid → null → missing behaviour" can't happen
-for format errors. No per-source schema conditionals (stagingdlrm ADR-002).
+for format errors.
 
 **Rule engine** (`MigratedCaseValidationRuleEngine`, LIBRA set, added in DD-43081): `RequiredFieldRule`
-on every hearing's `courtRoomId`, `dateOfHearing`, `timeOfHearing` → missing = reject. Contradicts
-the ticket for all three.
+on every hearing's `courtRoomId`, `dateOfHearing`, `timeOfHearing` → missing = reject. Confirmed:
+rejected by LIBRA intake schema.
 
 ### pcfdlrm
 
@@ -62,5 +63,5 @@ offence, hearing type, week commencing, no matching defendants.
 | `NO_MATCHING_DEFENDANTS_FOR_HEARING` → reject | yes | no — gated (~L542) |
 | Hearing skipped if OU / hearing type not in ref data, or past date (processor converter) | yes | yes (source-agnostic) |
 | No matching court room → listed without room | yes | yes |
-| Missing time on a fixed hearing → 10:00 London (aggregate ~L387) | yes | yes, but unreachable (staging rejects) |
+| Missing time on a fixed hearing → 10:00 London (aggregate ~L387) | yes | not applicable to LIBRA — `timeOfHearing` is mandatory in the LIBRA intake schema |
 | `durationMinutes` null / 0 → hearing-type default (converter ~L240) | yes | yes |

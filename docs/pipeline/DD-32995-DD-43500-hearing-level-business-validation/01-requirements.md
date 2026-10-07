@@ -2,8 +2,8 @@
 
 - **Story:** DD-43500 (epic DD-32995) — see `00-input-brief.md`.
 - **Scope:** LIBRA hearing-level business validation. XHIBIT behaviour unchanged.
-- **Format column: out of scope.** The shared schema already enforces it (except `courtRoomId`) and
-  can't be changed per source without affecting XHIBIT.
+- **Format column: out of scope.** The LIBRA intake schema (`libra.case-submission.json`) already
+  enforces it (except `courtRoomId`).
 
 ## pcfdlrm
 
@@ -21,8 +21,8 @@
 ## stagingdlrm — no change
 
 LIBRA `RequiredFieldRule`s (DD-43081) already reject a hearing missing `courtRoomId`,
-`dateOfHearing` or `timeOfHearing`. Kept as is (user decision 2026-10-05). Diverges from the ticket's
-"accept" rows; flag to BA.
+`dateOfHearing` or `timeOfHearing`. Kept as is (user decision 2026-10-05). Confirmed: rejected by LIBRA
+intake schema.
 
 ## Acceptance criteria
 
