@@ -38,6 +38,7 @@ import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.Mig
 
 import uk.gov.justice.services.common.converter.ObjectToJsonObjectConverter;
 import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
+import uk.gov.moj.cpp.pcfdlrm.builder.SourceSystem;
 import uk.gov.moj.cpp.pcfdlrm.domain.ProsecutionWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseFileReceived;
 import uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseValidatedWithWarnings;
@@ -70,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,6 +79,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -483,9 +486,13 @@ class MigratedCaseFileAggregateTest {
         assertEventsMatchExpected(actual, expected);
     }
 
-    @Test
-    void shouldNotDefaultHearingTimeForUnscheduledHearing() {
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails("MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
+    // LIBRA row: hearing warning raised for LIBRA too (DD-43500). Its received fixture differs only by
+    // XHIBIT-only defendant fix-ups (ProsecutionCaseFileHelper): no "U" custodyStatus default, and
+    // ethnicity / nationality not stripped.
+    @ParameterizedTest
+    @MethodSource("xhibitAndLibra")
+    void shouldNotDefaultHearingTimeForUnscheduledHearing(final SourceSystem sourceSystem, final String receivedFixture) {
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails("MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem);
         final MigratedDefendant defendant = migratedDefendant()
                 .withValuesFrom(migCaseDetails.getDefendants().get(0))
                 .withProsecutorDefendantId("DEF-001")
@@ -519,8 +526,14 @@ class MigratedCaseFileAggregateTest {
 
         final List<ExpectedEvent> expected = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
         expected.add(warning("Hearing validation", "COURT_HEARING_LOCATION_OUCODE_INVALID : [C50EX00]"));
-        expected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-hearing-unscheduled.json"));
+        expected.add(new ExpectedEvent(MigratedCaseFileReceived.class, receivedFixture));
         assertEventsMatchExpected(actual, expected);
+    }
+
+    private static Stream<Arguments> xhibitAndLibra() {
+        return Stream.of(
+                Arguments.of(sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER), "json/aggregate/migrated-case-file-received-hearing-unscheduled.json"),
+                Arguments.of(sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER), "json/aggregate/migrated-case-file-received-hearing-unscheduled-libra.json"));
     }
 
     @ParameterizedTest

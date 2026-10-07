@@ -130,8 +130,8 @@ final class AggregateScenarioInputs {
         return new CaseFileInput(receiveMigratedCase, new ProsecutionWithReferenceData(prosecution));
     }
 
-    static CaseFileInput noMatchingDefendantsForHearingInput() {
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails("MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
+    static CaseFileInput noMatchingDefendantsForHearingInput(final SourceSystem sourceSystem) {
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails("MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem);
         final MigratedCaseDetails migCaseDetailsWithHearing = MigratedCaseDetails.migratedCaseDetails().withValuesFrom(migCaseDetails)
                 .withHearings(List.of(MigratedHearing.migratedHearing().withListedDefendants(List.of()).build())).build();
         final Prosecution prosecution = buildProsecution(migCaseDetailsWithHearing);
@@ -139,8 +139,8 @@ final class AggregateScenarioInputs {
         return new CaseFileInput(receiveMigratedCase, new ProsecutionWithReferenceData(prosecution));
     }
 
-    static CaseFileInput hearingDefendantMatchesNoOffencesInput() {
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails("MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
+    static CaseFileInput hearingDefendantMatchesNoOffencesInput(final SourceSystem sourceSystem) {
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails("MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem);
         final MigratedDefendant defendantWithNonMatchingOffences = migratedDefendant().withId(DEFENDANT_ID).withProsecutorDefendantId("DEF-001")
                 .withOffences(List.of(migratedOffence().withOffenceId(UUID.fromString("b1b1b1b1-1111-4111-8111-111111111111")).withProsecutorOffenceId("OFF-001").withOffenceSequenceNumber(1).build())).build();
         final MigratedDefendant secondDefendantWithNonMatchingOffences = migratedDefendant().withId(DEFENDANT_ID2).withProsecutorDefendantId("DEF-002")

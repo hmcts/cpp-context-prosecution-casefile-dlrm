@@ -254,7 +254,8 @@ public class MigratedCaseFileAggregate implements Aggregate {
         final HearingValidationResult hearingValidationResult = validateHearings(receiveMigratedCaseFile, referenceDataQueryService, migratedHearingRefDataEnrichers, migratedCaseDetails, migratedHearingWithReferenceDataList);
         final List<Problem> hearingsProblems = hearingValidationResult.problems();
 
-        if (hasNoMatchingDefendantsForXhibitHearing(hearingsProblems, receiveMigratedCaseFile)) {
+        // No isXhibit guard here (DD-43500): a hearing with no matching defendants rejects LIBRA cases too.
+        if (hasNoMatchingDefendantsForHearing(hearingsProblems)) {
             builder.add(MigratedCaseFileProcessed.migratedCaseFileProcessed()
                     .withDescription(NO_MATCHING_DEFENDANTS_WITH_HEARINGS_FOUND_FOR_HEARING)
                     .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
@@ -302,7 +303,7 @@ public class MigratedCaseFileAggregate implements Aggregate {
 
         defendantValidationWarningsList.forEach(builder::add);
 
-        generateXhibitHearingWarnings(receiveMigratedCaseFile, hearingsProblems, builder, migratedCaseDetails);
+        generateHearingWarnings(hearingsProblems, builder, migratedCaseDetails);
 
         if (hasXhibitDefendantProblems(migratedDefendantWithProblem, receiveMigratedCaseFile)) {
 
@@ -408,8 +409,9 @@ public class MigratedCaseFileAggregate implements Aggregate {
                 .format(TIME_FORMAT);
     }
 
-    private void generateXhibitHearingWarnings(final ReceiveMigratedCaseFile receiveMigratedCaseFile, final List<Problem> hearingsProblems, final Stream.Builder<Object> builder, final MigratedCaseDetails migratedCaseDetails) {
-        if (isNotEmpty(hearingsProblems) && isXhibit(receiveMigratedCaseFile)) {
+    // No isXhibit guard here (DD-43500): LIBRA hearing problems become warnings too.
+    private void generateHearingWarnings(final List<Problem> hearingsProblems, final Stream.Builder<Object> builder, final MigratedCaseDetails migratedCaseDetails) {
+        if (isNotEmpty(hearingsProblems)) {
             final List<MigratedCaseValidatedWithWarnings> migratedCaseValidatedWithWarningsList = generateHearingsWarnings(
                     migratedCaseDetails.getCaseDetails().getCaseId(),
                     migratedCaseDetails.getCaseDetails().getProsecutorCaseReference(),
@@ -537,10 +539,6 @@ public class MigratedCaseFileAggregate implements Aggregate {
 
     private boolean hasCourtRecordSheetCountExceedsDefendantCount(final List<Problem> materialsProblems) {
         return materialsProblems.stream().anyMatch(e -> e.getCode().equals(COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANT_COUNT.name()));
-    }
-
-    private boolean hasNoMatchingDefendantsForXhibitHearing(final List<Problem> hearingsProblems, final ReceiveMigratedCaseFile receiveMigratedCaseFile) {
-        return hasNoMatchingDefendantsForHearing(hearingsProblems) && isXhibit(receiveMigratedCaseFile);
     }
 
     private boolean hasNoMatchingDefendantsForHearing(final List<Problem> problems) {
