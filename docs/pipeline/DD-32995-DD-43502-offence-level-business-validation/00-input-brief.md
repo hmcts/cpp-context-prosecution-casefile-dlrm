@@ -57,7 +57,7 @@ end date not tied to date code 4. The schema is draft-04 (networknt V4), so a co
 | Field | XHIBIT | LIBRA today |
 |---|---|---|
 | `offenceCode` not in ref data | Reject "Invalid offence code" | Warning only |
-| `pleaDate` missing on a guilty-type plea, or future | Reject "Missing or Invalid plea date" | Not rejected, no warning |
+| `pleaDate` future (any valid plea) or missing (guilty-type plea) | Reject "Missing or Invalid plea date" | Not rejected, no warning |
 | `verdictDate` missing on a valid verdict, or future | Reject "Missing or Invalid verdict date" | Missing: not rejected, no warning. Future: warning |
 | `chargeDate` missing (J, C, Q, R, Z) or future | Warning only | Same |
 | `arrestDate` missing (C, R, Z) or future | Warning only | Same |

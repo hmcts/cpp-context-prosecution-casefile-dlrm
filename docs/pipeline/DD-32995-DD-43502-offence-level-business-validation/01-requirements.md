@@ -10,7 +10,7 @@
 | ID | Requirement | XHIBIT precedent |
 |----|-------------|------------------|
 | FR-1 | `offenceCode` not in CP offence ref data → reject ("Invalid offence code"). | `hasInvalidOffenceCode` reject (XHIBIT-only today) |
-| FR-2 | Guilty-type plea with missing or future `pleaDate` → reject ("Missing or Invalid plea date"). Conditional mandatory: follows XHIBIT, so a non-guilty plea without a date is accepted (user decision 2026-10-08). | `PleaValidationRule` + `hasInvalidPleaDate` (XHIBIT-only today) |
+| FR-2 | Valid plea with a future `pleaDate`, or guilty-type plea with no `pleaDate` → reject ("Missing or Invalid plea date"). Conditional mandatory: follows XHIBIT, so a non-guilty plea without a date is accepted (user decision 2026-10-08). | `PleaValidationRule` + `hasInvalidPleaDate` (XHIBIT-only today) |
 | FR-3 | Valid verdict with missing or future `verdictDate` → reject ("Missing or Invalid verdict date"). | `VerdictValidationRule` + `hasInvalidVerdictDate` (XHIBIT-only today) |
 | FR-4 | Missing `chargeDate` on a J / C / Q / R case (any LIBRA code except Summons) → reject. Future date stays a warning. | `ChargeDateValidationRule` detects; XHIBIT only warns |
 | FR-5 | Missing or future `arrestDate` on a Charge case → reject (ticket: "must not be in the future"; invalid → missing). | `ArrestDateValidationRule` detects; XHIBIT only warns |

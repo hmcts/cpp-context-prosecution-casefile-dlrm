@@ -19,7 +19,7 @@ silently migrated.
 See `01-requirements.md` FR-1 – FR-9. For LIBRA, each reject is `migrated-case-file-processed`,
 `processingIsSuccessful=false`, with the description below and no received / creation-pending event:
 1. Offence code not in ref data → "Invalid offence code".
-2. Guilty-type plea with missing or future plea date → "Missing or Invalid plea date".
+2. Valid plea with a future plea date, or guilty-type plea with no plea date → "Missing or Invalid plea date".
 3. Valid verdict with missing or future verdict date → "Missing or Invalid verdict date".
 4. Missing charge date on a J / C / Q / R case (not Summons) → "Missing charge date". Future charge date → warning.
 5. Missing or future arrest date on a Charge case → "Missing or invalid arrest date". Other case types → warning.
