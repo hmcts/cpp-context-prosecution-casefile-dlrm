@@ -261,7 +261,8 @@ class ReceiveMigratedCaseFileIT {
             "command-json/pcfdlrm.command.receive-migrated-case-file-xhibit-no-material.json, no-material",
             "command-json/pcfdlrm.command.receive-migrated-case-file-libra-journey.json, libra-journey",
             "command-json/pcfdlrm.command.receive-migrated-case-file-libra-indicated-plea.json, libra-indicated-plea",
-            "command-json/pcfdlrm.command.receive-migrated-case-file-libra-indicated-guilty-plea.json, libra-indicated-guilty-plea"
+            "command-json/pcfdlrm.command.receive-migrated-case-file-libra-indicated-guilty-plea.json, libra-indicated-guilty-plea",
+            "command-json/pcfdlrm.command.receive-migrated-case-file-libra-guilty-verdict.json, libra-guilty-verdict"
     })
     void receiveMigratedCaseFileWithoutMaterialInitiatesCourtProceedings(final String commandJson, final String expectedFixture) {
         final String submissionId = UUID.randomUUID().toString();

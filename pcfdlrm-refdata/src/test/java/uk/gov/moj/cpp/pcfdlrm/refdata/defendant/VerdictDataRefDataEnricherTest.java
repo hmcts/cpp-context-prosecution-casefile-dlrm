@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.pcfdlrm.refdata.defendant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -23,6 +24,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -78,6 +81,74 @@ public class VerdictDataRefDataEnricherTest {
         assertTrue(verdictReferenceDataMap.containsKey(defendantId));
         assertTrue(verdictReferenceDataMap.get(defendantId).containsKey(offenceId));
         assertEquals("NGJAA", verdictReferenceDataMap.get(defendantId).get(offenceId).getVerdictCode());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Jurisdiction.class, names = {"EITHER", "MAGISTRATES"})
+    public void shouldAdmitVerdictReferenceDataForLibraJurisdiction(final Jurisdiction verdictJurisdiction) {
+        final UUID defendantId = UUID.randomUUID();
+        final UUID offenceId = UUID.randomUUID();
+
+        final Map<UUID, Map<UUID, VerdictReferenceData>> verdictReferenceDataMap =
+                enrichForLibraJurisdiction(verdictJurisdiction, defendantId, offenceId);
+
+        assertNotNull(verdictReferenceDataMap);
+        assertTrue(verdictReferenceDataMap.containsKey(defendantId));
+        assertTrue(verdictReferenceDataMap.get(defendantId).containsKey(offenceId));
+    }
+
+    @Test
+    public void shouldFilterOutVerdictReferenceDataForLibraCrownJurisdiction() {
+        final Map<UUID, Map<UUID, VerdictReferenceData>> verdictReferenceDataMap =
+                enrichForLibraJurisdiction(Jurisdiction.CROWN, UUID.randomUUID(), UUID.randomUUID());
+
+        assertNull(verdictReferenceDataMap);
+    }
+
+    private Map<UUID, Map<UUID, VerdictReferenceData>> enrichForLibraJurisdiction(final Jurisdiction verdictJurisdiction, final UUID defendantId, final UUID offenceId) {
+        final UUID verdictId = UUID.fromString("3be1b0c3-dc72-3a96-9474-07cb9b37a43e");
+
+        final MigratedOffence offence = MigratedOffence.migratedOffence()
+                .withOffenceId(offenceId)
+                .withVerdict(MigratedVerdict.migratedVerdict()
+                        .withId(verdictId)
+                        .withVerdictDate(LocalDate.now())
+                        .build())
+                .build();
+
+        final MigratedDefendant defendant = MigratedDefendant.migratedDefendant()
+                .withId(defendantId)
+                .withOffences(Collections.singletonList(offence))
+                .build();
+
+        final DefendantsWithReferenceData defendantsWithReferenceData = new DefendantsWithReferenceData(List.of(defendant));
+        defendantsWithReferenceData.setDefendants(Collections.singletonList(defendant));
+        defendantsWithReferenceData.setReferenceDataVO(new ReferenceDataVO());
+        defendantsWithReferenceData.setMigrationSourceSystemName("LIBRA");
+
+        final VerdictReferenceData verdictReferenceData = getVerdictReferenceData(verdictJurisdiction);
+
+        when(referenceDataQueryService.getVerdictTypeById(verdictId)).thenReturn(Optional.of(verdictReferenceData));
+
+        final List<DefendantsWithReferenceData> defendantsWithReferenceDataList = Collections.singletonList(defendantsWithReferenceData);
+
+        verdictDataRefDataEnricher.enrich(defendantsWithReferenceDataList);
+
+        return defendantsWithReferenceData.getReferenceDataVO().getVerdictReferenceDataMap();
+    }
+
+    VerdictReferenceData getVerdictReferenceData(final Jurisdiction jurisdiction) {
+        return VerdictReferenceData.verdictReferenceData()
+                .withId(UUID.fromString("3be1b0c3-dc72-3a96-9474-07cb9b37a43e"))
+                .withDescription("Guilty")
+                .withCategory("Guilty")
+                .withCategoryType("GUILTY")
+                .withSequence(10)
+                .withJurisdiction(jurisdiction)
+                .withVerdictCode("G")
+                .withJurySplitAvailable("No")
+                .withCjsVerdictCode("G")
+                .build();
     }
 
     VerdictReferenceData getVerdictReferenceData(){
