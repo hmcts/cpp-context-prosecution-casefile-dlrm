@@ -94,7 +94,7 @@ public class ProsecutionCaseFileHelper {
             final String initiationCode = defendantInitiationCode != null && isValidInitiationCode(defendantInitiationCode) ? defendant.getInitiationCode() : caseDetails.getInitiationCode();
 
             final List<Problem> defendantProblemList =
-                    validate(defendantWithReferenceData, referenceDataQueryService, getDefendantValidationRules(initiationCode, channel, isGroupCase));
+                    validate(defendantWithReferenceData, referenceDataQueryService, getDefendantValidationRules(initiationCode, channel, isGroupCase, migrationSourceSystemName));
 
             validateGenderAndLanguage(defendant, defendantProblemList);
             validateCustodyTimeLimit(defendant, defendantProblemList);

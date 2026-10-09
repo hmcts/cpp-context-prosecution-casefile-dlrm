@@ -39,6 +39,8 @@ public enum FieldName {
     OFFENCE_SEQUENCE_NO("offence_offenceSequenceNo"),
     OFFENCE_LOCATION("offence_offenceLocation"),
     OFFENCE_DATE_CODE("offence_offenceDateCode"),
+    OFFENCE_COMMITTED_DATE("offence_offenceCommittedDate"),
+    OFFENCE_COMMITTED_END_DATE("offence_offenceCommittedEndDate"),
     STATEMENT_OF_FACTS_WELSH("statementOfFactsWelsh"),
     CASE_MARKERS("caseMarkers"),
     OU_CODE("ouCode"),

@@ -12,12 +12,17 @@ import static uk.gov.moj.cpp.pcfdlrm.ProsecutionCaseFileHelper.buildMigratedHear
 import static uk.gov.moj.cpp.pcfdlrm.ProsecutionCaseFileHelper.validateDefendantErrors;
 import static uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseValidatedCreationPending.migratedCaseValidatedCreationPending;
 import static uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseValidatedWithWarnings.migratedCaseValidatedWithWarnings;
+import static uk.gov.moj.cpp.pcfdlrm.validation.CaseType.CHARGE;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.ARREST_DATE_IN_FUTURE;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.CHARGE_DATE_IN_FUTURE;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURT_LOCATION_OUCODE_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANT_COUNT;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_FILE_TYPE_FOR_XHIBIT;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.NO_MATCHING_DEFENDANTS_FOR_HEARING;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.OFFENCE_CODE_IS_INVALID;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.OFFENCE_COMMITTED_DATE_IN_FUTURE;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.OFFENCE_COMMITTED_END_DATE_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.PLEA_DATE_ABSENT;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.PLEA_DATE_CANNOT_BE_FUTURE_DATE;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.PROSECUTOR_OUCODE_NOT_RECOGNISED;
@@ -27,6 +32,7 @@ import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.VERDICT_DATE_CANNOT_
 import static uk.gov.moj.cpp.pcfdlrm.validation.ValidationRuleExecutor.validate;
 import static uk.gov.moj.cpp.pcfdlrm.validation.provider.CcProsecutionValidationRuleProvider.getCaseValidationRules;
 import static uk.gov.moj.cpp.pcfdlrm.validation.provider.CcProsecutionValidationRuleProvider.getMigratedHearingValidationRules;
+import static uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.ChargeDateValidationRule.CHARGE_DATE_NOT_PROVIDED;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.DocumentCategoryLevel.CASE_LEVEL;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.DocumentCategoryLevel.DEFENDANT_LEVEL;
 import static uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialAdded.materialAdded;
@@ -90,6 +96,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -99,6 +106,7 @@ public class MigratedCaseFileAggregate implements Aggregate {
     @Serial
     private static final long serialVersionUID = -6786924305887766569L;
     private static final String XHIBIT = "XHIBIT";
+    private static final String LIBRA = "LIBRA";
     private static final String MIGRATED_CASE_NOT_FOUND_IN_AUTOMATION = "Migrated case not found in Automation";
     public static final String NO_MATCHING_DEFENDANTS_WITH_HEARINGS_FOUND_FOR_HEARING = "No matching defendants with hearings found for the hearing";
     public static final String OFFENCE_VALIDATION = "Offence validation";
@@ -106,6 +114,10 @@ public class MigratedCaseFileAggregate implements Aggregate {
     public static final String INVALID_OFFENCE_CODE = "Invalid offence code";
     public static final String MISSING_OR_INVALID_PLEA_DATE = "Missing or Invalid plea date";
     public static final String MISSING_OR_INVALID_VERDICT_DATE = "Missing or Invalid verdict date";
+    public static final String MISSING_CHARGE_DATE = "Missing charge date";
+    public static final String MISSING_OR_INVALID_ARREST_DATE = "Missing or invalid arrest date";
+    public static final String INVALID_OFFENCE_COMMITTED_DATE = "Invalid offence committed date";
+    public static final String MISSING_OR_INVALID_OFFENCE_COMMITTED_END_DATE = "Missing or invalid offence committed end date";
     public static final String COURT_RECORD_SHEET_NOT_PDF = "Court Record Sheet must be a PDF file";
     public static final String COURT_RECORD_SHEET_FILE_TYPE_INVALID = "Court Record Sheet file type is not valid for XHIBIT migration";
     public static final String COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANTS = "Number of Court Record Sheets exceeds number of defendants";
@@ -270,7 +282,7 @@ public class MigratedCaseFileAggregate implements Aggregate {
                 prosecutionChannel, defendantsWithReferenceData,
                 referenceDataQueryService, builder, false, sourceSystemName);
 
-        if (hasOffenceProblems(receiveMigratedCaseFile, migratedDefendantWithProblem, builder, migratedCaseDetails)) {
+        if (hasOffenceProblems(receiveMigratedCaseFile, migratedDefendantWithProblem, receivedInitiationCode, builder, migratedCaseDetails)) {
             return apply(builder.build());
         }
 
@@ -305,7 +317,8 @@ public class MigratedCaseFileAggregate implements Aggregate {
 
         generateHearingWarnings(hearingsProblems, builder, migratedCaseDetails);
 
-        if (hasXhibitDefendantProblems(migratedDefendantWithProblem, receiveMigratedCaseFile)) {
+        // No isXhibit guard here (DD-43502): LIBRA offence problems become warnings too.
+        if (hasDefendantProblems(migratedDefendantWithProblem)) {
 
             final List<MigratedCaseValidatedWithWarnings> migratedCaseValidatedWithWarningsList = generateOffenceWarnings(
                     migratedCaseDetails.getCaseDetails().getCaseId(),
@@ -420,46 +433,58 @@ public class MigratedCaseFileAggregate implements Aggregate {
         }
     }
 
-    private boolean hasOffenceProblems(final ReceiveMigratedCaseFile receiveMigratedCaseFile, final MigratedDefendantWithProblem migratedDefendantWithProblem, final Stream.Builder<Object> builder, final MigratedCaseDetails migratedCaseDetails) {
-        if(isXhibit(receiveMigratedCaseFile)) {
-
-            if (hasInvalidOffenceCode(migratedDefendantWithProblem)) {
-                builder.add(MigratedCaseFileProcessed.migratedCaseFileProcessed()
-                        .withDescription(INVALID_OFFENCE_CODE)
-                        .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
-                        .withSubmissionId(receiveMigratedCaseFile.getSubmissionId())
-                        .withProcessingIsSuccessful(false)
-                        .withCaseUrn(migratedCaseDetails.getCaseDetails().getProsecutorCaseReference())
-                        .build());
-
-                return true;
-            }
-
-            if(hasInvalidPleaDate(migratedDefendantWithProblem)) {
-                builder.add(MigratedCaseFileProcessed.migratedCaseFileProcessed()
-                        .withDescription(MISSING_OR_INVALID_PLEA_DATE)
-                        .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
-                        .withSubmissionId(receiveMigratedCaseFile.getSubmissionId())
-                        .withProcessingIsSuccessful(false)
-                        .withCaseUrn(migratedCaseDetails.getCaseDetails().getProsecutorCaseReference())
-                        .build());
-
-                return true;
-            }
-
-            if(hasInvalidVerdictDate(migratedDefendantWithProblem)) {
-                builder.add(MigratedCaseFileProcessed.migratedCaseFileProcessed()
-                        .withDescription(MISSING_OR_INVALID_VERDICT_DATE)
-                        .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
-                        .withSubmissionId(receiveMigratedCaseFile.getSubmissionId())
-                        .withProcessingIsSuccessful(false)
-                        .withCaseUrn(migratedCaseDetails.getCaseDetails().getProsecutorCaseReference())
-                        .build());
-
-                return true;
-            }
+    // No isXhibit guard here (DD-43502): offence code, plea date and verdict date reject LIBRA cases too.
+    private boolean hasOffenceProblems(final ReceiveMigratedCaseFile receiveMigratedCaseFile, final MigratedDefendantWithProblem migratedDefendantWithProblem, final String initiationCode, final Stream.Builder<Object> builder, final MigratedCaseDetails migratedCaseDetails) {
+        final Optional<String> rejection;
+        if (hasInvalidOffenceCode(migratedDefendantWithProblem)) {
+            rejection = Optional.of(INVALID_OFFENCE_CODE);
+        } else if (hasInvalidPleaDate(migratedDefendantWithProblem)) {
+            rejection = Optional.of(MISSING_OR_INVALID_PLEA_DATE);
+        } else if (hasInvalidVerdictDate(migratedDefendantWithProblem)) {
+            rejection = Optional.of(MISSING_OR_INVALID_VERDICT_DATE);
+        } else if (isLibra(receiveMigratedCaseFile)) {
+            rejection = getLibraOffenceRejection(migratedDefendantWithProblem, initiationCode);
+        } else {
+            rejection = Optional.empty();
         }
-        return false;
+
+        rejection.ifPresent(description -> builder.add(MigratedCaseFileProcessed.migratedCaseFileProcessed()
+                .withDescription(description)
+                .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
+                .withSubmissionId(receiveMigratedCaseFile.getSubmissionId())
+                .withProcessingIsSuccessful(false)
+                .withCaseUrn(migratedCaseDetails.getCaseDetails().getProsecutorCaseReference())
+                .build()));
+
+        return rejection.isPresent();
+    }
+
+    // DD-43502: the charge / arrest date rules report a missing date under their _IN_FUTURE codes; the
+    // problem value tells missing from future. XHIBIT keeps these as warnings.
+    // Charge date: only a missing one rejects. Arrest date: missing or future rejects, Charge cases only.
+    private Optional<String> getLibraOffenceRejection(final MigratedDefendantWithProblem migratedDefendantWithProblem, final String initiationCode) {
+        if (hasProblemValue(migratedDefendantWithProblem, CHARGE_DATE_IN_FUTURE, value -> CHARGE_DATE_NOT_PROVIDED.equals(value.getValue()))) {
+            return Optional.of(MISSING_CHARGE_DATE);
+        }
+        // LIBRA carries initiationCode at case level only, so the case code decides "Charge".
+        if (CHARGE.getCode().equals(initiationCode) && hasProblemValue(migratedDefendantWithProblem, ARREST_DATE_IN_FUTURE, value -> true)) {
+            return Optional.of(MISSING_OR_INVALID_ARREST_DATE);
+        }
+        if (hasProblemValue(migratedDefendantWithProblem, OFFENCE_COMMITTED_DATE_IN_FUTURE, value -> true)) {
+            return Optional.of(INVALID_OFFENCE_COMMITTED_DATE);
+        }
+        if (hasProblemValue(migratedDefendantWithProblem, OFFENCE_COMMITTED_END_DATE_INVALID, value -> true)) {
+            return Optional.of(MISSING_OR_INVALID_OFFENCE_COMMITTED_END_DATE);
+        }
+        return Optional.empty();
+    }
+
+    private boolean hasProblemValue(final MigratedDefendantWithProblem migratedDefendantWithProblem, final ProblemCode problemCode, final Predicate<ProblemValue> valueMatches) {
+        return migratedDefendantWithProblem.getDefendantProblems().stream()
+                .flatMap(defendantProblem -> defendantProblem.getProblems().stream())
+                .filter(problem -> problem.getCode().equals(problemCode.name()))
+                .flatMap(problem -> problem.getValues().stream())
+                .anyMatch(valueMatches);
     }
 
 
@@ -517,6 +542,10 @@ public class MigratedCaseFileAggregate implements Aggregate {
         return XHIBIT.equals(receiveMigratedCaseFile.getMigratedCaseDetails().getMigrationSourceSystem().getMigrationSourceSystemName());
     }
 
+    private boolean isLibra(final ReceiveMigratedCaseFile receiveMigratedCaseFile) {
+        return LIBRA.equals(receiveMigratedCaseFile.getMigratedCaseDetails().getMigrationSourceSystem().getMigrationSourceSystemName());
+    }
+
     private boolean hasInvalidOuCode(final List<Problem> caseProblems) {
         return caseProblems.stream().anyMatch(e -> e.getCode().equals(COURT_LOCATION_OUCODE_INVALID.name()));
     }
@@ -545,8 +574,8 @@ public class MigratedCaseFileAggregate implements Aggregate {
         return problems.stream().anyMatch(p -> p.getCode().equals(NO_MATCHING_DEFENDANTS_FOR_HEARING.name()));
     }
 
-    private boolean hasXhibitDefendantProblems(final MigratedDefendantWithProblem migratedDefendantWithProblem, final ReceiveMigratedCaseFile receiveMigratedCaseFile) {
-        return isNotEmpty(migratedDefendantWithProblem.getDefendantProblems()) && isXhibit(receiveMigratedCaseFile);
+    private boolean hasDefendantProblems(final MigratedDefendantWithProblem migratedDefendantWithProblem) {
+        return isNotEmpty(migratedDefendantWithProblem.getDefendantProblems());
     }
 
     public Stream<Object> materialAddedPostProcessing(final CourtDocument courtDocument, final UUID materialId) {
