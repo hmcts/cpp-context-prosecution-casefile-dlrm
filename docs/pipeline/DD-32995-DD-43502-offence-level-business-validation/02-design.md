@@ -48,7 +48,7 @@ case initiation code (LIBRA has it at case level only). No end-date rule exists 
 | B. End-date rule in the common rule set | Raises new problems for XHIBIT too (FR-8). |
 | C. New `_ABSENT` codes in the charge / arrest rules | Changes XHIBIT warning codes (FR-8). |
 | D. Inline LIBRA checks in the aggregate | Breaks the rule-class pattern; harder to unit-test. |
-| E. Null the end date in `ProsecutionCaseFileHelper` | Same file as open PR #41; event would differ from the received payload for no gain. |
+| E. Null the end date in the aggregate fix-ups | The event would store the nulled value, so the original end date is lost on replay. Converter keeps the event as received (design note 2). |
 
 ## Downstream
 
@@ -61,8 +61,6 @@ case initiation code (LIBRA has it at case level only). No end-date rule exists 
 - **Initiation code `R`** (allowed for LIBRA, not in the ticket columns) is not Summons → missing charge
   date rejects.
 - **Rule order:** C-1 rejects first, then C-3 / C-6; one reject per case, first match wins, as today.
-- **Open PR #41** also edits `ProsecutionCaseFileHelper.java` (~L120); C-5 touches ~L97 — small merge
-  risk, rebase after #41 merges.
 
 ## Tests (FR-9)
 
