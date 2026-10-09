@@ -14,6 +14,7 @@ import static uk.gov.moj.cpp.pcfdlrm.event.processor.utils.CaseReceivedHelper.GI
 import static uk.gov.moj.cpp.pcfdlrm.event.processor.utils.CaseReceivedHelper.GIVEN_NAME_3;
 import static uk.gov.moj.cpp.pcfdlrm.event.processor.utils.CaseReceivedHelper.buildProsecutionWithReferenceData;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.AlcoholLevelMethodReferenceData.alcoholLevelMethodReferenceData;
+import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ObservedEthnicityReferenceData.observedEthnicityReferenceData;
 
 import uk.gov.justice.core.courts.Defendant;
 import uk.gov.moj.cpp.pcfdlrm.domain.ParamsVO;
@@ -27,6 +28,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDe
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +43,7 @@ class ProsecutionCaseFileMigratedDefendantToCCDefendantConverterTest {
 
     private static final String EITHER_WAY = "Either Way";
     private static final String XHIBIT = "XHIBIT";
+    private static final UUID OBSERVED_ETHNICITY_ID = randomUUID();
 
     @InjectMocks
     private ProsecutionCaseFileMigratedDefendantToCCDefendantConverter converter;
@@ -270,7 +273,7 @@ class ProsecutionCaseFileMigratedDefendantToCCDefendantConverterTest {
         final ProsecutionWithReferenceData prosecutionWithReferenceData = buildProsecutionWithReferenceData(EITHER_WAY);
         final List<MigratedDefendant> defendants = prosecutionWithReferenceData.getProsecution().getDefendants();
 
-        final MigratedDefendant defendantWithNullPersonalInfo = MigratedDefendant.migratedDefendant()
+        final MigratedDefendant defendantWithGuardianPersonalInfo = MigratedDefendant.migratedDefendant()
                 .withValuesFrom(defendants.get(0))
                 .withIndividual(Individual.individual()
                         .withValuesFrom(defendants.get(0).getIndividual())
@@ -278,13 +281,16 @@ class ProsecutionCaseFileMigratedDefendantToCCDefendantConverterTest {
                                 .withValuesFrom(defendants.get(0).getIndividual().getParentGuardianInformation())
                                 .withPersonalInformation(PersonalInformation.personalInformation()
                                         .withLastName("lastname")
+                                        .withObservedEthnicity(1)
                                         .build())
                                 .withOrganisationName(null)
                                 .build())
                         .build())
                 .build();
         
-        final List<MigratedDefendant> testDefendants = singletonList(defendantWithNullPersonalInfo);
+        final List<MigratedDefendant> testDefendants = singletonList(defendantWithGuardianPersonalInfo);
+        prosecutionWithReferenceData.getReferenceDataVO().setObservedEthnicityReferenceData(singletonList(observedEthnicityReferenceData()
+                .withId(OBSERVED_ETHNICITY_ID).withEthnicityCode("1").withEthnicityDescription("White - North European").build()));
         final ParamsVO paramsVO = new ParamsVO();
         paramsVO.setMigrationSourceSystemName(XHIBIT);
         paramsVO.setCaseId(prosecutionWithReferenceData.getProsecution().getCaseDetails().getCaseId());
@@ -298,6 +304,8 @@ class ProsecutionCaseFileMigratedDefendantToCCDefendantConverterTest {
 
         assertThat(testDefendants.size(), equalTo(courtsDefendants.size()));
         assertThat(courtsDefendants.get(0).getAssociatedPersons().get(0).getPerson().getLastName(),is("lastname"));
+        assertThat(courtsDefendants.get(0).getAssociatedPersons().get(0).getPerson().getEthnicity().getObservedEthnicityId(), is(OBSERVED_ETHNICITY_ID));
+        assertThat(courtsDefendants.get(0).getAssociatedPersons().get(0).getPerson().getEthnicity().getObservedEthnicityCode(), is("1"));
     }
 
     @Test

@@ -70,7 +70,7 @@ class ObservedEthnicityRefDataEnricherTest {
     void testShouldPopulateObservedEthnicityWhenParentGuardianObservedEthnicityFound() {
         when(referenceDataQueryService.retrieveObservedEthnicity()).thenReturn(getMockObservedEthnicityRefData());
 
-        final DefendantsWithReferenceData defendantsWithReferenceData = getMockDefendantsWithParentGuardianReferenceData("1");
+        final DefendantsWithReferenceData defendantsWithReferenceData = getMockDefendantsWithParentGuardianReferenceData(1);
         observedEthnicityRefDataEnricher.enrich(defendantsWithReferenceData);
         assertNotNull(defendantsWithReferenceData.getReferenceDataVO().getObservedEthnicityReferenceData());
         assertThat(defendantsWithReferenceData.getReferenceDataVO().getObservedEthnicityReferenceData().size(), is(1));
@@ -112,8 +112,10 @@ class ObservedEthnicityRefDataEnricherTest {
         return new DefendantsWithReferenceData(defendants);
     }
 
-    private DefendantsWithReferenceData getMockDefendantsWithParentGuardianReferenceData(final String ethnicity) {
-        final ParentGuardianInformation parentGuardianInformation = ParentGuardianInformation.parentGuardianInformation().withObservedEthnicity(ethnicity).build();
+    private DefendantsWithReferenceData getMockDefendantsWithParentGuardianReferenceData(final Integer ethnicity) {
+        final ParentGuardianInformation parentGuardianInformation = ParentGuardianInformation.parentGuardianInformation()
+                .withPersonalInformation(PersonalInformation.personalInformation().withObservedEthnicity(ethnicity).build())
+                .build();
         final Individual individual = Individual.individual().withParentGuardianInformation(parentGuardianInformation).build();
         final MigratedDefendant defendant = MigratedDefendant.migratedDefendant().withId(DEFENDANT_ID).withIndividual(individual).build();
         final List<MigratedDefendant> defendants = new ArrayList<>();

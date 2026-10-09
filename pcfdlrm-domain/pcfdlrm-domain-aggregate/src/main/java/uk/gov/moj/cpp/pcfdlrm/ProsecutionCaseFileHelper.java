@@ -115,9 +115,7 @@ public class ProsecutionCaseFileHelper {
                             .withCaseType(caseDetails.getInitiationCode())
                             .withPoliceSystemId(caseDetails.getPoliceSystemId()).build());
 
-                    if ("XHIBIT".equals(migrationSourceSystemName)) {
-                        applyRuleToDefendantFields(migratedDefendantBuilder, referenceDataQueryService, defendantWithReferenceData, defendantProblemList);
-                    }
+                    applyRuleToDefendantFields(migratedDefendantBuilder, referenceDataQueryService, defendantWithReferenceData, defendantProblemList);
                 }
             } else {
                 if (DLRM_MIGRATION.equals(channel)) {

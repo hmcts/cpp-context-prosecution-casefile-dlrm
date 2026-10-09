@@ -145,9 +145,10 @@ public class ProsecutionCaseFileMigratedDefendantToCCDefendantConverter implemen
                     });
         }
 
-        if (parentGuardianInformation.getObservedEthnicity() != null) {
+        if (parentGuardianInformation.getPersonalInformation() != null && parentGuardianInformation.getPersonalInformation().getObservedEthnicity() != null) {
+            final String observedEthnicity = parentGuardianInformation.getPersonalInformation().getObservedEthnicity().toString();
             referenceDataVO.getObservedEthnicityReferenceData().stream()
-                    .filter(observedEthnicityReferenceData -> observedEthnicityReferenceData.getEthnicityCode().equalsIgnoreCase(parentGuardianInformation.getObservedEthnicity()))
+                    .filter(observedEthnicityReferenceData -> observedEthnicityReferenceData.getEthnicityCode().equalsIgnoreCase(observedEthnicity))
                     .findAny().ifPresent(observedEthnicityReferenceDataPG -> {
                         ethnicityBuiler.withObservedEthnicityId(observedEthnicityReferenceDataPG.getId());
                         ethnicityBuiler.withObservedEthnicityCode(observedEthnicityReferenceDataPG.getEthnicityCode());

@@ -195,11 +195,11 @@ public class ProsecutionMigrationCaseToCCPersonDefendantConverter implements Par
     }
 
     private HearingLanguage getDocumentationLanguageNeeds(final MigratedDefendant defendant) {
-        return getLanguageToDocumentationLanguageNeeds().get(Language.valueOf(defendant.getDocumentationLanguage()));
+        return getLanguageToDocumentationLanguageNeeds().get(Language.valueOf(defendant.getDocumentationLanguage().toUpperCase()));
     }
 
     private HearingLanguage getHearingLanguageNeeds(final MigratedDefendant defendant) {
-        return getLanguageToHearingLanguageNeeds().get(Language.valueOf(defendant.getHearingLanguage()));
+        return getLanguageToHearingLanguageNeeds().get(Language.valueOf(defendant.getHearingLanguage().toUpperCase()));
     }
 
     private ContactNumber buildContactNumber(final MigratedDefendant defendant) {

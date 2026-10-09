@@ -104,11 +104,11 @@
           },
           "parentGuardianInformation": {
             "selfDefinedEthnicity": "W1",
-            "observedEthnicity": "1",
             "gender": "MALE",
             "dateOfBirth": "2015-04-04",
             "personalInformation": {
-              "lastName": "Brown"
+              "lastName": "Brown",
+              "observedEthnicity": 1
             }
           }
         },

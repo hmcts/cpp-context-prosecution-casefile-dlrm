@@ -211,7 +211,7 @@ public class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConvert
     }
 
     private HearingLanguage getHearingLanguage(final String hearingLanguage) {
-        return getLanguageToHearingLanguageNeeds().get(Language.valueOf(hearingLanguage));
+        return getLanguageToHearingLanguageNeeds().get(Language.valueOf(hearingLanguage.toUpperCase()));
     }
 
     public static String asOrganisationUnitWithCourtroomsReferenceData(OrganisationUnitWithCourtroomsReferenceData organisationUnitWithCourtroomsReferenceData) {
