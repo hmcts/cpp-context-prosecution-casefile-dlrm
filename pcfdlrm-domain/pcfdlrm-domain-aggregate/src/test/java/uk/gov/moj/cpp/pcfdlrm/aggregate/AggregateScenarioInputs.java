@@ -3,6 +3,7 @@ package uk.gov.moj.cpp.pcfdlrm.aggregate;
 import static java.util.Collections.singletonList;
 import static uk.gov.justice.core.courts.Gender.FEMALE;
 import static uk.gov.justice.core.courts.Gender.MALE;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_DATE;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.PLEA_DATE_ANCHOR;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildLibraMigratedCaseDetails;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildMigratedCaseDetails;
@@ -49,6 +50,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /**
  * The per-scenario {@link CaseFileInput} builders feeding {@link AggregateScenarios}' scenario
@@ -166,8 +169,8 @@ final class AggregateScenarioInputs {
         return new CaseFileInput(receiveMigratedCase, new ProsecutionWithReferenceData(prosecution));
     }
 
-    static CaseFileInput invalidOffenceCodeInput() {
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(null, null, null, null, "BadOffenceCode", null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
+    static CaseFileInput invalidOffenceCodeInput(final SourceSystem sourceSystem) {
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(null, null, null, null, "BadOffenceCode", null, null, sourceSystem);
         final Prosecution prosecution = buildProsecution(migCaseDetails);
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, createMigratedMaterials(1, "pdf"));
         final ReferenceDataVO referenceDataVO = new ReferenceDataVO();
@@ -177,8 +180,8 @@ final class AggregateScenarioInputs {
         return new CaseFileInput(receiveMigratedCase, prosecutionWithReferenceData);
     }
 
-    static CaseFileInput missingPleaDateInput() {
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(null, null, null, null, "998A", "G", null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
+    static CaseFileInput missingPleaDateInput(final SourceSystem sourceSystem) {
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(null, null, null, null, "998A", "G", null, sourceSystem);
         final Prosecution prosecution = buildProsecution(migCaseDetails);
         final MigratedOffence offence = prosecution.getDefendants().get(0).getOffences().get(0);
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, createMigratedMaterials(1, "pdf"));
@@ -192,8 +195,8 @@ final class AggregateScenarioInputs {
         return new CaseFileInput(receiveMigratedCase, prosecutionWithReferenceData);
     }
 
-    static CaseFileInput missingVerdictDateInput() {
-        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(null, null, null, null, "998A", null, null, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
+    static CaseFileInput missingVerdictDateInput(final SourceSystem sourceSystem) {
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(null, null, null, null, "998A", null, null, sourceSystem);
         final MigratedOffence baseOffence = migCaseDetails.getDefendants().get(0).getOffences().get(0);
         final MigratedOffence offenceWithVerdict = MigratedOffence.migratedOffence().withValuesFrom(baseOffence)
                 .withVerdict(MigratedVerdict.migratedVerdict().withId(UUID.fromString("f1f1f1f1-1111-4111-8111-111111111111")).build())
@@ -208,6 +211,91 @@ final class AggregateScenarioInputs {
         referenceDataVO.setOffenceReferenceData(List.of(OffenceReferenceData.offenceReferenceData().withCjsOffenceCode("998A").build()));
         referenceDataVO.setVerdictReferenceDataMap(Map.of(DEFENDANT_ID, Map.of(offenceWithVerdict.getOffenceId(),
                 VerdictReferenceData.verdictReferenceData().build())));
+        referenceDataVO.setProsecutorsReferenceData(ProsecutorsReferenceData.prosecutorsReferenceData().build());
+        final ProsecutionWithReferenceData prosecutionWithReferenceData = new ProsecutionWithReferenceData(prosecution);
+        prosecutionWithReferenceData.setReferenceDataVO(referenceDataVO);
+        return new CaseFileInput(receiveMigratedCase, prosecutionWithReferenceData);
+    }
+
+    private static final SourceSystem LIBRA = sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER);
+
+    /** LIBRA offence with no charge, arrest or end date (DD-43502). */
+    static CaseFileInput libraMissingChargeDateInput() {
+        return offenceDatesInput(LIBRA, null, offence -> offence);
+    }
+
+    /** LIBRA offence with a future charge date — a warning, not a reject (DD-43502). */
+    static CaseFileInput libraFutureChargeDateInput() {
+        return offenceDatesInput(LIBRA, null, offence -> offence.withChargeDate(FUTURE_DATE).withArrestDate(PLEA_DATE_ANCHOR));
+    }
+
+    /** LIBRA offence with a charge date and the given arrest date, for the given case initiation code (DD-43502). */
+    static CaseFileInput libraArrestDateInput(final String initiationCode, final LocalDate arrestDate) {
+        return arrestDateInput(LIBRA, initiationCode, arrestDate);
+    }
+
+    /** Offence with a charge date and the given arrest date, for the given source and case initiation code (DD-43502). */
+    static CaseFileInput arrestDateInput(final SourceSystem sourceSystem, final String initiationCode, final LocalDate arrestDate) {
+        return offenceDatesInput(sourceSystem, initiationCode, offence -> offence.withChargeDate(PLEA_DATE_ANCHOR).withArrestDate(arrestDate));
+    }
+
+    /** LIBRA offence with charge and arrest dates and a future committed date (DD-43502). */
+    static CaseFileInput libraFutureCommittedDateInput() {
+        return futureCommittedDateInput(LIBRA);
+    }
+
+    /** Offence with charge and arrest dates and a future committed date, for the given source (DD-43502). */
+    static CaseFileInput futureCommittedDateInput(final SourceSystem sourceSystem) {
+        return offenceDatesInput(sourceSystem, null, offence -> offence.withChargeDate(PLEA_DATE_ANCHOR).withArrestDate(PLEA_DATE_ANCHOR)
+                .withOffenceCommittedDate(FUTURE_DATE));
+    }
+
+    /** LIBRA offence with charge and arrest dates, date code 4 ("between") and no end date (DD-43502). */
+    static CaseFileInput libraMissingEndDateInput() {
+        return missingEndDateInput(LIBRA);
+    }
+
+    /** Offence with charge and arrest dates, date code 4 ("between") and no end date, for the given source (DD-43502). */
+    static CaseFileInput missingEndDateInput(final SourceSystem sourceSystem) {
+        return offenceDatesInput(sourceSystem, null, offence -> offence.withChargeDate(PLEA_DATE_ANCHOR).withArrestDate(PLEA_DATE_ANCHOR)
+                .withOffenceDateCode(4).withOffenceCommittedDate(PLEA_DATE_ANCHOR.minusMonths(1)));
+    }
+
+    /** LIBRA offence with charge and arrest dates and an unrecognised plea code — warning, not a reject (DD-43502). */
+    static CaseFileInput libraBadPleaCodeInput() {
+        return offenceDatesInput(LIBRA, null, "badPlea", PLEA_DATE_ANCHOR,
+                offence -> offence.withChargeDate(PLEA_DATE_ANCHOR).withArrestDate(PLEA_DATE_ANCHOR), offenceId -> Map.of());
+    }
+
+    /** LIBRA offence with charge and arrest dates and a not-guilty plea with no plea date — accepted, as XHIBIT (DD-43502). */
+    static CaseFileInput libraNotGuiltyMissingPleaDateInput() {
+        return offenceDatesInput(LIBRA, null, "NG", null,
+                offence -> offence.withChargeDate(PLEA_DATE_ANCHOR).withArrestDate(PLEA_DATE_ANCHOR),
+                offenceId -> Map.of(DEFENDANT_ID, Map.of(offenceId,
+                        PleaReferenceData.pleaReferenceData().withPleaTypeCode("NG").withPleaTypeGuiltyFlag("No").withPleaValue("Not Guilty").build())));
+    }
+
+    private static CaseFileInput offenceDatesInput(final SourceSystem sourceSystem, final String initiationCode, final UnaryOperator<MigratedOffence.Builder> offenceDates) {
+        return offenceDatesInput(sourceSystem, initiationCode, null, null, offenceDates, offenceId -> null);
+    }
+
+    private static CaseFileInput offenceDatesInput(final SourceSystem sourceSystem, final String initiationCode, final String pleaCode, final LocalDate pleaDate,
+                                                   final UnaryOperator<MigratedOffence.Builder> offenceDates,
+                                                   final Function<UUID, Map<UUID, Map<UUID, PleaReferenceData>>> pleaReferenceData) {
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(null, null, null, null, "998A", pleaCode, pleaDate, sourceSystem);
+        final MigratedDefendant baseDefendant = migCaseDetails.getDefendants().get(0);
+        final MigratedOffence offence = offenceDates.apply(migratedOffence().withValuesFrom(baseDefendant.getOffences().get(0))).build();
+        final MigratedCaseDetails migCaseDetailsWithOffence = MigratedCaseDetails.migratedCaseDetails().withValuesFrom(migCaseDetails)
+                .withDefendants(List.of(migratedDefendant().withValuesFrom(baseDefendant).withOffences(List.of(offence)).build())).build();
+        final Prosecution prosecution = buildProsecution(migCaseDetailsWithOffence, CaseDetails.caseDetails()
+                .withReceiptType("Either way case").withInitiationCode(initiationCode).build());
+        final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetailsWithOffence, createMigratedMaterials(1, "pdf"));
+        final ReferenceDataVO referenceDataVO = new ReferenceDataVO();
+        referenceDataVO.setOffenceReferenceData(List.of(OffenceReferenceData.offenceReferenceData().withCjsOffenceCode("998A").build()));
+        final Map<UUID, Map<UUID, PleaReferenceData>> pleaReferenceDataMap = pleaReferenceData.apply(offence.getOffenceId());
+        if (pleaReferenceDataMap != null) {
+            referenceDataVO.setPleaReferenceDataMap(pleaReferenceDataMap);
+        }
         referenceDataVO.setProsecutorsReferenceData(ProsecutorsReferenceData.prosecutorsReferenceData().build());
         final ProsecutionWithReferenceData prosecutionWithReferenceData = new ProsecutionWithReferenceData(prosecution);
         prosecutionWithReferenceData.setReferenceDataVO(referenceDataVO);

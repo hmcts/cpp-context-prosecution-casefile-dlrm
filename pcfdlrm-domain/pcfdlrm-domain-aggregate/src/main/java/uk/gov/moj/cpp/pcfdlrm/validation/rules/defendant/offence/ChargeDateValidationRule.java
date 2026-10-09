@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 
 public class ChargeDateValidationRule implements ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService> {
 
+    public static final String CHARGE_DATE_NOT_PROVIDED = "Charge date not provided";
+
     @Override
     public ValidationResult validate(final DefendantWithReferenceData defendantWithReferenceData, final ReferenceDataQueryService referenceDataQueryService) {
         if (defendantWithReferenceData.getDefendant() == null ||
@@ -35,10 +37,12 @@ public class ChargeDateValidationRule implements ValidationRule<DefendantWithRef
 
         if (isNull(defendantWithReferenceData.getCaseDetails().getFeeStatus())) {
             final List<MigratedOffence> offenceList = defendantWithReferenceData.getDefendant().getOffences().stream().filter(Objects::nonNull).filter(offence -> offence.getChargeDate() == null).collect(Collectors.toList());
-            offenceList.forEach(offence -> problemValues.add(new ProblemValue(offence.getOffenceId().toString(), FieldName.OFFENCE_CHARGE_DATE.getValue(), "Charge date not provided")));
+            offenceList.forEach(offence -> problemValues.add(new ProblemValue(offence.getOffenceId().toString(), FieldName.OFFENCE_CHARGE_DATE.getValue(), CHARGE_DATE_NOT_PROVIDED)));
         }
 
-        final List<MigratedOffence> chargeDateIsGreaterThanCurrentDate = defendantWithReferenceData.getDefendant().getOffences().stream().filter(offence -> offence.getChargeDate() != null && offence.getChargeDate().isAfter(LocalDate.now(ZoneId.of("Europe/London")))).collect(Collectors.toList());
+        final List<MigratedOffence> chargeDateIsGreaterThanCurrentDate = defendantWithReferenceData.getDefendant().getOffences().stream()
+                .filter(offence -> offence.getChargeDate() != null && offence.getChargeDate().isAfter(LocalDate.now(ZoneId.of("Europe/London"))))
+                .toList();
 
         chargeDateIsGreaterThanCurrentDate.forEach(offence -> problemValues.add(new ProblemValue(offence.getOffenceId().toString(), FieldName.OFFENCE_CHARGE_DATE.getValue(),
                 offence.getChargeDate().toString())));

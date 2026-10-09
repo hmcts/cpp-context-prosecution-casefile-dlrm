@@ -17,8 +17,12 @@ import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.guiltyPle
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.hearingDefendantMatchesNoOffencesInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.invalidOffenceCodeInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.invalidProsecutingAuthorityInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraArrestDateInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraFutureCommittedDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraInvalidCaseMarkerInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraInvalidProsecutingAuthorityInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraMissingChargeDateInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraMissingEndDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.missingPleaDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.missingVerdictDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.noMatchingDefendantsForHearingInput;
@@ -49,6 +53,7 @@ import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialAdded;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseFileProcessed;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -108,6 +113,10 @@ final class AggregateScenarios {
      * be pinned to a fixed value and are excluded from the whole-payload comparison instead.
      */
     static final List<String> PLEA_FUTURE_DATE_EXCLUSIONS = List.of("defendant.offences[0].plea.pleaDate", "problems[2].values[0].value");
+    /** London time, as the date rules use — a machine-zone "tomorrow" is London's today for an hour on a UTC agent in BST. */
+    static final LocalDate FUTURE_DATE = LocalDate.now(ZoneId.of("Europe/London")).plusDays(1);
+    static final List<String> FUTURE_COMMITTED_DATE_EXCLUSIONS = List.of("defendant.offences[0].offenceCommittedDate", "problems[3].values[0].value");
+    static final List<String> FUTURE_ARREST_DATE_EXCLUSIONS = List.of("defendant.offences[0].arrestDate", "problems[2].values[0].value");
 
     private AggregateScenarios() {
     }
@@ -150,7 +159,7 @@ final class AggregateScenarios {
     }
 
     static Stream<AggregateScenario> aggregateScenarios() {
-        return Stream.of(sourceSystemGateScenarios(), failFastScenarios(), hasOffenceProblemsGateScenarios(), materialsMainPathScenarios(), defendantProblemsScenarios(), pleaScenarios(), genderCourtMarkerScenarios())
+        return Stream.of(sourceSystemGateScenarios(), failFastScenarios(), hasOffenceProblemsGateScenarios(), libraOffenceDateScenarios(), materialsMainPathScenarios(), defendantProblemsScenarios(), pleaScenarios(), genderCourtMarkerScenarios())
                 .flatMap(s -> s);
     }
 
@@ -245,18 +254,49 @@ final class AggregateScenarios {
      */
     private static Stream<AggregateScenario> hasOffenceProblemsGateScenarios() {
         return Stream.of(
-                new AggregateScenario("Invalid offence code — hasOffenceProblems()/hasInvalidOffenceCode() (new scenario)",
-                        invalidOffenceCodeInput(),
-                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-invalid-offence-code.json"),
-                                processedFailure("Invalid offence code"))),
-                new AggregateScenario("Guilty plea missing plea date — hasOffenceProblems()/hasInvalidPleaDate() (new scenario)",
-                        missingPleaDateInput(),
-                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-missing-plea-date.json"),
-                                processedFailure("Missing or Invalid plea date"))),
-                new AggregateScenario("Verdict missing verdict date — hasOffenceProblems()/hasInvalidVerdictDate() (new scenario)",
-                        missingVerdictDateInput(),
-                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-missing-verdict-date.json"),
-                                processedFailure("Missing or Invalid verdict date")))
+                        sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER),
+                        sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER))
+                .flatMap(sourceSystem -> Stream.of(
+                        new AggregateScenario("Invalid offence code, " + sourceSystem.migrationSourceSystemName() + " — hasOffenceProblems()/hasInvalidOffenceCode() (LIBRA: DD-43502)",
+                                invalidOffenceCodeInput(sourceSystem),
+                                List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-invalid-offence-code.json"),
+                                        processedFailure("Invalid offence code"))),
+                        new AggregateScenario("Guilty plea missing plea date, " + sourceSystem.migrationSourceSystemName() + " — hasOffenceProblems()/hasInvalidPleaDate() (LIBRA: DD-43502)",
+                                missingPleaDateInput(sourceSystem),
+                                List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-missing-plea-date.json"),
+                                        processedFailure("Missing or Invalid plea date"))),
+                        new AggregateScenario("Verdict missing verdict date, " + sourceSystem.migrationSourceSystemName() + " — hasOffenceProblems()/hasInvalidVerdictDate() (LIBRA: DD-43502)",
+                                missingVerdictDateInput(sourceSystem),
+                                List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-missing-verdict-date.json"),
+                                        processedFailure("Missing or Invalid verdict date")))));
+    }
+
+    /**
+     * DD-43502 LIBRA-only offence rejects. XHIBIT keeps the missing charge / arrest date as a warning
+     * (see {@link #pleaScenarios()}) and never runs the end-date rule.
+     */
+    private static Stream<AggregateScenario> libraOffenceDateScenarios() {
+        return Stream.of(
+                new AggregateScenario("Missing charge date, LIBRA — rejected (DD-43502)",
+                        libraMissingChargeDateInput(),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-libra-missing-charge-date.json"),
+                                processedFailure("Missing charge date"))),
+                new AggregateScenario("Missing arrest date on a Charge case, LIBRA — rejected (DD-43502)",
+                        libraArrestDateInput("C", null),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-libra-missing-arrest-date.json"),
+                                processedFailure("Missing or invalid arrest date"))),
+                new AggregateScenario("Future arrest date on a Charge case, LIBRA — rejected (DD-43502)",
+                        libraArrestDateInput("C", FUTURE_DATE),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-libra-future-arrest-date.json", FUTURE_ARREST_DATE_EXCLUSIONS),
+                                processedFailure("Missing or invalid arrest date"))),
+                new AggregateScenario("Future offence committed date, LIBRA — rejected (DD-43502)",
+                        libraFutureCommittedDateInput(),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-libra-future-committed-date.json", FUTURE_COMMITTED_DATE_EXCLUSIONS),
+                                processedFailure("Invalid offence committed date"))),
+                new AggregateScenario("Offence date code 4 with no end date, LIBRA — rejected (DD-43502)",
+                        libraMissingEndDateInput(),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-libra-missing-end-date.json"),
+                                processedFailure("Missing or invalid offence committed end date")))
         );
     }
 

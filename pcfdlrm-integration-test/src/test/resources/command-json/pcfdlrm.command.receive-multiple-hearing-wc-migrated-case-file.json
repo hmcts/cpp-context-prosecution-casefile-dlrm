@@ -117,7 +117,7 @@
             }
           },
           {
-            "offenceCode": "OFCODE13",
+            "offenceCode": "OFCODE12",
             "offenceId": "550e8400-e29b-41d4-a716-446655440002",
             "prosecutorOffenceId": "LIBRA-offence-id-2",
             "offenceSequenceNumber": 1,
