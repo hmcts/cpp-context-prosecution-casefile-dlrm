@@ -14,6 +14,7 @@ import static uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseValidatedCreationPending.
 import static uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseValidatedWithWarnings.migratedCaseValidatedWithWarnings;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURT_LOCATION_OUCODE_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANT_COUNT;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_STATUS_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_FILE_TYPE_FOR_XHIBIT;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.NO_MATCHING_DEFENDANTS_FOR_HEARING;
@@ -99,6 +100,7 @@ public class MigratedCaseFileAggregate implements Aggregate {
     @Serial
     private static final long serialVersionUID = -6786924305887766569L;
     private static final String XHIBIT = "XHIBIT";
+    private static final String LIBRA = "LIBRA";
     private static final String MIGRATED_CASE_NOT_FOUND_IN_AUTOMATION = "Migrated case not found in Automation";
     public static final String NO_MATCHING_DEFENDANTS_WITH_HEARINGS_FOUND_FOR_HEARING = "No matching defendants with hearings found for the hearing";
     public static final String OFFENCE_VALIDATION = "Offence validation";
@@ -106,6 +108,7 @@ public class MigratedCaseFileAggregate implements Aggregate {
     public static final String INVALID_OFFENCE_CODE = "Invalid offence code";
     public static final String MISSING_OR_INVALID_PLEA_DATE = "Missing or Invalid plea date";
     public static final String MISSING_OR_INVALID_VERDICT_DATE = "Missing or Invalid verdict date";
+    public static final String MISSING_OR_INVALID_CUSTODY_STATUS = "Missing or Invalid custody status";
     public static final String COURT_RECORD_SHEET_NOT_PDF = "Court Record Sheet must be a PDF file";
     public static final String COURT_RECORD_SHEET_FILE_TYPE_INVALID = "Court Record Sheet file type is not valid for XHIBIT migration";
     public static final String COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANTS = "Number of Court Record Sheets exceeds number of defendants";
@@ -271,6 +274,17 @@ public class MigratedCaseFileAggregate implements Aggregate {
                 referenceDataQueryService, builder, false, sourceSystemName);
 
         if (hasOffenceProblems(receiveMigratedCaseFile, migratedDefendantWithProblem, builder, migratedCaseDetails)) {
+            return apply(builder.build());
+        }
+
+        if (hasLibraCustodyStatusProblem(receiveMigratedCaseFile, migratedDefendantWithProblem)) {
+            builder.add(MigratedCaseFileProcessed.migratedCaseFileProcessed()
+                    .withDescription(MISSING_OR_INVALID_CUSTODY_STATUS)
+                    .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
+                    .withSubmissionId(receiveMigratedCaseFile.getSubmissionId())
+                    .withProcessingIsSuccessful(false)
+                    .withCaseUrn(migratedCaseDetails.getCaseDetails().getProsecutorCaseReference())
+                    .build());
             return apply(builder.build());
         }
 
@@ -511,6 +525,17 @@ public class MigratedCaseFileAggregate implements Aggregate {
                 .filter(e -> e.getCode().equals(VERDICT_DATE_ABSENT.name()) ||  e.getCode().equals(VERDICT_DATE_CANNOT_BE_FUTURE_DATE.name()))
                 .toList();
         return !errors.isEmpty();
+    }
+
+    private boolean hasLibraCustodyStatusProblem(final ReceiveMigratedCaseFile receiveMigratedCaseFile, final MigratedDefendantWithProblem migratedDefendantWithProblem) {
+        return isLibra(receiveMigratedCaseFile)
+                && migratedDefendantWithProblem.getDefendantProblems().stream()
+                .flatMap(e -> e.getProblems().stream())
+                .anyMatch(e -> e.getCode().equals(DEFENDANT_CUSTODY_STATUS_INVALID.name()));
+    }
+
+    private boolean isLibra(final ReceiveMigratedCaseFile receiveMigratedCaseFile) {
+        return LIBRA.equals(receiveMigratedCaseFile.getMigratedCaseDetails().getMigrationSourceSystem().getMigrationSourceSystemName());
     }
 
     private boolean isXhibit(final ReceiveMigratedCaseFile receiveMigratedCaseFile) {

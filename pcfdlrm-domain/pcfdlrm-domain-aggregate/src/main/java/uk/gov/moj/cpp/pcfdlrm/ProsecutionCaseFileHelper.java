@@ -5,11 +5,15 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static uk.gov.justice.core.courts.Gender.NOT_KNOWN;
 import static uk.gov.moj.cpp.json.schemas.prosecution.casefile.dlrm.events.DefendantValidationPassed.defendantValidationPassed;
+import static uk.gov.moj.cpp.pcfdlrm.validation.CaseType.CHARGE;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_STATUS_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_TIME_LIMIT_IS_MISSING;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_GENDER_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_NATIONALITY_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_OBSERVED_ETHNICITY_INVALID;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_PARENT_GUARDIAN_DATE_OF_BIRTH_IN_FUTURE;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_PARENT_GUARDIAN_OBSERVED_ETHNICITY_INVALID;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_PARENT_GUARDIAN_SELF_DEFINED_ETHNICITY_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_SELF_DEFINED_ETHNICITY_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DOCUMENTATION_LANGUAGE_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.HEARING_LANGUAGE_INVALID;
@@ -55,6 +59,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -71,6 +76,7 @@ public class ProsecutionCaseFileHelper {
     private static final String PARENTGUARDIAN_NOT_PROVIDED = "PARENTGUARDIAN_NOT_PROVIDED";
     private static final String DEFENDANT_SELFINFO_NOT_PROVIDED = "DEFENDANT_SELFINFO_NOT_PROVIDED";
     private static final String IN_CUSTODY="C";
+    private static final String LIBRA = "LIBRA";
 
     private ProsecutionCaseFileHelper() {
     }
@@ -99,6 +105,11 @@ public class ProsecutionCaseFileHelper {
             validateGenderAndLanguage(defendant, defendantProblemList);
             validateCustodyTimeLimit(defendant, defendantProblemList);
 
+            if (LIBRA.equals(migrationSourceSystemName) && !CHARGE.getCode().equals(initiationCode)
+                    && nonNull(defendant.getIndividual()) && isNull(defendant.getIndividual().getCustodyStatus())) {
+                defendantProblemList.removeIf(problem -> DEFENDANT_CUSTODY_STATUS_INVALID.name().equals(problem.getCode()));
+            }
+
             if (CollectionUtils.isNotEmpty(defendantProblemList)) {
                 defendantErrors.add(defendantProblem()
                         .withProblems(defendantProblemList)
@@ -116,6 +127,9 @@ public class ProsecutionCaseFileHelper {
                             .withPoliceSystemId(caseDetails.getPoliceSystemId()).build());
 
                     applyRuleToDefendantFields(migratedDefendantBuilder, referenceDataQueryService, defendantWithReferenceData, defendantProblemList);
+                    if (LIBRA.equals(migrationSourceSystemName)) {
+                        applyParentGuardianRules(migratedDefendantBuilder, defendantProblemList);
+                    }
                 }
             } else {
                 if (DLRM_MIGRATION.equals(channel)) {
@@ -281,6 +295,32 @@ public class ProsecutionCaseFileHelper {
         }
     }
 
+    private static void applyParentGuardianRules(MigratedDefendant.Builder migratedDefendantBuilder, final List<Problem> defendantProblemList) {
+        if (hasProblem(defendantProblemList, DEFENDANT_PARENT_GUARDIAN_DATE_OF_BIRTH_IN_FUTURE)) {
+            updateParentGuardian(migratedDefendantBuilder, parentGuardian -> parentGuardian.withDateOfBirth(null));
+        }
+
+        if (hasProblem(defendantProblemList, DEFENDANT_PARENT_GUARDIAN_OBSERVED_ETHNICITY_INVALID)) {
+            final PersonalInformation personalInformation = migratedDefendantBuilder.build().getIndividual().getParentGuardianInformation().getPersonalInformation();
+            updateParentGuardian(migratedDefendantBuilder, parentGuardian -> parentGuardian.withPersonalInformation(PersonalInformation.personalInformation()
+                    .withValuesFrom(personalInformation)
+                    .withObservedEthnicity(null)
+                    .build()));
+        }
+
+        if (hasProblem(defendantProblemList, DEFENDANT_PARENT_GUARDIAN_SELF_DEFINED_ETHNICITY_INVALID)) {
+            updateParentGuardian(migratedDefendantBuilder, parentGuardian -> parentGuardian.withSelfDefinedEthnicity(null));
+        }
+    }
+
+    private static void updateParentGuardian(MigratedDefendant.Builder builder, UnaryOperator<ParentGuardianInformation.Builder> update) {
+        builder.withIndividual(Individual.individual()
+                .withValuesFrom(builder.build().getIndividual())
+                .withParentGuardianInformation(update.apply(ParentGuardianInformation.parentGuardianInformation()
+                        .withValuesFrom(builder.build().getIndividual().getParentGuardianInformation())).build())
+                .build());
+    }
+
 
     private static void buildMigratedDefendant(MigratedDefendant.Builder defendantBuilder, final String nationality, final String ethnicity, final Integer observedEthnicity, final String custodyStatus) {
         final MigratedDefendant currentDefendant = defendantBuilder.build();
@@ -342,7 +382,8 @@ public class ProsecutionCaseFileHelper {
         final String defendantGender = nonNull(defendant.getIndividual()) && nonNull(defendant.getIndividual().getSelfDefinedInformation()) ?
                 defendant.getIndividual().getSelfDefinedInformation().getGender() : DEFENDANT_SELFINFO_NOT_PROVIDED;
 
-        final String parentGender = nonNull(defendant.getIndividual()) && nonNull(defendant.getIndividual().getParentGuardianInformation()) ?
+        final String parentGender = nonNull(defendant.getIndividual()) && nonNull(defendant.getIndividual().getParentGuardianInformation())
+                && isNull(defendant.getIndividual().getParentGuardianInformation().getOrganisationName()) ?
                 defendant.getIndividual().getParentGuardianInformation().getGender() : PARENTGUARDIAN_NOT_PROVIDED;
 
         if (matchGenderEnum(defendantGender) && !DEFENDANT_SELFINFO_NOT_PROVIDED.equals(defendantGender)) {

@@ -25,6 +25,7 @@ import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.Mig
 import uk.gov.moj.cpp.pcfdlrm.builder.SourceSystem;
 import uk.gov.moj.cpp.pcfdlrm.domain.ProsecutionWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.domain.ReferenceDataVO;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.BailStatusReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseMarker;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Individual;
@@ -55,6 +56,8 @@ import java.util.UUID;
  * table — one method per named {@link AggregateScenario} row.
  */
 final class AggregateScenarioInputs {
+
+    private static final String UNCONDITIONAL_BAIL = "U";
 
     private AggregateScenarioInputs() {
     }
@@ -472,13 +475,38 @@ final class AggregateScenarioInputs {
                 .withProsecutor(Prosecutor.prosecutor().withProsecutingAuthority("GAEAA01").build());
     }
 
+    static CaseFileInput libraCustodyStatusInput(final String initiationCode, final String custodyStatus) {
+        return libraInput(libraCaseDetails().withInitiationCode(initiationCode).build(),
+                ProsecutorsReferenceData.prosecutorsReferenceData().build(), custodyStatus);
+    }
+
     private static CaseFileInput libraInput(final CaseDetails caseDetails, final ProsecutorsReferenceData resolvedProsecutor) {
-        final MigratedCaseDetails migCaseDetails = buildLibraMigratedCaseDetails(caseDetails, sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER));
+        // A LIBRA Charge defendant needs a custody status, or the case is rejected.
+        return libraInput(caseDetails, resolvedProsecutor, UNCONDITIONAL_BAIL);
+    }
+
+    private static CaseFileInput libraInput(final CaseDetails caseDetails, final ProsecutorsReferenceData resolvedProsecutor, final String custodyStatus) {
+        final MigratedCaseDetails libraMigratedCaseDetails = buildLibraMigratedCaseDetails(caseDetails, sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER));
+        final MigratedCaseDetails migCaseDetails = MigratedCaseDetails.migratedCaseDetails()
+                .withValuesFrom(libraMigratedCaseDetails)
+                .withDefendants(libraMigratedCaseDetails.getDefendants().stream()
+                        .map(defendant -> MigratedDefendant.migratedDefendant()
+                                .withValuesFrom(defendant)
+                                .withIndividual(Individual.individual()
+                                        .withValuesFrom(defendant.getIndividual())
+                                        .withCustodyStatus(custodyStatus)
+                                        .build())
+                                .build())
+                        .toList())
+                .build();
         final Prosecution prosecution = buildProsecution(migCaseDetails, caseDetails);
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, List.of());
         final ReferenceDataVO referenceDataVO = new ReferenceDataVO();
-        referenceDataVO.setInitiationTypes(List.of("C"));
+        referenceDataVO.setInitiationTypes(List.of(caseDetails.getInitiationCode()));
         referenceDataVO.setProsecutorsReferenceData(resolvedProsecutor);
+        if (UNCONDITIONAL_BAIL.equals(custodyStatus)) {
+            referenceDataVO.addBailStatusReferenceData(BailStatusReferenceData.bailStatusReferenceData().withStatusCode(UNCONDITIONAL_BAIL).build());
+        }
         final ProsecutionWithReferenceData prosecutionWithReferenceData = new ProsecutionWithReferenceData(prosecution);
         prosecutionWithReferenceData.setReferenceDataVO(referenceDataVO);
         return new CaseFileInput(receiveMigratedCase, prosecutionWithReferenceData);

@@ -85,6 +85,12 @@ final class AggregateScenarios {
             warning("Defendant validation", "DEFENDANT_NATIONALITY_INVALID : [HUN]"),
             warning("Defendant validation", "DEFENDANT_CUSTODY_STATUS_INVALID : []"));
 
+    /** As {@link #HEARING_DEFENDANT_VALIDATION_NOISE} for LIBRA, where a missing custody status is allowed. */
+    static final List<ExpectedEvent> HEARING_DEFENDANT_VALIDATION_NOISE_LIBRA = List.of(
+            new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-hearing-defendant-libra.json"),
+            warning("Defendant validation", "DEFENDANT_SELF_DEFINED_ETHNICITY_INVALID : [British]"),
+            warning("Defendant validation", "DEFENDANT_NATIONALITY_INVALID : [HUN]"));
+
     /** The ETHNICITY/NATIONALITY/CUSTODY-empty warning triple shared by most main-path scenarios below. */
     private static final List<ExpectedEvent> DEFENDANT_ETHNICITY_NATIONALITY_CUSTODY_NOISE = List.of(
             warning("Defendant validation", "DEFENDANT_SELF_DEFINED_ETHNICITY_INVALID : [British]"),
@@ -165,7 +171,10 @@ final class AggregateScenarios {
         final List<ExpectedEvent> xhibitExpectedNullMaterials = new ArrayList<>(defendantValidationNoise);
         xhibitExpectedNullMaterials.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-no-materials-null.json"));
 
-        final List<ExpectedEvent> libraExpected = new ArrayList<>(defendantValidationNoise);
+        final List<ExpectedEvent> libraExpected = new ArrayList<>(List.of(
+                new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-no-materials-libra.json"),
+                warning("Defendant validation", "DEFENDANT_SELF_DEFINED_ETHNICITY_INVALID : [British]"),
+                warning("Defendant validation", "DEFENDANT_NATIONALITY_INVALID : [HUN]")));
         libraExpected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-no-materials-libra.json"));
 
         final List<ExpectedEvent> libraCaseMarkerInvalidExpected = List.of(
@@ -174,7 +183,6 @@ final class AggregateScenarios {
                 warning("Defendant validation", "DEFENDANT_SELF_DEFINED_ETHNICITY_INVALID : [British]", LIBRA_PROSECUTOR_CASE_REFERENCE),
                 warning("Defendant validation", "DEFENDANT_NATIONALITY_INVALID : [HUN]", LIBRA_PROSECUTOR_CASE_REFERENCE),
                 warning("Defendant validation", "DEFENDANT_ADDITIONAL_NATIONALITY_INVALID : [SVK]", LIBRA_PROSECUTOR_CASE_REFERENCE),
-                warning("Defendant validation", "DEFENDANT_CUSTODY_STATUS_INVALID : []", LIBRA_PROSECUTOR_CASE_REFERENCE),
                 new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-case-marker-invalid-libra.json"));
 
         return Stream.of(

@@ -27,15 +27,25 @@
    `migrated-case-file-received` events that would fail schema validation on a processor catch-up, so
    those environments may need an event-store reset first.
 
+5. **Organisation guardians (G3).** `ProsecutionCaseFileHelper.validateGenderAndLanguage` skips the
+   guardian-gender check when `parentGuardianInformation.organisationName` is set. An organisation
+   guardian has no gender; previously the check flagged it and the shared default added
+   `gender: NOT_KNOWN`, producing an object that matches neither `oneOf` branch of
+   `parent-guardian-information.json`, so the `migrated-case-file-received` event failed validation in
+   the processor. Shared XHIBIT/LIBRA fix.
+
+6. **Invalid guardian date of birth and ethnicities (G1), LIBRA only.** `applyParentGuardianRules`,
+   called after `applyRuleToDefendantFields` for LIBRA only, clears the guardian `dateOfBirth` on
+   `DEFENDANT_PARENT_GUARDIAN_DATE_OF_BIRTH_IN_FUTURE`, `personalInformation.observedEthnicity` on
+   `DEFENDANT_PARENT_GUARDIAN_OBSERVED_ETHNICITY_INVALID`, and `selfDefinedEthnicity` on
+   `DEFENDANT_PARENT_GUARDIAN_SELF_DEFINED_ETHNICITY_INVALID`, in the same way the defendant's own
+   nationality and ethnicities are cleared. The warnings remain and the case is accepted; a future
+   LIBRA guardian date of birth no longer reaches `progression`. XHIBIT keeps the values (warning only).
+
 ## Not changed
 
 - No new rule class, problem code or event; rule sets unchanged.
-- Guardian date of birth and ethnicities are not nulled (G1, awaiting the BA).
-- Organisation guardian handling (LIBRA does not send it). Note: the STAGINGDLRM LIBRA schema still
-  accepts the organisation branch. If one were sent, the existing guardian-gender check would flag the
-  missing gender and the shared XHIBIT default would add `gender: NOT_KNOWN`, giving an object that
-  matches neither `oneOf` branch, so the `migrated-case-file-received` event would fail validation in
-  the processor (XHIBIT already behaves this way). See G3.
+- Organisation guardians are not mapped to `progression` (G4: current behaviour kept, agreed with the BA and TL).
 
 ## Tests
 
@@ -47,6 +57,10 @@
 - `ProsecutionCaseFileMigratedDefendantToCCDefendantConverterTest`: the existing guardian test also
   asserts the observed ethnicity id and code on the associated person; `CaseReceivedHelper` builds the
   guardian with `personalInformation.observedEthnicity`.
+- `ProsecutionCaseFileHelperTest.shouldClearFutureParentGuardianDateOfBirthAndInvalidEthnicitiesOnlyForLibra`
+  (LIBRA: date of birth and both ethnicities cleared; XHIBIT: kept).
+- `ProsecutionCaseFileHelperTest.shouldNotDefaultGenderForOrganisationParentGuardian` (XHIBIT and LIBRA):
+  no `PARENT_GUARDIAN_GENDER_INVALID` and the organisation guardian is unchanged.
 - 27 integration-test command fixtures move the guardian's observed ethnicity from the top level
   (now rejected by the schema) to `personalInformation.observedEthnicity`, where STAGINGDLRM sends it.
   The expected `progression.initiate-court-proceedings` payloads are unchanged.

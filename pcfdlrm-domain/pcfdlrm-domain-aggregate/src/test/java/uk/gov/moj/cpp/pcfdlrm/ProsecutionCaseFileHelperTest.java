@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.pcfdlrm.test.FixtureLoader.fixture;
 import static uk.gov.moj.cpp.pcfdlrm.test.WholePayloadMatcher.matchesWholePayload;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.PARENT_GUARDIAN_GENDER_INVALID;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.BailStatusReferenceData.bailStatusReferenceData;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel.DLRM_MIGRATION;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ObservedEthnicityReferenceData.observedEthnicityReferenceData;
@@ -34,6 +35,8 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedHe
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedOffence;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ListedDefendant;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -43,6 +46,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -220,8 +224,9 @@ class ProsecutionCaseFileHelperTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"XHIBIT", "LIBRA"})
-    void shouldApplyRuleToDefendantFieldsNormalisingGenderAndLanguageForMigrationSourceSystem(final String migrationSourceSystemName) {
+    @CsvSource({"XHIBIT, json/prosecution-case-file-helper/migrated-defendant-gender-and-language-normalised.json",
+            "LIBRA, json/prosecution-case-file-helper/migrated-defendant-gender-and-language-normalised-libra.json"})
+    void shouldApplyRuleToDefendantFieldsNormalisingGenderAndLanguageForMigrationSourceSystem(final String migrationSourceSystemName, final String expectedFixture) {
         final MigratedDefendant defendant = migratedDefendant()
                 .withDocumentationLanguage("ZZ")
                 .withHearingLanguage("ZZ")
@@ -247,7 +252,81 @@ class ProsecutionCaseFileHelperTest {
                 Stream.builder(), false, migrationSourceSystemName);
 
         assertMigratedDefendantMatchesFixture(result.getMigratedDefendants().get(0),
-                "json/prosecution-case-file-helper/migrated-defendant-gender-and-language-normalised.json");
+                expectedFixture);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"XHIBIT, false", "LIBRA, true"})
+    void shouldClearFutureParentGuardianDateOfBirthAndInvalidEthnicitiesOnlyForLibra(final String migrationSourceSystemName, final boolean cleared) {
+        final LocalDate futureDateOfBirth = LocalDate.now(ZoneId.of("Europe/London")).plusDays(1);
+        final MigratedDefendant defendant = migratedDefendant()
+                .withDocumentationLanguage("E")
+                .withHearingLanguage("E")
+                .withIndividual(Individual.individual()
+                        .withPersonalInformation(PersonalInformation.personalInformation().build())
+                        .withSelfDefinedInformation(SelfDefinedInformation.selfDefinedInformation()
+                                .withGender("MALE")
+                                .build())
+                        .withParentGuardianInformation(ParentGuardianInformation.parentGuardianInformation()
+                                .withGender("MALE")
+                                .withDateOfBirth(futureDateOfBirth)
+                                .withSelfDefinedEthnicity("Z9")
+                                .withPersonalInformation(PersonalInformation.personalInformation()
+                                        .withObservedEthnicity(99)
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        final CaseDetails caseDetails = CaseDetails.caseDetails().withCaseId(UUID.randomUUID()).build();
+        final DefendantsWithReferenceData defendantsWithReferenceData = new DefendantsWithReferenceData(List.of(defendant));
+        defendantsWithReferenceData.setReferenceDataVO(new ReferenceDataVO());
+        defendantsWithReferenceData.setCaseDetails(caseDetails);
+
+        final ParentGuardianInformation parentGuardian = ProsecutionCaseFileHelper.validateDefendantErrors(
+                caseDetails, DLRM_MIGRATION, defendantsWithReferenceData, referenceDataQueryService,
+                Stream.builder(), false, migrationSourceSystemName).getMigratedDefendants().get(0).getIndividual().getParentGuardianInformation();
+
+        final LocalDate expectedDateOfBirth = cleared ? null : futureDateOfBirth;
+        final Integer expectedObservedEthnicity = cleared ? null : 99;
+        final String expectedSelfDefinedEthnicity = cleared ? null : "Z9";
+        assertAll(
+                () -> assertThat(parentGuardian.getDateOfBirth(), is(expectedDateOfBirth)),
+                () -> assertThat(parentGuardian.getPersonalInformation().getObservedEthnicity(), is(expectedObservedEthnicity)),
+                () -> assertThat(parentGuardian.getSelfDefinedEthnicity(), is(expectedSelfDefinedEthnicity)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"XHIBIT", "LIBRA"})
+    void shouldNotDefaultGenderForOrganisationParentGuardian(final String migrationSourceSystemName) {
+        final ParentGuardianInformation organisationParentGuardian = ParentGuardianInformation.parentGuardianInformation()
+                .withOrganisationName("Example Care Trust")
+                .build();
+        final MigratedDefendant defendant = migratedDefendant()
+                .withDocumentationLanguage("E")
+                .withHearingLanguage("E")
+                .withIndividual(Individual.individual()
+                        .withPersonalInformation(PersonalInformation.personalInformation().build())
+                        .withSelfDefinedInformation(SelfDefinedInformation.selfDefinedInformation()
+                                .withGender("MALE")
+                                .build())
+                        .withParentGuardianInformation(organisationParentGuardian)
+                        .build())
+                .build();
+
+        final CaseDetails caseDetails = CaseDetails.caseDetails().withCaseId(UUID.randomUUID()).build();
+        final DefendantsWithReferenceData defendantsWithReferenceData = new DefendantsWithReferenceData(List.of(defendant));
+        defendantsWithReferenceData.setReferenceDataVO(new ReferenceDataVO());
+        defendantsWithReferenceData.setCaseDetails(caseDetails);
+
+        final MigratedDefendantWithProblem result = ProsecutionCaseFileHelper.validateDefendantErrors(
+                caseDetails, DLRM_MIGRATION, defendantsWithReferenceData, referenceDataQueryService,
+                Stream.builder(), false, migrationSourceSystemName);
+
+        assertThat(result.getDefendantProblems().stream()
+                .flatMap(defendantProblem -> defendantProblem.getProblems().stream())
+                .noneMatch(problem -> PARENT_GUARDIAN_GENDER_INVALID.name().equals(problem.getCode())), is(true));
+        assertThat(result.getMigratedDefendants().get(0).getIndividual().getParentGuardianInformation(), is(organisationParentGuardian));
     }
 
     @ParameterizedTest

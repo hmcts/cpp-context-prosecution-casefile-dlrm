@@ -6,6 +6,7 @@
     "hearingLanguage": "W",
     "id": "9824e40f-0289-4221-8854-346eb28c8f27",
     "individual": {
+      "custodyStatus": "U",
       "parentGuardianInformation": {
         "dateOfBirth": "1980-06-01",
         "gender": "MALE"
@@ -48,15 +49,6 @@
         {
           "key": "individual_selfDefinedInformation_additional_nationality",
           "value": "SVK"
-        }
-      ]
-    },
-    {
-      "code": "DEFENDANT_CUSTODY_STATUS_INVALID",
-      "values": [
-        {
-          "key": "custodyStatus",
-          "value": ""
         }
       ]
     }
