@@ -9,7 +9,7 @@
 
     <groupId>uk.gov.moj.cpp.pcfdlrm</groupId>
     <artifactId>pcfdlrm-parent</artifactId>
-    <version>17.104.23-SNAPSHOT</version>
+    <version>17.104.0-CIVIL-T3-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Prosecution Casefile DLRM Microservice - Parent</name>
     <description>Casefile DLRM Microservice - Prosecution Context</description>
@@ -22,7 +22,7 @@
         <mvn.site.url>file://${project.build.directory}/site</mvn.site.url>
         <cpp.framework.action.mapping.enabled>true</cpp.framework.action.mapping.enabled>
         <authorisation.service.version>0.1.49</authorisation.service.version>
-        <coredomain.version>17.104.4</coredomain.version>
+        <coredomain.version>17.104.5-CIVIL-T3-SNAPSHOT</coredomain.version>
         <cpp.structure.version>2.0.335</cpp.structure.version>
         <referencedata.version>17.104.140</referencedata.version>
         <referencedata.offences.version>17.104.52</referencedata.offences.version>
