@@ -51,6 +51,7 @@ import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.ChargeDateValid
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceAlcoholLevelValidationAndEnricherRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceBackDutyValidationRuleAndEnricherRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceCodeValidationAndEnricherRule;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceCommittedDatesValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceDrugLevelAmountValidationAndEnricherRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceDrugLevelMethodValidationAndEnricherRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceGenericValidationAndEnricherRule;
@@ -489,6 +490,18 @@ class CcProsecutionValidationRuleProviderTest {
                 ChargeDateValidationRule.class,
                 CustodyStatusValidationAndEnricherRule.class
         )), classesOf(validationRules));
+    }
+
+    // DD-43502: the committed-dates rule is appended for LIBRA only; XHIBIT keeps the plain DLRM set.
+    @Test
+    void shouldAppendLibraDefendantRulesForLibraOnly() {
+        final Set<Class<?>> dlrmRules = classesOf(CcProsecutionValidationRuleProvider
+                .getDefendantValidationRules(CHARGE.getCode(), Channel.DLRM_MIGRATION, Boolean.FALSE));
+
+        assertEquals(union(dlrmRules, Set.of(OffenceCommittedDatesValidationRule.class)), classesOf(CcProsecutionValidationRuleProvider
+                .getDefendantValidationRules(CHARGE.getCode(), Channel.DLRM_MIGRATION, Boolean.FALSE, "LIBRA")));
+        assertEquals(dlrmRules, classesOf(CcProsecutionValidationRuleProvider
+                .getDefendantValidationRules(CHARGE.getCode(), Channel.DLRM_MIGRATION, Boolean.FALSE, "XHIBIT")));
     }
 
     @SafeVarargs

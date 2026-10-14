@@ -40,7 +40,9 @@ public class ArrestDateValidationRule implements ValidationRule<DefendantWithRef
             offenceList.forEach(offence -> problemValues.add(new ProblemValue(offence.getOffenceId().toString(), OFFENCE_ARREST_DATE.getValue(), null)));
         }
 
-        final List<MigratedOffence> arrestDateIsGreaterThanCurrentDate = defendantWithReferenceData.getDefendant().getOffences().stream().filter(offence -> offence.getArrestDate() != null && offence.getArrestDate().isAfter(LocalDate.now(ZoneId.of("Europe/London")))).collect(Collectors.toList());
+        final List<MigratedOffence> arrestDateIsGreaterThanCurrentDate = defendantWithReferenceData.getDefendant().getOffences().stream()
+                .filter(offence -> offence.getArrestDate() != null && offence.getArrestDate().isAfter(LocalDate.now(ZoneId.of("Europe/London"))))
+                .toList();
 
         arrestDateIsGreaterThanCurrentDate.forEach(offence -> problemValues.add(new ProblemValue(offence.getOffenceId().toString(), OFFENCE_ARREST_DATE.getValue(),
                 offence.getArrestDate().toString())));

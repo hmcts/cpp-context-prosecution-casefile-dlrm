@@ -59,6 +59,7 @@ import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.ChargeDateValid
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceAlcoholLevelValidationAndEnricherRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceBackDutyValidationRuleAndEnricherRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceCodeValidationAndEnricherRule;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceCommittedDatesValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceDrugLevelAmountValidationAndEnricherRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceDrugLevelMethodValidationAndEnricherRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceGenericValidationAndEnricherRule;
@@ -310,7 +311,13 @@ public class CcProsecutionValidationRuleProvider {
     private static final Map<String, List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>>> defendantValidationMapDlrm = defendantValidationMapSpi;
 
 
+    // DD-43502: LIBRA-only defendant rules, so XHIBIT gets no new problems.
+    private static final List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> LIBRA_DEFENDANT_RULE_SET = List.of(
+            new OffenceCommittedDatesValidationRule()
+    );
+
     private static final String XHIBIT = "XHIBIT";
+    private static final String LIBRA = "LIBRA";
 
     private CcProsecutionValidationRuleProvider() {
     }
@@ -325,6 +332,16 @@ public class CcProsecutionValidationRuleProvider {
 
     public static List<ValidationRule<MigratedHearingWithReferenceData, ReferenceDataQueryService>> getMigratedHearingValidationRules() {
         return MIGRATED_HEARING_RULE_SET;
+    }
+
+    public static List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> getDefendantValidationRules(final String defendantInitiationCode,
+                                                                                                                          final Channel channel, final Boolean isGroupCase,
+                                                                                                                          final String sourceSystemName) {
+        final List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> rules = getDefendantValidationRules(defendantInitiationCode, channel, isGroupCase);
+        if (LIBRA.equals(sourceSystemName)) {
+            return Stream.of(rules, LIBRA_DEFENDANT_RULE_SET).flatMap(Collection::stream).collect(toList());
+        }
+        return rules;
     }
 
     public static List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> getDefendantValidationRules(final String defendantInitiationCode,

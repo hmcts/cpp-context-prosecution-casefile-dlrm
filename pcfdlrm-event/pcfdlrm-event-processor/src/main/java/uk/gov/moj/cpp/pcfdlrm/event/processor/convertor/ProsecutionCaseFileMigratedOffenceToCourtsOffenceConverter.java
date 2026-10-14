@@ -75,6 +75,7 @@ public class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter implemen
     private static final String SEE_INDICTMENT_OR_CHARGE_SHEET_FOR_PARTICULARS = "See indictment or charge sheet for particulars";
     private static final String XHIBIT = "XHIBIT";
     private static final int COURT_HEARING_OU_CODE_LENGTH = 7;
+    private static final int OFFENCE_DATE_CODE_BETWEEN = 4;
     public static final String SUMMARY_ONLY_OFFENCE = "Summary-only offence";
     private static final String IN_CUSTODY = "C";
 
@@ -126,7 +127,7 @@ public class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter implemen
                 .withOffenceTitleWelsh(getOffenceWelshTitle(offence.getOffenceCode(), referenceDataVO))
                 .withOrderIndex(offence.getOffenceSequenceNumber())
                 .withStartDate(offence.getOffenceCommittedDate().toString())
-                .withEndDate(getDate(offence.getOffenceCommittedEndDate()))
+                .withEndDate(getEndDate(offence, paramsVO))
                 .withWording(offenceWording)
                 .withWordingWelsh(isXhibit ?
                         (isNotEmpty(offence.getOffenceWordingWelsh()) ? offence.getOffenceWordingWelsh() : offenceWording) :
@@ -310,6 +311,14 @@ public class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverter implemen
 
     private String getDate(final LocalDate date) {
         return nonNull(date) ? date.toString() : null;
+    }
+
+    // DD-43502: for LIBRA an end date only applies to offence date code 4 ("between"); otherwise it must be blank.
+    private String getEndDate(final MigratedOffence offence, final ParamsVO paramsVO) {
+        if (LIBRA.equals(paramsVO.getMigrationSourceSystemName()) && !Objects.equals(OFFENCE_DATE_CODE_BETWEEN, offence.getOffenceDateCode())) {
+            return null;
+        }
+        return getDate(offence.getOffenceCommittedEndDate());
     }
 
     private String getOffenceLegislation(String offenceCode, ReferenceDataVO referenceDataVO) {

@@ -133,8 +133,8 @@ offence-level (per offence) → plea/verdict date (per plea/verdict).
 | Hearing | `getMigratedHearingValidationRules()` | 7 | `NoMatchingDefendantsValidationRule` is fatal (`HearingValidationFailed` + processed-false); the rest are warnings |
 | Case-level | `getCaseValidationRules(initiationCode)` | 7 | All fatal — initiation code, receipt type, sending/receiving court OU code, prosecutor OU code, summons code, police force code, case markers |
 | Defendant-level | (per-defendant enrichers) | ~19 | Mostly enrich-and-warn (DOB, CRO/PNC format, postcode, nationality/ethnicity, custody status, bail conditions, email formats) |
-| Offence-level | (per-offence enrichers) | ~11 | `OffenceCodeValidationAndEnricherRule` is fatal (`OFFENCE_CODE_IS_INVALID`); the rest enrich-and-warn |
-| Plea / verdict | `PleaValidationRule`, `VerdictValidationRule` | 2 | Fatal — absent/future date, invalid ID |
+| Offence-level | (per-offence enrichers) | ~11 | `OffenceCodeValidationAndEnricherRule` is fatal (`OFFENCE_CODE_IS_INVALID`); the rest enrich-and-warn. LIBRA only (DD-43502): also fatal on missing charge date (non-Summons), missing / future arrest date (Charge), future committed date, and code-4 end date missing / not after committed / future (`OffenceCommittedDatesValidationRule`) |
+| Plea / verdict | `PleaValidationRule`, `VerdictValidationRule` | 2 | Fatal — future plea date (any valid plea) or missing plea date (guilty-type plea); valid verdict with absent or future date; invalid ID is an "Offence validation" warning. XHIBIT and LIBRA (DD-43502) |
 
 Rule classes live under `pcfdlrm-domain/pcfdlrm-domain-aggregate/.../validation/rules/`.
 

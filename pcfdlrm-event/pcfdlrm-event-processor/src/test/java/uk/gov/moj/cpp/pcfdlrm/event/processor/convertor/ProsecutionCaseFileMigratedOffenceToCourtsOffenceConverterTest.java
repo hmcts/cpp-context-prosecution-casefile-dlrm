@@ -452,6 +452,26 @@ class ProsecutionCaseFileMigratedOffenceToCourtsOffenceConverterTest {
         assertThat(coreOffences.get(0).getMaxPenalty(), is("Max Penalty"));
     }
 
+    // DD-43502: LIBRA sends an end date only for offence date code 4 ("between"); XHIBIT unchanged.
+    @ParameterizedTest
+    @CsvSource({"LIBRA, 1, false", "LIBRA, 4, true", "XHIBIT, 1, true"})
+    void shouldSendEndDateOnlyForDateCodeBetweenForLibra(final String sourceSystemName, final Integer offenceDateCode, final boolean endDateSent) {
+        final LocalDate offenceCommittedEndDate = LocalDate.now().minusDays(1);
+        final List<MigratedOffence> offences = buildOffences().stream()
+                .map(offence -> migratedOffence().withValuesFrom(offence)
+                        .withOffenceDateCode(offenceDateCode)
+                        .withOffenceCommittedEndDate(offenceCommittedEndDate)
+                        .build())
+                .toList();
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName(sourceSystemName);
+        paramsVO.setReferenceDataVO(buildReferenceDataIncludingDvlaCode());
+
+        final List<uk.gov.justice.core.courts.Offence> coreOffences = converter.convert(offences, paramsVO);
+
+        assertThat(coreOffences.get(0).getEndDate(), is(endDateSent ? offenceCommittedEndDate.toString() : null));
+    }
+
     @Test
     void shouldConvertOffences() {
         final ReferenceDataVO referenceDataVO = buildReferenceDataWithOffenceAndModeOfTrial(EITHER_WAY);

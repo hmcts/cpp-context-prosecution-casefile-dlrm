@@ -13,9 +13,17 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.arrestDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.createMigratedMaterials;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.futureCommittedDateInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraArrestDateInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraBadPleaCodeInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraCustodyStatusInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraFutureChargeDateInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraNotGuiltyMissingPleaDateInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.missingEndDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.noMaterialsInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_DATE;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_DATE_OF_HEARING_EXCLUSIONS;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_HEARING_DATE_GMT;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_WEEK_COMMENCING_START_DATE;
@@ -558,6 +566,41 @@ class MigratedCaseFileAggregateTest {
                 .filter(MigratedCaseFileReceived.class::isInstance)
                 .map(MigratedCaseFileReceived.class::cast)
                 .forEach(received -> assertThat(received.getReceiveMigratedCaseFile().getMigratedCaseDetails().getDefendants().get(0).getIndividual().getCustodyStatus(), is(custodyStatus)));
+    }
+
+    // DD-43502: offence problems that must not reject the case. The XHIBIT rows pin that the new LIBRA
+    // rejects (arrest date on a Charge case, committed date, end date) do not leak into XHIBIT (AC-9).
+    static Stream<Arguments> offenceProblemsNotRejected() {
+        final SourceSystem xhibit = sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER);
+        return Stream.of(
+                Arguments.of("LIBRA future charge date", libraFutureChargeDateInput()),
+                Arguments.of("LIBRA missing arrest date on a non-Charge (R) case", libraArrestDateInput("R", null)),
+                Arguments.of("LIBRA not-guilty plea with no plea date", libraNotGuiltyMissingPleaDateInput()),
+                Arguments.of("LIBRA unrecognised plea code", libraBadPleaCodeInput()),
+                Arguments.of("XHIBIT missing arrest date on a Charge case", arrestDateInput(xhibit, "C", null)),
+                Arguments.of("XHIBIT future arrest date on a Charge case", arrestDateInput(xhibit, "C", FUTURE_DATE)),
+                Arguments.of("XHIBIT future committed date", futureCommittedDateInput(xhibit)),
+                Arguments.of("XHIBIT date code 4 with no end date", missingEndDateInput(xhibit)));
+    }
+
+    @ParameterizedTest(name = "{0} — not rejected")
+    @MethodSource("offenceProblemsNotRejected")
+    void shouldNotRejectCaseForOffenceProblem(final String description, final CaseFileInput input) {
+        final List<Object> actual = receiveMigratedCaseFile(input.receiveMigratedCaseFile(), input.prosecutionWithReferenceData());
+
+        assertThat(actual.stream().anyMatch(MigratedCaseFileProcessed.class::isInstance), is(false));
+    }
+
+    // DD-43502 (AC-8): an unrecognised LIBRA plea code is an "Offence validation" warning, as XHIBIT.
+    @Test
+    void shouldRaiseOffenceValidationWarningForLibraUnrecognisedPleaCode() {
+        final CaseFileInput input = libraBadPleaCodeInput();
+        final List<Object> actual = receiveMigratedCaseFile(input.receiveMigratedCaseFile(), input.prosecutionWithReferenceData());
+
+        assertThat(actual.stream()
+                .filter(MigratedCaseValidatedWithWarnings.class::isInstance)
+                .map(MigratedCaseValidatedWithWarnings.class::cast)
+                .anyMatch(warning -> "Offence validation".equals(warning.getType()) && warning.getMessage().startsWith("INVALID_PLEA")), is(true));
     }
 
     @ParameterizedTest
