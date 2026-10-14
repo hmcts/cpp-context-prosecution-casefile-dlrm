@@ -48,15 +48,6 @@
       ]
     },
     {
-      "code": "DEFENDANT_CUSTODY_STATUS_INVALID",
-      "values": [
-        {
-          "key": "custodyStatus",
-          "value": ""
-        }
-      ]
-    },
-    {
       "code": "OFFENCE_COMMITTED_END_DATE_INVALID",
       "values": [
         {

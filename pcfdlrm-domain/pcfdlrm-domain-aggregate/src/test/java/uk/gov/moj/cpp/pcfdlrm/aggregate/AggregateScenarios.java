@@ -44,6 +44,7 @@ import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_XHIBIT;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_XHIBIT_IDENDIFIER;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SUBMISSION_ID;
 
+import uk.gov.moj.cpp.pcfdlrm.builder.SourceSystem;
 import uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseFileReceived;
 import uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseValidatedCreationPending;
 import uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseValidatedWithWarnings;
@@ -90,6 +91,12 @@ final class AggregateScenarios {
             warning("Defendant validation", "DEFENDANT_NATIONALITY_INVALID : [HUN]"),
             warning("Defendant validation", "DEFENDANT_CUSTODY_STATUS_INVALID : []"));
 
+    /** As {@link #HEARING_DEFENDANT_VALIDATION_NOISE} for LIBRA, where a missing custody status is allowed. */
+    static final List<ExpectedEvent> HEARING_DEFENDANT_VALIDATION_NOISE_LIBRA = List.of(
+            new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-hearing-defendant-libra.json"),
+            warning("Defendant validation", "DEFENDANT_SELF_DEFINED_ETHNICITY_INVALID : [British]"),
+            warning("Defendant validation", "DEFENDANT_NATIONALITY_INVALID : [HUN]"));
+
     /** The ETHNICITY/NATIONALITY/CUSTODY-empty warning triple shared by most main-path scenarios below. */
     private static final List<ExpectedEvent> DEFENDANT_ETHNICITY_NATIONALITY_CUSTODY_NOISE = List.of(
             warning("Defendant validation", "DEFENDANT_SELF_DEFINED_ETHNICITY_INVALID : [British]"),
@@ -115,7 +122,7 @@ final class AggregateScenarios {
     static final List<String> PLEA_FUTURE_DATE_EXCLUSIONS = List.of("defendant.offences[0].plea.pleaDate", "problems[2].values[0].value");
     /** London time, as the date rules use — a machine-zone "tomorrow" is London's today for an hour on a UTC agent in BST. */
     static final LocalDate FUTURE_DATE = LocalDate.now(ZoneId.of("Europe/London")).plusDays(1);
-    static final List<String> FUTURE_COMMITTED_DATE_EXCLUSIONS = List.of("defendant.offences[0].offenceCommittedDate", "problems[3].values[0].value");
+    static final List<String> FUTURE_COMMITTED_DATE_EXCLUSIONS = List.of("defendant.offences[0].offenceCommittedDate", "problems[2].values[0].value");
     static final List<String> FUTURE_ARREST_DATE_EXCLUSIONS = List.of("defendant.offences[0].arrestDate", "problems[2].values[0].value");
 
     private AggregateScenarios() {
@@ -174,7 +181,10 @@ final class AggregateScenarios {
         final List<ExpectedEvent> xhibitExpectedNullMaterials = new ArrayList<>(defendantValidationNoise);
         xhibitExpectedNullMaterials.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-no-materials-null.json"));
 
-        final List<ExpectedEvent> libraExpected = new ArrayList<>(defendantValidationNoise);
+        final List<ExpectedEvent> libraExpected = new ArrayList<>(List.of(
+                new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-no-materials-libra.json"),
+                warning("Defendant validation", "DEFENDANT_SELF_DEFINED_ETHNICITY_INVALID : [British]"),
+                warning("Defendant validation", "DEFENDANT_NATIONALITY_INVALID : [HUN]")));
         libraExpected.add(new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-no-materials-libra.json"));
 
         final List<ExpectedEvent> libraCaseMarkerInvalidExpected = List.of(
@@ -183,7 +193,6 @@ final class AggregateScenarios {
                 warning("Defendant validation", "DEFENDANT_SELF_DEFINED_ETHNICITY_INVALID : [British]", LIBRA_PROSECUTOR_CASE_REFERENCE),
                 warning("Defendant validation", "DEFENDANT_NATIONALITY_INVALID : [HUN]", LIBRA_PROSECUTOR_CASE_REFERENCE),
                 warning("Defendant validation", "DEFENDANT_ADDITIONAL_NATIONALITY_INVALID : [SVK]", LIBRA_PROSECUTOR_CASE_REFERENCE),
-                warning("Defendant validation", "DEFENDANT_CUSTODY_STATUS_INVALID : []", LIBRA_PROSECUTOR_CASE_REFERENCE),
                 new ExpectedEvent(MigratedCaseFileReceived.class, "json/aggregate/migrated-case-file-received-case-marker-invalid-libra.json"));
 
         return Stream.of(
@@ -259,16 +268,22 @@ final class AggregateScenarios {
                 .flatMap(sourceSystem -> Stream.of(
                         new AggregateScenario("Invalid offence code, " + sourceSystem.migrationSourceSystemName() + " — hasOffenceProblems()/hasInvalidOffenceCode() (LIBRA: DD-43502)",
                                 invalidOffenceCodeInput(sourceSystem),
-                                List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-invalid-offence-code.json"),
+                                List.of(new ExpectedEvent(DefendantValidationFailed.class, fixtureFor(sourceSystem, "defendant-validation-failed-invalid-offence-code")),
                                         processedFailure("Invalid offence code"))),
                         new AggregateScenario("Guilty plea missing plea date, " + sourceSystem.migrationSourceSystemName() + " — hasOffenceProblems()/hasInvalidPleaDate() (LIBRA: DD-43502)",
                                 missingPleaDateInput(sourceSystem),
-                                List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-missing-plea-date.json"),
+                                List.of(new ExpectedEvent(DefendantValidationFailed.class, fixtureFor(sourceSystem, "defendant-validation-failed-missing-plea-date")),
                                         processedFailure("Missing or Invalid plea date"))),
                         new AggregateScenario("Verdict missing verdict date, " + sourceSystem.migrationSourceSystemName() + " — hasOffenceProblems()/hasInvalidVerdictDate() (LIBRA: DD-43502)",
                                 missingVerdictDateInput(sourceSystem),
-                                List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-missing-verdict-date.json"),
+                                List.of(new ExpectedEvent(DefendantValidationFailed.class, fixtureFor(sourceSystem, "defendant-validation-failed-missing-verdict-date")),
                                         processedFailure("Missing or Invalid verdict date")))));
+    }
+
+    // LIBRA drops the empty custody status problem on non-Charge cases (DD-43493), so it has its own fixture.
+    private static String fixtureFor(final SourceSystem sourceSystem, final String name) {
+        final String suffix = SOURCE_SYSTEM_LIBRA.equals(sourceSystem.migrationSourceSystemName()) ? "-libra" : "";
+        return "json/aggregate/" + name + suffix + ".json";
     }
 
     /**

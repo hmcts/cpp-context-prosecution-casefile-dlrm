@@ -50,7 +50,7 @@ Organisation guardian: `organisationName` (M; reject if youth defendant), `compa
 
 ## Decisions already agreed with the requester
 
-- LIBRA will not send organisation guardian details; the organisation rows do not apply.
+- A parent guardian can be an organisation (confirmed by the team leader, superseding an earlier assumption that LIBRA would not send one). The organisation rows apply; see G3 and G4 in `01-requirements.md`.
 - Phone and email formats are STAGINGDLRM's, not the ticket's.
 - Guardian surname stays required (STAGINGDLRM).
 - Guardian observed ethnicity is sent as an integer in `personalInformation.observedEthnicity`.

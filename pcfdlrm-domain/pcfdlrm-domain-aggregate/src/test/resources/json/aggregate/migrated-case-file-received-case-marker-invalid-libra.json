@@ -62,7 +62,7 @@
     "observedEthnicityReferenceData": [],
     "vehicleCodesReferenceData": [],
     "offenderCodeReferenceData": [],
-    "bailStatusReferenceData": [],
+    "bailStatusReferenceData": [{ "statusCode": "U" }],
     "modeOfTrialReasonsReferenceData": [],
     "prosecutorsReferenceData": {}
   },

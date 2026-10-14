@@ -17,6 +17,7 @@ import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.ARREST_DATE_IN_FUTUR
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.CHARGE_DATE_IN_FUTURE;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURT_LOCATION_OUCODE_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANT_COUNT;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_STATUS_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_FILE_TYPE_FOR_XHIBIT;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.INVALID_FILE_TYPE_FOR_XHIBIT_MIGRATION;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.NO_MATCHING_DEFENDANTS_FOR_HEARING;
@@ -114,6 +115,7 @@ public class MigratedCaseFileAggregate implements Aggregate {
     public static final String INVALID_OFFENCE_CODE = "Invalid offence code";
     public static final String MISSING_OR_INVALID_PLEA_DATE = "Missing or Invalid plea date";
     public static final String MISSING_OR_INVALID_VERDICT_DATE = "Missing or Invalid verdict date";
+    public static final String MISSING_OR_INVALID_CUSTODY_STATUS = "Missing or Invalid custody status";
     public static final String MISSING_CHARGE_DATE = "Missing charge date";
     public static final String MISSING_OR_INVALID_ARREST_DATE = "Missing or invalid arrest date";
     public static final String INVALID_OFFENCE_COMMITTED_DATE = "Invalid offence committed date";
@@ -283,6 +285,17 @@ public class MigratedCaseFileAggregate implements Aggregate {
                 referenceDataQueryService, builder, false, sourceSystemName);
 
         if (hasOffenceProblems(receiveMigratedCaseFile, migratedDefendantWithProblem, receivedInitiationCode, builder, migratedCaseDetails)) {
+            return apply(builder.build());
+        }
+
+        if (hasLibraCustodyStatusProblem(receiveMigratedCaseFile, migratedDefendantWithProblem)) {
+            builder.add(MigratedCaseFileProcessed.migratedCaseFileProcessed()
+                    .withDescription(MISSING_OR_INVALID_CUSTODY_STATUS)
+                    .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
+                    .withSubmissionId(receiveMigratedCaseFile.getSubmissionId())
+                    .withProcessingIsSuccessful(false)
+                    .withCaseUrn(migratedCaseDetails.getCaseDetails().getProsecutorCaseReference())
+                    .build());
             return apply(builder.build());
         }
 
@@ -538,12 +551,19 @@ public class MigratedCaseFileAggregate implements Aggregate {
         return !errors.isEmpty();
     }
 
-    private boolean isXhibit(final ReceiveMigratedCaseFile receiveMigratedCaseFile) {
-        return XHIBIT.equals(receiveMigratedCaseFile.getMigratedCaseDetails().getMigrationSourceSystem().getMigrationSourceSystemName());
+    private boolean hasLibraCustodyStatusProblem(final ReceiveMigratedCaseFile receiveMigratedCaseFile, final MigratedDefendantWithProblem migratedDefendantWithProblem) {
+        return isLibra(receiveMigratedCaseFile)
+                && migratedDefendantWithProblem.getDefendantProblems().stream()
+                .flatMap(e -> e.getProblems().stream())
+                .anyMatch(e -> e.getCode().equals(DEFENDANT_CUSTODY_STATUS_INVALID.name()));
     }
 
     private boolean isLibra(final ReceiveMigratedCaseFile receiveMigratedCaseFile) {
         return LIBRA.equals(receiveMigratedCaseFile.getMigratedCaseDetails().getMigrationSourceSystem().getMigrationSourceSystemName());
+    }
+
+    private boolean isXhibit(final ReceiveMigratedCaseFile receiveMigratedCaseFile) {
+        return XHIBIT.equals(receiveMigratedCaseFile.getMigratedCaseDetails().getMigrationSourceSystem().getMigrationSourceSystemName());
     }
 
     private boolean hasInvalidOuCode(final List<Problem> caseProblems) {
