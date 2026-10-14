@@ -20,21 +20,21 @@ source systems. There is no XHIBIT alias rule to reuse.
 
 | Field | Ticket | STAGINGDLRM | PCFDLRM | After this story | Discrepancy |
 |---|---|---|---|---|---|
-| forename | O, accept; ≤35 (truncate); no double spaces; "mandatory if person" in comment | no length, optional | none | unchanged | A1, A2, A3 |
-| forename2 | O, accept; ≤35 (truncate); no double spaces | no length | none | unchanged | A1, A2 |
-| forename3 | O, accept; ≤35 (truncate); no double spaces | no length | none | unchanged | A1, A2 |
-| surname | O, accept; ≤35 (truncate); no double spaces; "mandatory if person, otherwise null" in comment | no length, optional | none | unchanged | A1, A2, A3 |
+| forename | O, accept; ≤35 (truncate); no double spaces; "mandatory if person" in comment | no length, optional | none | unchanged; optional | A1 (open), A2, A3 (resolved) |
+| forename2 | O, accept; ≤35 (truncate); no double spaces | no length | none | unchanged | A1 (open), A2 (resolved) |
+| forename3 | O, accept; ≤35 (truncate); no double spaces | no length | none | unchanged | A1 (open), A2 (resolved) |
+| surname | O, accept; ≤35 (truncate); no double spaces; "mandatory if person, otherwise null" in comment | no length, optional | none | unchanged; optional | A1 (open), A2, A3 (resolved) |
 
-## Discrepancies for the BA
+## Discrepancies and decisions
 
 | # | Discrepancy | Classification |
 |---|---|---|
-| A1 | Alias names over 35 characters should be cut to the first 35. Nothing truncates or limits alias names in STAGINGDLRM or PCFDLRM, for XHIBIT or LIBRA. Truncation is a data transformation, not a reference-data check, so it belongs in the STAGINGDLRM mapping (or a STAGINGDLRM schema `maxLength` if rejection is acceptable). | Needs clarification; STAGINGDLRM change; align XHIBIT and LIBRA |
-| A2 | "No consecutive spaces": not implemented anywhere. The outcome is not stated (reject, null, or collapse the spaces). | Needs clarification |
-| A3 | The comments say forename and surname are mandatory for a person, but the columns say optional / accept. | Needs clarification |
+| A1 | Alias names over 35 characters should be cut to the first 35. Nothing truncates or limits alias names in STAGINGDLRM or PCFDLRM, for XHIBIT or LIBRA. Truncation is a data transformation, not a reference-data check, so it belongs in the STAGINGDLRM mapping. | **Open:** truncation in STAGINGDLRM was withdrawn after TL review (2026-10-13). Alias names pass through unchanged; PCFDLRM's alias schema has no length limit, so long names are accepted as sent. |
+| A2 | "No consecutive spaces": not implemented anywhere. The outcome is not stated (reject, null, or collapse the spaces). | **Resolved (BA, 2026-10-12):** ignored — no consecutive-spaces rule |
+| A3 | The comments say forename and surname are mandatory for a person, but the columns say optional / accept. | **Resolved (BA, 2026-10-12):** optional everywhere — nothing required in the alias schema |
 
 ## Outcome
 
 No PCFDLRM code change for this story: none of the alias rules is reference-data or business
-validation, and there is no XHIBIT alias rule to reuse. All three items go to the BA; if confirmed,
-A1 and A2 are a STAGINGDLRM story (one repo per story).
+validation, and there is no XHIBIT alias rule to reuse. A1 (truncation) is open after the STAGINGDLRM
+change was withdrawn; A2 is ignored and A3 keeps alias names optional.

@@ -14,14 +14,17 @@ import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.createMigratedMaterials;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraCustodyStatusInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.noMaterialsInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_DATE_OF_HEARING_EXCLUSIONS;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_HEARING_DATE_GMT;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_WEEK_COMMENCING_START_DATE;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_WEEK_COMMENCING_START_DATE_EXCLUSIONS;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.HEARING_DEFENDANT_VALIDATION_NOISE;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.HEARING_DEFENDANT_VALIDATION_NOISE_LIBRA;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.warning;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.MigratedCaseFileAggregate.HEARING_VALIDATION;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.MigratedCaseFileAggregate.MISSING_OR_INVALID_CUSTODY_STATUS;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildMigratedCaseDetails;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildProsecution;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildReceiveMigratedCaseFile;
@@ -64,6 +67,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedWe
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigrationSourceSystem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ReceiveMigratedCaseFile;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialAddedPendingProcess;
+import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseFileProcessed;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseNotFoundInAutomation;
 
 import java.util.ArrayList;
@@ -80,6 +84,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -490,7 +495,7 @@ class MigratedCaseFileAggregateTest {
     // migrationSourceSystem, since LIBRA now gets the same defendant fix-ups as XHIBIT.
     @ParameterizedTest
     @MethodSource("xhibitAndLibra")
-    void shouldNotDefaultHearingTimeForUnscheduledHearing(final SourceSystem sourceSystem, final String receivedFixture) {
+    void shouldNotDefaultHearingTimeForUnscheduledHearing(final SourceSystem sourceSystem, final String receivedFixture, final List<ExpectedEvent> defendantValidationNoise) {
         final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails("MALE", "FEMALE", W.name(), W.name(), null, null, null, sourceSystem);
         final MigratedDefendant defendant = migratedDefendant()
                 .withValuesFrom(migCaseDetails.getDefendants().get(0))
@@ -523,7 +528,7 @@ class MigratedCaseFileAggregateTest {
 
         final List<Object> actual = receiveMigratedCaseFile(receiveMigratedCase, prosecutionWithReferenceData);
 
-        final List<ExpectedEvent> expected = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
+        final List<ExpectedEvent> expected = new ArrayList<>(defendantValidationNoise);
         expected.add(warning("Hearing validation", "COURT_HEARING_LOCATION_OUCODE_INVALID : [C50EX00]"));
         expected.add(new ExpectedEvent(MigratedCaseFileReceived.class, receivedFixture));
         assertEventsMatchExpected(actual, expected);
@@ -531,8 +536,28 @@ class MigratedCaseFileAggregateTest {
 
     private static Stream<Arguments> xhibitAndLibra() {
         return Stream.of(
-                Arguments.of(sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER), "json/aggregate/migrated-case-file-received-hearing-unscheduled.json"),
-                Arguments.of(sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER), "json/aggregate/migrated-case-file-received-hearing-unscheduled-libra.json"));
+                Arguments.of(sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER), "json/aggregate/migrated-case-file-received-hearing-unscheduled.json", HEARING_DEFENDANT_VALIDATION_NOISE),
+                Arguments.of(sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER), "json/aggregate/migrated-case-file-received-hearing-unscheduled-libra.json", HEARING_DEFENDANT_VALIDATION_NOISE_LIBRA));
+    }
+
+    @ParameterizedTest(name = "LIBRA initiation code {0}, custody status {1} -> rejected: {2}")
+    @CsvSource(nullValues = "NULL", value = {"C, X, true", "C, NULL, true", "R, X, true", "C, U, false", "R, NULL, false", "Q, NULL, false"})
+    void shouldRejectLibraCaseWithMissingOrInvalidCustodyStatus(final String initiationCode, final String custodyStatus, final boolean rejected) {
+        final CaseFileInput input = libraCustodyStatusInput(initiationCode, custodyStatus);
+
+        final List<Object> events = receiveMigratedCaseFile(input.receiveMigratedCaseFile(), input.prosecutionWithReferenceData());
+
+        final List<MigratedCaseFileProcessed> failures = events.stream()
+                .filter(MigratedCaseFileProcessed.class::isInstance)
+                .map(MigratedCaseFileProcessed.class::cast)
+                .filter(processed -> !processed.getProcessingIsSuccessful())
+                .toList();
+        assertThat(failures.stream().anyMatch(processed -> MISSING_OR_INVALID_CUSTODY_STATUS.equals(processed.getDescription())), is(rejected));
+        assertThat(events.stream().anyMatch(MigratedCaseFileReceived.class::isInstance), is(!rejected));
+        events.stream()
+                .filter(MigratedCaseFileReceived.class::isInstance)
+                .map(MigratedCaseFileReceived.class::cast)
+                .forEach(received -> assertThat(received.getReceiveMigratedCaseFile().getMigratedCaseDetails().getDefendants().get(0).getIndividual().getCustodyStatus(), is(custodyStatus)));
     }
 
     @ParameterizedTest
