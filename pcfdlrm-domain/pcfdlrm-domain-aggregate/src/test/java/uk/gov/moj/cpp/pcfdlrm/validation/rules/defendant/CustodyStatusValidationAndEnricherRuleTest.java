@@ -70,6 +70,15 @@ public class CustodyStatusValidationAndEnricherRuleTest {
     }
 
     @Test
+    void shouldReturnEmptyListWhenIndividualIsNotProvided() {
+        when(defendantWithReferenceData.getDefendant().getIndividual()).thenReturn(null);
+
+        final Optional<Problem> optionalProblem = new CustodyStatusValidationAndEnricherRule().validate(defendantWithReferenceData, referenceDataQueryService)
+                .problems().stream().findFirst();
+        assertThat(optionalProblem.isPresent(), is(false));
+    }
+
+    @Test
     void shouldReturnProblemWhenCaseTypeIsCAndCustodyStatusNotProvided() {
         when(defendantWithReferenceData.getDefendant().getIndividual().getCustodyStatus()).thenReturn(null);
 

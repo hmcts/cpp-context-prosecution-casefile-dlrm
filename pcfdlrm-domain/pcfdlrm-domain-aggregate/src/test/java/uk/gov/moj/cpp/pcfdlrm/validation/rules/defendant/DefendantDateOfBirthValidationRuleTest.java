@@ -70,6 +70,28 @@ public class DefendantDateOfBirthValidationRuleTest {
         assertThat(actualProblem, is(Optional.empty()));
     }
 
+    @Test
+    public void shouldNotReturnProblemWhenSelfDefinedInformationIsNotPresent() {
+        final Individual individual = Individual.individual().build();
+        final MigratedDefendant defendant = MigratedDefendant.migratedDefendant().withId(DEFENDANT_ID).withIndividual(individual).build();
+        final DefendantWithReferenceData defendantWithReferenceData = new DefendantWithReferenceData(defendant, referenceDataVO, null);
+
+        final Optional<Problem> actualProblem = defendantDateOfBirthValidationRule.validate(defendantWithReferenceData, referenceDataQueryService)
+                .problems().stream().findFirst();
+
+        assertThat(actualProblem, is(Optional.empty()));
+    }
+
+    @Test
+    public void shouldNotReturnProblemWhenIndividualIsNotPresent() {
+        final MigratedDefendant defendant = MigratedDefendant.migratedDefendant().withId(DEFENDANT_ID).build();
+        final DefendantWithReferenceData defendantWithReferenceData = new DefendantWithReferenceData(defendant, referenceDataVO, null);
+
+        final Optional<Problem> actualProblem = defendantDateOfBirthValidationRule.validate(defendantWithReferenceData, referenceDataQueryService)
+                .problems().stream().findFirst();
+
+        assertThat(actualProblem, is(Optional.empty()));
+    }
 
     private DefendantWithReferenceData getMockDefendantWithReferenceData(final LocalDate defendantDateOfBirth) {
 

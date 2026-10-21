@@ -1,5 +1,6 @@
 package uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.of;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_STATUS_INVALID;
@@ -23,9 +24,10 @@ public class CustodyStatusValidationAndEnricherRule implements ValidationRule<De
     @Override
     public ValidationResult validate(final DefendantWithReferenceData defendantWithReferenceData, final ReferenceDataQueryService referenceDataQueryService) {
 
-        if (nonNull(defendantWithReferenceData.getDefendant().getOrganisationName())) {
+        if (nonNull(defendantWithReferenceData.getDefendant().getOrganisationName())
+                || isNull(defendantWithReferenceData.getDefendant().getIndividual())) {
             return VALID;
-        } else if (nonNull(defendantWithReferenceData.getDefendant().getIndividual()) && (defendantWithReferenceData.getDefendant().getIndividual().getCustodyStatus() == null)) {
+        } else if (defendantWithReferenceData.getDefendant().getIndividual().getCustodyStatus() == null) {
             return newValidationResult(of(newProblem(DEFENDANT_CUSTODY_STATUS_INVALID, new ProblemValue(null, DEFENDANT_CUSTODY_STATUS.getValue(), ""))));
         }
 
