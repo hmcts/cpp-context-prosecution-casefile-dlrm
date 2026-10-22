@@ -21,7 +21,9 @@ public class DefendantDateOfBirthValidationRule implements ValidationRule<Defend
 
     @Override
     public ValidationResult validate(final DefendantWithReferenceData defendantWithReferenceData, final ReferenceDataQueryService referenceDataQueryService) {
-        if (defendantWithReferenceData.getDefendant().getIndividual() == null || defendantWithReferenceData.getDefendant().getIndividual().getSelfDefinedInformation().getDateOfBirth() == null) {
+        if (defendantWithReferenceData.getDefendant().getIndividual() == null
+                || defendantWithReferenceData.getDefendant().getIndividual().getSelfDefinedInformation() == null
+                || defendantWithReferenceData.getDefendant().getIndividual().getSelfDefinedInformation().getDateOfBirth() == null) {
             return VALID;
         }
 

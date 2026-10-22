@@ -63,4 +63,13 @@ public class BailConditionsValidationAndEnricherRuleTest {
 
     }
 
+    @Test
+    public void shouldReturnEmptyProblemListWhenIndividualIsNotProvided() {
+        when(defendantWithReferenceData.getDefendant().getIndividual()).thenReturn(null);
+
+        final Optional<Problem> optionalProblem = new BailConditionsValidationAndEnricherRule().validate(defendantWithReferenceData, referenceDataQueryService)
+                .problems().stream().findFirst();
+        assertThat(optionalProblem.isPresent(), is(false));
+    }
+
 }

@@ -11,6 +11,7 @@ import uk.gov.moj.cpp.pcfdlrm.validation.Problems;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.FieldName;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationResult;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationRule;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Individual;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ProblemValue;
 
 
@@ -22,7 +23,12 @@ public class BailConditionsValidationAndEnricherRule implements ValidationRule<D
     @Override
     public ValidationResult validate(final DefendantWithReferenceData defendantWithReferenceData, final ReferenceDataQueryService referenceDataQueryService) {
 
-        final String custodyStatus = defendantWithReferenceData.getDefendant().getIndividual().getCustodyStatus();
+        final Individual individual = defendantWithReferenceData.getDefendant().getIndividual();
+        if (individual == null) {
+            return VALID;
+        }
+
+        final String custodyStatus = individual.getCustodyStatus();
 
         if (custodyStatus != null && CONDITIONAL_BAIL_STATUS.equals(custodyStatus) && isBailConditionsEmpty(defendantWithReferenceData)) {
             return newValidationResult(of(Problems.newProblem(ProblemCode.BAIL_CONDITIONS_REQUIRED, new ProblemValue(null, FieldName.DEFENDANT_BAIL_CONDITIONS.getValue(), ""))));
