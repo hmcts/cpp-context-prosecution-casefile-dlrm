@@ -63,7 +63,7 @@ Azure DevOps (`azure-pipelines.yaml`):
 - PR builds → `pipelines/context-verify.yaml` (Sonar + unit tests).
 - `IndividualCI` on `main` / `team/*` → `pipelines/context-validation.yaml` with `serviceName=pcfdlrm` and `itTestFolder=pcfdlrm-integration-test`.
 - `dev/release-*` branches are excluded.
-- Agent pool: `MDV-ADO-AGENT-AKS-01`, demand `centos8-j17`.
+- Agent pool: `MDV-ADO-AGENT-AKS-01`, demand `ubuntu24-j17`.
 - SonarQube project: `uk.gov.moj.cpp.prosecutioncasefile.dlrm:prosecutioncasefile-dlrm-parent`.
 
 ## Architecture — the three layers you must reason across
