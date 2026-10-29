@@ -20,6 +20,8 @@ import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_XHIBIT;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_XHIBIT_IDENDIFIER;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Language.E;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Language.W;
+import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ModeOfTrialReasonsReferenceData.modeOfTrialReasonsReferenceData;
+import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedAllocationDecision.migratedAllocationDecision;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant.migratedDefendant;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedOffence.migratedOffence;
 
@@ -61,6 +63,8 @@ import java.util.function.UnaryOperator;
 final class AggregateScenarioInputs {
 
     private static final String UNCONDITIONAL_BAIL = "U";
+    private static final UUID MOT_REASON_ID = UUID.fromString("a1a1a1a1-1111-4111-8111-111111111111");
+    private static final UUID UNKNOWN_MOT_REASON_ID = UUID.fromString("b2b2b2b2-2222-4222-8222-222222222222");
 
     private AggregateScenarioInputs() {
     }
@@ -262,6 +266,30 @@ final class AggregateScenarioInputs {
     static CaseFileInput missingEndDateInput(final SourceSystem sourceSystem) {
         return offenceDatesInput(sourceSystem, null, offence -> offence.withChargeDate(PLEA_DATE_ANCHOR).withArrestDate(PLEA_DATE_ANCHOR)
                 .withOffenceDateCode(4).withOffenceCommittedDate(PLEA_DATE_ANCHOR.minusMonths(1)));
+    }
+
+    /** Offence with charge and arrest dates and an allocation decision with the given date, for the given source (DD-43888). */
+    static CaseFileInput allocationDecisionDateInput(final SourceSystem sourceSystem, final LocalDate allocationDecisionDate) {
+        return allocationDecisionInput(sourceSystem, MOT_REASON_ID, allocationDecisionDate);
+    }
+
+    /** LIBRA offence with charge and arrest dates and an allocation decision whose motReasonId is not in ref data (DD-43888). */
+    static CaseFileInput libraUnknownMotReasonInput() {
+        return allocationDecisionInput(LIBRA, UNKNOWN_MOT_REASON_ID, PLEA_DATE_ANCHOR);
+    }
+
+    /** LIBRA offence with charge and arrest dates and an allocation decision with the given date (DD-43888). */
+    static CaseFileInput libraAllocationDecisionDateInput(final LocalDate allocationDecisionDate) {
+        return allocationDecisionDateInput(LIBRA, allocationDecisionDate);
+    }
+
+    // Ref data knows only MOT_REASON_ID, as ModeOfTrialRefDataEnricher would leave it.
+    private static CaseFileInput allocationDecisionInput(final SourceSystem sourceSystem, final UUID motReasonId, final LocalDate allocationDecisionDate) {
+        final CaseFileInput input = offenceDatesInput(sourceSystem, null, offence -> offence.withChargeDate(PLEA_DATE_ANCHOR).withArrestDate(PLEA_DATE_ANCHOR)
+                .withAllocationDecision(migratedAllocationDecision().withMotReasonId(motReasonId).withAllocationDecisionDate(allocationDecisionDate).build()));
+        input.prosecutionWithReferenceData().getReferenceDataVO().getModeOfTrialReasonsReferenceData()
+                .add(modeOfTrialReasonsReferenceData().withId(MOT_REASON_ID.toString()).build());
+        return input;
     }
 
     /** LIBRA offence with charge and arrest dates and an unrecognised plea code — warning, not a reject (DD-43502). */

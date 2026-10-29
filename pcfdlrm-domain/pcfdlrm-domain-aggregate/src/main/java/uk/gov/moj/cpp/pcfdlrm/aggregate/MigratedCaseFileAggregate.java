@@ -13,6 +13,8 @@ import static uk.gov.moj.cpp.pcfdlrm.ProsecutionCaseFileHelper.validateDefendant
 import static uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseValidatedCreationPending.migratedCaseValidatedCreationPending;
 import static uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseValidatedWithWarnings.migratedCaseValidatedWithWarnings;
 import static uk.gov.moj.cpp.pcfdlrm.validation.CaseType.CHARGE;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.ALLOCATION_DECISION_DATE_INVALID;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.ALLOCATION_DECISION_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.ARREST_DATE_IN_FUTURE;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.CHARGE_DATE_IN_FUTURE;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.COURT_LOCATION_OUCODE_INVALID;
@@ -120,6 +122,8 @@ public class MigratedCaseFileAggregate implements Aggregate {
     public static final String MISSING_OR_INVALID_ARREST_DATE = "Missing or invalid arrest date";
     public static final String INVALID_OFFENCE_COMMITTED_DATE = "Invalid offence committed date";
     public static final String MISSING_OR_INVALID_OFFENCE_COMMITTED_END_DATE = "Missing or invalid offence committed end date";
+    public static final String INVALID_ALLOCATION_DECISION = "Invalid allocation decision";
+    public static final String MISSING_OR_INVALID_ALLOCATION_DECISION_DATE = "Missing or invalid allocation decision date";
     public static final String COURT_RECORD_SHEET_NOT_PDF = "Court Record Sheet must be a PDF file";
     public static final String COURT_RECORD_SHEET_FILE_TYPE_INVALID = "Court Record Sheet file type is not valid for XHIBIT migration";
     public static final String COURT_RECORD_SHEET_COUNT_EXCEEDS_DEFENDANTS = "Number of Court Record Sheets exceeds number of defendants";
@@ -488,6 +492,12 @@ public class MigratedCaseFileAggregate implements Aggregate {
         }
         if (hasProblemValue(migratedDefendantWithProblem, OFFENCE_COMMITTED_END_DATE_INVALID, value -> true)) {
             return Optional.of(MISSING_OR_INVALID_OFFENCE_COMMITTED_END_DATE);
+        }
+        if (hasProblemValue(migratedDefendantWithProblem, ALLOCATION_DECISION_INVALID, value -> true)) {
+            return Optional.of(INVALID_ALLOCATION_DECISION);
+        }
+        if (hasProblemValue(migratedDefendantWithProblem, ALLOCATION_DECISION_DATE_INVALID, value -> true)) {
+            return Optional.of(MISSING_OR_INVALID_ALLOCATION_DECISION_DATE);
         }
         return Optional.empty();
     }

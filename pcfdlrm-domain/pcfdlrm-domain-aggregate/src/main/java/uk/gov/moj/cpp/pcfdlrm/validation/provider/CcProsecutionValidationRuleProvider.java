@@ -57,6 +57,7 @@ import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.SelfDefinedEthnicityVal
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.ArrestDateValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.ChargeDateValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceAlcoholLevelValidationAndEnricherRule;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceAllocationDecisionValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceBackDutyValidationRuleAndEnricherRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceCodeValidationAndEnricherRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceCommittedDatesValidationRule;
@@ -311,9 +312,10 @@ public class CcProsecutionValidationRuleProvider {
     private static final Map<String, List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>>> defendantValidationMapDlrm = defendantValidationMapSpi;
 
 
-    // DD-43502: LIBRA-only defendant rules, so XHIBIT gets no new problems.
+    // DD-43502 / DD-43888: LIBRA-only defendant rules, so XHIBIT gets no new problems.
     private static final List<ValidationRule<DefendantWithReferenceData, ReferenceDataQueryService>> LIBRA_DEFENDANT_RULE_SET = List.of(
-            new OffenceCommittedDatesValidationRule()
+            new OffenceCommittedDatesValidationRule(),
+            new OffenceAllocationDecisionValidationRule()
     );
 
     private static final String XHIBIT = "XHIBIT";
