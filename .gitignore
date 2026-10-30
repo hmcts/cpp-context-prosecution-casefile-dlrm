@@ -56,8 +56,7 @@ target/
 deployWars.sh
 buildContexts.sh
 
-# Spec Kit / Claude Code — local-only files; team-shared (.claude/agents/,
-# .claude/rules/, .claude/skills/, .specify/) stays tracked
+# Claude Code — local-only files
 .claude/settings.[l]ocal.json
 .claude/projects/
 .claude/todos/
