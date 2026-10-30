@@ -13,9 +13,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.allocationDecisionDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.arrestDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.createMigratedMaterials;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.futureCommittedDateInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraAllocationDecisionDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraArrestDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraBadPleaCodeInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraCustodyStatusInput;
@@ -30,6 +32,7 @@ import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_WEEK_CO
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_WEEK_COMMENCING_START_DATE_EXCLUSIONS;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.HEARING_DEFENDANT_VALIDATION_NOISE;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.HEARING_DEFENDANT_VALIDATION_NOISE_LIBRA;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.PLEA_DATE_ANCHOR;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.warning;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.MigratedCaseFileAggregate.HEARING_VALIDATION;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.MigratedCaseFileAggregate.MISSING_OR_INVALID_CUSTODY_STATUS;
@@ -568,8 +571,8 @@ class MigratedCaseFileAggregateTest {
                 .forEach(received -> assertThat(received.getReceiveMigratedCaseFile().getMigratedCaseDetails().getDefendants().get(0).getIndividual().getCustodyStatus(), is(custodyStatus)));
     }
 
-    // DD-43502: offence problems that must not reject the case. The XHIBIT rows pin that the new LIBRA
-    // rejects (arrest date on a Charge case, committed date, end date) do not leak into XHIBIT (AC-9).
+    // DD-43502 / DD-43888: offence inputs that must not reject the case. The XHIBIT rows pin that the new LIBRA
+    // rejects (arrest date on a Charge case, committed date, end date, allocation decision date) do not leak into XHIBIT (AC-9).
     static Stream<Arguments> offenceProblemsNotRejected() {
         final SourceSystem xhibit = sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER);
         return Stream.of(
@@ -580,7 +583,9 @@ class MigratedCaseFileAggregateTest {
                 Arguments.of("XHIBIT missing arrest date on a Charge case", arrestDateInput(xhibit, "C", null)),
                 Arguments.of("XHIBIT future arrest date on a Charge case", arrestDateInput(xhibit, "C", FUTURE_DATE)),
                 Arguments.of("XHIBIT future committed date", futureCommittedDateInput(xhibit)),
-                Arguments.of("XHIBIT date code 4 with no end date", missingEndDateInput(xhibit)));
+                Arguments.of("XHIBIT date code 4 with no end date", missingEndDateInput(xhibit)),
+                Arguments.of("LIBRA allocation decision with a past date", libraAllocationDecisionDateInput(PLEA_DATE_ANCHOR)),
+                Arguments.of("XHIBIT allocation decision with no date", allocationDecisionDateInput(xhibit, null)));
     }
 
     @ParameterizedTest(name = "{0} — not rejected")

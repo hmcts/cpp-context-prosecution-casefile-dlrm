@@ -41,6 +41,8 @@ public enum FieldName {
     OFFENCE_DATE_CODE("offence_offenceDateCode"),
     OFFENCE_COMMITTED_DATE("offence_offenceCommittedDate"),
     OFFENCE_COMMITTED_END_DATE("offence_offenceCommittedEndDate"),
+    OFFENCE_ALLOCATION_DECISION_MOT_REASON_ID("offence_allocationDecision_motReasonId"),
+    OFFENCE_ALLOCATION_DECISION_DATE("offence_allocationDecision_allocationDecisionDate"),
     STATEMENT_OF_FACTS_WELSH("statementOfFactsWelsh"),
     CASE_MARKERS("caseMarkers"),
     OU_CODE("ouCode"),

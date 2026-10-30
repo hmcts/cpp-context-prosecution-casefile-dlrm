@@ -176,12 +176,15 @@ class ReceiveMigratedCaseFileIT {
         receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiated(caseUrn, retrialIndicator ? "retrial-true" : "retrial-false");
     }
 
+    // DD-43888: the LIBRA row reuses the XHIBIT payload with the source system swapped and its own material
+    // location, as each upload location must be unique across the run.
     @ParameterizedTest
-    @CsvSource({"command-json/pcfdlrm.command.receive-migrated-case-file-with-no-allocation-decision.json, 20, allocation-no-decision",
-                "command-json/pcfdlrm.command.receive-migrated-case-file-with-allocation-decision.json, 21, allocation-with-decision",
-                "command-json/pcfdlrm.command.receive-migrated-case-file-with-indictable-allocation-decision.json, 19, allocation-with-indictable-decision"
+    @CsvSource({"command-json/pcfdlrm.command.receive-migrated-case-file-with-no-allocation-decision.json, 20, allocation-no-decision, XHIBIT",
+                "command-json/pcfdlrm.command.receive-migrated-case-file-with-allocation-decision.json, 21, allocation-with-decision, XHIBIT",
+                "command-json/pcfdlrm.command.receive-migrated-case-file-with-indictable-allocation-decision.json, 19, allocation-with-indictable-decision, XHIBIT",
+                "command-json/pcfdlrm.command.receive-migrated-case-file-with-allocation-decision.json, 24, libra-allocation-with-decision, LIBRA"
     })
-    void shouldSetAllocationDecisionForDifferentScenario(String fileName, String index, String initiateCourtProceedingsFixture) {
+    void shouldSetAllocationDecisionForDifferentScenario(String fileName, String index, String initiateCourtProceedingsFixture, String sourceSystemName) {
 
         final String submissionId = UUID.randomUUID().toString();
 
@@ -198,7 +201,9 @@ class ReceiveMigratedCaseFileIT {
                 .replace("CASE_ID", caseId)
                 .replace("CASE_URN", caseUrn)
                 .replace("DEFENDANT_ID", defendantId)
-                .replace("HEARING_DATE", LocalDate.now().plusDays(1).toString());
+                .replace("HEARING_DATE", LocalDate.now().plusDays(1).toString())
+                .replace("\"migrationSourceSystemName\": \"XHIBIT\"", "\"migrationSourceSystemName\": \"" + sourceSystemName + "\"")
+                .replaceAll("http://inazure/secrets/\\d+", "http://inazure/secrets/" + index);
 
         receiveMigratedCaseFileHelper.receiveMigratedCaseFile(staticPayLoad);
 

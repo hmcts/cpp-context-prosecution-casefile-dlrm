@@ -49,6 +49,7 @@ import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.SelfDefinedEthnicityVal
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.ArrestDateValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.ChargeDateValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceAlcoholLevelValidationAndEnricherRule;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceAllocationDecisionValidationRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceBackDutyValidationRuleAndEnricherRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceCodeValidationAndEnricherRule;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.defendant.offence.OffenceCommittedDatesValidationRule;
@@ -492,13 +493,13 @@ class CcProsecutionValidationRuleProviderTest {
         )), classesOf(validationRules));
     }
 
-    // DD-43502: the committed-dates rule is appended for LIBRA only; XHIBIT keeps the plain DLRM set.
+    // DD-43502 / DD-43888: the committed-dates and allocation decision rules are appended for LIBRA only; XHIBIT keeps the plain DLRM set.
     @Test
     void shouldAppendLibraDefendantRulesForLibraOnly() {
         final Set<Class<?>> dlrmRules = classesOf(CcProsecutionValidationRuleProvider
                 .getDefendantValidationRules(CHARGE.getCode(), Channel.DLRM_MIGRATION, Boolean.FALSE));
 
-        assertEquals(union(dlrmRules, Set.of(OffenceCommittedDatesValidationRule.class)), classesOf(CcProsecutionValidationRuleProvider
+        assertEquals(union(dlrmRules, Set.of(OffenceCommittedDatesValidationRule.class, OffenceAllocationDecisionValidationRule.class)), classesOf(CcProsecutionValidationRuleProvider
                 .getDefendantValidationRules(CHARGE.getCode(), Channel.DLRM_MIGRATION, Boolean.FALSE, "LIBRA")));
         assertEquals(dlrmRules, classesOf(CcProsecutionValidationRuleProvider
                 .getDefendantValidationRules(CHARGE.getCode(), Channel.DLRM_MIGRATION, Boolean.FALSE, "XHIBIT")));

@@ -17,12 +17,14 @@ import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.guiltyPle
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.hearingDefendantMatchesNoOffencesInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.invalidOffenceCodeInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.invalidProsecutingAuthorityInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraAllocationDecisionDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraArrestDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraFutureCommittedDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraInvalidCaseMarkerInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraInvalidProsecutingAuthorityInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraMissingChargeDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraMissingEndDateInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraUnknownMotReasonInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.missingPleaDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.missingVerdictDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.noMatchingDefendantsForHearingInput;
@@ -124,6 +126,7 @@ final class AggregateScenarios {
     static final LocalDate FUTURE_DATE = LocalDate.now(ZoneId.of("Europe/London")).plusDays(1);
     static final List<String> FUTURE_COMMITTED_DATE_EXCLUSIONS = List.of("defendant.offences[0].offenceCommittedDate", "problems[2].values[0].value");
     static final List<String> FUTURE_ARREST_DATE_EXCLUSIONS = List.of("defendant.offences[0].arrestDate", "problems[2].values[0].value");
+    static final List<String> FUTURE_ALLOCATION_DECISION_DATE_EXCLUSIONS = List.of("defendant.offences[0].allocationDecision.allocationDecisionDate", "problems[2].values[0].value");
 
     private AggregateScenarios() {
     }
@@ -311,7 +314,19 @@ final class AggregateScenarios {
                 new AggregateScenario("Offence date code 4 with no end date, LIBRA — rejected (DD-43502)",
                         libraMissingEndDateInput(),
                         List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-libra-missing-end-date.json"),
-                                processedFailure("Missing or invalid offence committed end date")))
+                                processedFailure("Missing or invalid offence committed end date"))),
+                new AggregateScenario("Allocation decision motReasonId not in ref data, LIBRA — rejected (DD-43888)",
+                        libraUnknownMotReasonInput(),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-libra-invalid-allocation-decision.json"),
+                                processedFailure("Invalid allocation decision"))),
+                new AggregateScenario("Allocation decision with no date, LIBRA — rejected (DD-43888)",
+                        libraAllocationDecisionDateInput(null),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-libra-missing-allocation-decision-date.json"),
+                                processedFailure("Missing or invalid allocation decision date"))),
+                new AggregateScenario("Allocation decision with a future date, LIBRA — rejected (DD-43888)",
+                        libraAllocationDecisionDateInput(FUTURE_DATE),
+                        List.of(new ExpectedEvent(DefendantValidationFailed.class, "json/aggregate/defendant-validation-failed-libra-future-allocation-decision-date.json", FUTURE_ALLOCATION_DECISION_DATE_EXCLUSIONS),
+                                processedFailure("Missing or invalid allocation decision date")))
         );
     }
 
