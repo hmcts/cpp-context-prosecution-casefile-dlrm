@@ -12,3 +12,5 @@ carries main's latest fixes.
 
 Test specs (Stage 4) are not produced: this is a merge with no new behaviour beyond what main
 already tested.
+
+CI retriggered 2026-11-02 after DevOps registry credential fix.
