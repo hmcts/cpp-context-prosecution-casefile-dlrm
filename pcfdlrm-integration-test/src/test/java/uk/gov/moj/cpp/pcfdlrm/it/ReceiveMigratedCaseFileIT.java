@@ -27,6 +27,7 @@ import uk.gov.justice.services.messaging.Metadata;
 import uk.gov.moj.cpp.pcfdlrm.helper.AddMaterialHelper;
 import uk.gov.moj.cpp.pcfdlrm.helper.ReceiveMigratedCaseFileHelper;
 
+import java.io.StringReader;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -34,10 +35,13 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 
 import org.apache.commons.lang3.RandomStringUtils;
@@ -56,6 +60,15 @@ class ReceiveMigratedCaseFileIT {
     private final ReceiveMigratedCaseFileHelper receiveMigratedCaseFileHelper = new ReceiveMigratedCaseFileHelper();
 
     private final AddMaterialHelper addMaterialHelper = new AddMaterialHelper();
+
+    // DD-43463: accepted LIBRA bundle codes and their STE reference-data level.
+    private static final Map<String, String> LIBRA_BUNDLE_LEVELS = Map.of(
+            "1", "Defendant level",
+            "2", "Defendant level",
+            "3", "Case level",
+            "6", "Defendant level",
+            "8", "Case level",
+            "99", "Defendant level");
 
     @BeforeAll
     static void setup() {
@@ -214,6 +227,85 @@ class ReceiveMigratedCaseFileIT {
         addMaterialHelper.sendMessage(materialAddedToMaterialContextPayload.metadata().name(), materialAddedToMaterialContextPayload);
 
         receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiatedWithAllocationDecision(caseUrn, initiateCourtProceedingsFixture);
+    }
+
+    // DD-43463: every accepted LIBRA bundle reaches material-ready-for-court-document on accept at its
+    // reference-data level. Reuses the XHIBIT allocation-decision payload with the source system and
+    // materials swapped; upload locations 25-30 are unique across the run.
+    @Test
+    void shouldSendEveryAcceptedLibraBundleForCourtDocumentOnAccept() {
+        final String submissionId = UUID.randomUUID().toString();
+        final String caseId = UUID.randomUUID().toString();
+        final String defendantId = UUID.randomUUID().toString();
+        final String caseUrn = RandomStringUtils.secure().nextAlphanumeric(10);
+
+        final String staticPayLoad = getStringFromResource("command-json/pcfdlrm.command.receive-migrated-case-file-with-allocation-decision.json")
+                .replace("SUBMISSION_ID", submissionId)
+                .replace("CASE_ID", caseId)
+                .replace("CASE_URN", caseUrn)
+                .replace("DEFENDANT_ID", defendantId)
+                .replace("HEARING_DATE", LocalDate.now().plusDays(1).toString())
+                .replace("\"migrationSourceSystemName\": \"XHIBIT\"", "\"migrationSourceSystemName\": \"LIBRA\"");
+
+        receiveMigratedCaseFileHelper.receiveMigratedCaseFile(withLibraMaterials(staticPayLoad));
+
+        // pcfdlrm sets each material's level from reference data (MaterialAdded.documentCategory).
+        final Map<String, String> materialIdToBundle = new HashMap<>();
+        final Map<String, String> bundleToLevel = new HashMap<>();
+        for (int i = 0; i < LIBRA_BUNDLE_LEVELS.size(); i++) {
+            final JsonObject materialAdded = receiveMigratedCaseFileHelper.nextMaterialAdded(addMaterialHelper).payloadAsJsonObject();
+            final String bundle = materialAdded.getJsonObject("material").getString("fileType");
+            final String level = materialAdded.getString("documentCategory");
+            bundleToLevel.put(bundle, level);
+
+            // Material echoes back the category pcfdlrm sent it.
+            final String materialId = randomUUID().toString();
+            materialIdToBundle.put(materialId, bundle);
+            sendMaterialAdded(createMaterialAddedPayload(materialId, caseId, defendantId, level));
+        }
+        assertThat(bundleToLevel, is(LIBRA_BUNDLE_LEVELS));
+
+        receiveMigratedCaseFileHelper.verifyMigratedCaseFileReceived(addMaterialHelper, submissionId);
+        receiveMigratedCaseFileHelper.triggerAcceptMigratedCase(caseId);
+
+        for (int i = 0; i < LIBRA_BUNDLE_LEVELS.size(); i++) {
+            final JsonObject event = receiveMigratedCaseFileHelper.nextMaterialReadyForCourtDocument(addMaterialHelper).payloadAsJsonObject();
+            final String bundle = materialIdToBundle.remove(event.getString("materialId"));
+            final JsonObject category = event.getJsonObject("courtDocument").getJsonObject("documentCategory");
+
+            if ("Case level".equals(LIBRA_BUNDLE_LEVELS.get(bundle))) {
+                assertThat("bundle " + bundle, category.getJsonObject("caseDocument").getString("prosecutionCaseId"), is(caseId));
+                assertThat("bundle " + bundle, category.containsKey("defendantDocument"), is(false));
+            } else {
+                assertThat("bundle " + bundle, category.getJsonObject("defendantDocument").getJsonArray("defendants").getString(0), is(defendantId));
+                assertThat("bundle " + bundle, category.getJsonObject("defendantDocument").getJsonArray("defendants").size(), is(1));
+            }
+        }
+        assertThat(materialIdToBundle.isEmpty(), is(true));
+
+        receiveMigratedCaseFileHelper.verifyMigratedCaseAccepted(addMaterialHelper, submissionId, caseId, caseUrn);
+    }
+
+    private static String withLibraMaterials(final String payload) {
+        final JsonObject receiveMigratedCaseFile = JsonObjects.createReader(new StringReader(payload)).readObject();
+        final JsonArrayBuilder materials = JsonObjects.createArrayBuilder();
+        int uploadIndex = 25;
+        for (final String bundle : LIBRA_BUNDLE_LEVELS.keySet().stream().sorted().toList()) {
+            materials.add(createObjectBuilder()
+                    .add("id", randomUUID().toString())
+                    .add("azureLocation", "http://inazure/secrets/" + uploadIndex++)
+                    .add("fileName", "bundle-" + bundle + ".pdf")
+                    .add("fileType", bundle)
+                    .add("documentType", 2));
+        }
+        return JsonObjects.createObjectBuilder(receiveMigratedCaseFile)
+                .add("materials", materials)
+                .build()
+                .toString();
+    }
+
+    private void sendMaterialAdded(final JsonEnvelope materialAdded) {
+        addMaterialHelper.sendMessage(materialAdded.metadata().name(), materialAdded);
     }
 
     @Test
@@ -375,9 +467,13 @@ class ReceiveMigratedCaseFileIT {
     }
 
     private JsonEnvelope createMaterialAddedPayload(final String materialId, final String caseId, final String defendantId) {
+        return createMaterialAddedPayload(materialId, caseId, defendantId, "Case level");
+    }
+
+    private JsonEnvelope createMaterialAddedPayload(final String materialId, final String caseId, final String defendantId, final String documentCategory) {
 
         final Metadata metadata = JsonEnvelope
-                .metadataFrom(getCCMetadataJsonObjectCaseLevel(caseId, defendantId))
+                .metadataFrom(getCCMetadataJsonObject(caseId, defendantId, documentCategory))
                 .build();
 
         final JsonObject payload = createObjectBuilder()
@@ -393,7 +489,7 @@ class ReceiveMigratedCaseFileIT {
         return JsonEnvelope.envelopeFrom(metadata, payload);
     }
 
-    private static JsonObject getCCMetadataJsonObjectCaseLevel(final String caseId, final String defendantId) {
+    private static JsonObject getCCMetadataJsonObject(final String caseId, final String defendantId, final String documentCategory) {
         return JsonObjects
                 .createObjectBuilder(metadataBuilder()
                         .withId(randomUUID())
@@ -402,7 +498,7 @@ class ReceiveMigratedCaseFileIT {
                 .add("ccMetadata", createObjectBuilder()
                         .add("caseId", caseId)
                         .add("defendantId", defendantId)
-                        .add("documentCategory", "Case level")
+                        .add("documentCategory", documentCategory)
                         .add("documentTypeDescription", "SJPN")
                         .add("documentTypeId", randomUUID().toString())
                         .add("fileCloudLocation", "azure.net")

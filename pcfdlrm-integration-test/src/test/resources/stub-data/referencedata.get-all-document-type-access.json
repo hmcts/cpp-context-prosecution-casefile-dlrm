@@ -356,6 +356,159 @@
           }
         ]
       }
+    },
+    {
+      "id": "530f6f7a-c002-11e9-a355-529269fb1662",
+      "section": "Witness Statements",
+      "documentCategory": "Case level",
+      "sectionCode": "WS",
+      "actionRequired": false,
+      "validFrom": "1983-05-13",
+      "validTo": "2022-05-13",
+      "courtDocumentTypeRBAC": {
+        "readUserGroups": [
+          {
+            "cppGroup": {
+              "id": "ff9fb2c8-2738-4d77-87e5-56b5781b4113",
+              "groupName": "Legal Advisors"
+            },
+            "validFrom": "1983-05-13",
+            "validTo": "2022-05-13"
+          }
+        ],
+        "uploadUserGroups": [
+          {
+            "cppGroup": {
+              "id": "ff9fb2c8-2738-4d77-87e5-56b5781b4113",
+              "groupName": "Court Admin"
+            },
+            "validFrom": "1983-05-13",
+            "validTo": "2022-05-13"
+          }
+        ],
+        "downloadUserGroups": [
+          {
+            "cppGroup": {
+              "id": "ff9fb2c8-2738-4d77-87e5-56b5781b4113",
+              "groupName": "Crown Court Clerk"
+            },
+            "validFrom": "1983-05-13",
+            "validTo": "2022-05-13"
+          }
+        ],
+        "deleteUserGroups": [
+          {
+            "cppGroup": {
+              "id": "ff9fb2c8-2738-4d77-87e5-56b5781b4113",
+              "groupName": "Listing Officer"
+            },
+            "validFrom": "1983-05-13",
+            "validTo": "2022-05-13"
+          }
+        ]
+      }
+    },
+    {
+      "id": "540f6f7a-c002-11e9-a355-529269fb1662",
+      "section": "Magistrates' court evidence bundle",
+      "documentCategory": "Defendant level",
+      "sectionCode": "MCEB",
+      "actionRequired": false,
+      "validFrom": "1983-05-13",
+      "validTo": "2022-05-13",
+      "courtDocumentTypeRBAC": {
+        "readUserGroups": [
+          {
+            "cppGroup": {
+              "id": "ff9fb2c8-2738-4d77-87e5-56b5781b4113",
+              "groupName": "Legal Advisors"
+            },
+            "validFrom": "1983-05-13",
+            "validTo": "2022-05-13"
+          }
+        ],
+        "uploadUserGroups": [
+          {
+            "cppGroup": {
+              "id": "ff9fb2c8-2738-4d77-87e5-56b5781b4113",
+              "groupName": "Court Admin"
+            },
+            "validFrom": "1983-05-13",
+            "validTo": "2022-05-13"
+          }
+        ],
+        "downloadUserGroups": [
+          {
+            "cppGroup": {
+              "id": "ff9fb2c8-2738-4d77-87e5-56b5781b4113",
+              "groupName": "Crown Court Clerk"
+            },
+            "validFrom": "1983-05-13",
+            "validTo": "2022-05-13"
+          }
+        ],
+        "deleteUserGroups": [
+          {
+            "cppGroup": {
+              "id": "ff9fb2c8-2738-4d77-87e5-56b5781b4113",
+              "groupName": "Listing Officer"
+            },
+            "validFrom": "1983-05-13",
+            "validTo": "2022-05-13"
+          }
+        ]
+      }
+    },
+    {
+      "id": "550f6f7a-c002-11e9-a355-529269fb1662",
+      "section": "Unused material",
+      "documentCategory": "Defendant level",
+      "sectionCode": "UM",
+      "actionRequired": false,
+      "validFrom": "1983-05-13",
+      "validTo": "2022-05-13",
+      "courtDocumentTypeRBAC": {
+        "readUserGroups": [
+          {
+            "cppGroup": {
+              "id": "ff9fb2c8-2738-4d77-87e5-56b5781b4113",
+              "groupName": "Legal Advisors"
+            },
+            "validFrom": "1983-05-13",
+            "validTo": "2022-05-13"
+          }
+        ],
+        "uploadUserGroups": [
+          {
+            "cppGroup": {
+              "id": "ff9fb2c8-2738-4d77-87e5-56b5781b4113",
+              "groupName": "Court Admin"
+            },
+            "validFrom": "1983-05-13",
+            "validTo": "2022-05-13"
+          }
+        ],
+        "downloadUserGroups": [
+          {
+            "cppGroup": {
+              "id": "ff9fb2c8-2738-4d77-87e5-56b5781b4113",
+              "groupName": "Crown Court Clerk"
+            },
+            "validFrom": "1983-05-13",
+            "validTo": "2022-05-13"
+          }
+        ],
+        "deleteUserGroups": [
+          {
+            "cppGroup": {
+              "id": "ff9fb2c8-2738-4d77-87e5-56b5781b4113",
+              "groupName": "Listing Officer"
+            },
+            "validFrom": "1983-05-13",
+            "validTo": "2022-05-13"
+          }
+        ]
+      }
     }
   ]
 }

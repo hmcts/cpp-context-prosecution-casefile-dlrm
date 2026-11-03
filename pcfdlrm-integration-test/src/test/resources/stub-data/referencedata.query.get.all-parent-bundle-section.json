@@ -176,6 +176,19 @@
           "targetSectionCode": "WS"
         }
       ]
+    },
+    {
+      "id": "3e6d1ccd-1ff5-33ae-a7f5-abb4d240c044",
+      "seqNum": 30,
+      "cpsBundleCode": "3",
+      "bundleCode": "S9",
+      "bundleDescription": "Section 9",
+      "targetSectionCode": "WS",
+      "unbundleFlag": false,
+      "bundleAcceptanceFlag": true,
+      "bundleSections": [
+
+      ]
     }
   ]
 }

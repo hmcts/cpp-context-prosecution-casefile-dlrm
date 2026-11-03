@@ -8,5 +8,6 @@ public class EventSelector {
     public static final String MIGRATED_CASE_VALIDATED_CREATION_PENDING = "pcfdlrm.events.migrated-case-validated-creation-pending";
     public static final String MATERIAL_ADDED_PENDING_PROCESS_EVENT = "pcfdlrm.events.material-added-pending-process";
     public static final String MATERIAL_ADDED_EVENT = "pcfdlrm.events.material-added";
+    public static final String MATERIAL_READY_FOR_COURT_DOCUMENT = "pcfdlrm.events.material-ready-for-court-document";
     public static final String MIGRATED_CASE_NOT_FOUND_IN_AUTOMATION = "pcfdlrm.events.migrated-case-not-found-in-automation";
 }
