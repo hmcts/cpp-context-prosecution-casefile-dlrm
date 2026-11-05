@@ -6,7 +6,7 @@ import static java.time.ZonedDateTime.now;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
-import static javax.json.JsonValue.NULL;
+import static jakarta.json.JsonValue.NULL;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -47,8 +47,8 @@ import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialAdded;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;

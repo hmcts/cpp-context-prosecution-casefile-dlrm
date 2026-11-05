@@ -11,6 +11,7 @@ import static uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.Mig
 
 import uk.gov.justice.core.courts.JurisdictionType;
 import uk.gov.justice.core.courts.ListHearingRequest;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.pcfdlrm.domain.MigratedDefendantWithOffences;
 import uk.gov.moj.cpp.pcfdlrm.domain.MigratedHearingWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.domain.ParamsVO;
@@ -22,10 +23,15 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedOf
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedWeekCommencingDate;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -63,6 +69,35 @@ class ProsecutionCaseFileMigrationInitialHearingToCCHearingRequestConverterTest 
         assertEquals(JurisdictionType.CROWN, listHearingRequests.get(0).getJurisdictionType());
         assertEquals("C55BN00", listHearingRequests.get(0).getCourtCentre().getCourtHearingLocation());
 
+    }
+
+    // BC-08 (C1) zone-identity pin — see docs/j25-parity-checklist.md, 01-requirements.md FR6,
+    // 02-design.md §A1.
+    @Test
+    void shouldPinZoneIdentityOnListedStartDateTime() throws JsonProcessingException {
+        final MigratedHearingWithReferenceData migratedHearingWithReferenceData = getMigratedHearingWithReferenceData(true);
+
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName("XHIBIT");
+        paramsVO.setChannel(DLRM_MIGRATION);
+
+        final List<ListHearingRequest> listHearingRequests = prosecutionCaseFileMigrationInitialHearingToCCHearingRequestConverter
+                .convert(List.of(migratedHearingWithReferenceData), paramsVO);
+
+        assertEquals(1, listHearingRequests.size());
+        final ZonedDateTime listedStartDateTime = listHearingRequests.get(0).getListedStartDateTime();
+        assertEquals(ZoneId.of("UTC"), listedStartDateTime.getZone());
+
+        final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+        final String serialized = objectMapper.writeValueAsString(listedStartDateTime);
+
+        // FR6 round-trip read side — see 01-requirements.md FR6.
+        // BC-08, J25: Jackson 2.21.x resolves the 'Z' timezone token to ZoneOffset.UTC rather than
+        // the J17-era ZoneId.of("UTC") region id — confirmed, precedented fix across 5 repos
+        // (docs/analysis/j25-upgrade/j25-behavioural-change-investigation-report.md §BC-08).
+        final ZonedDateTime roundTripped = objectMapper.readValue(serialized, ZonedDateTime.class);
+        assertEquals(ZoneOffset.UTC, roundTripped.getZone(),
+                "J25 read side: 'Z' now resolves back to ZoneOffset.UTC, not the J17-era region id ZoneId.of(\"UTC\")");
     }
 
     @Test
