@@ -40,6 +40,9 @@ import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildMigratedCaseDeta
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildProsecution;
 import static uk.gov.moj.cpp.pcfdlrm.builder.ObjectBuilder.buildReceiveMigratedCaseFile;
 import static uk.gov.moj.cpp.pcfdlrm.builder.SourceSystem.sourceSystem;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.CASE_ID;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID;
+import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.DEFENDANT_ID2;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_LIBRA;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_LIBRA_IDENTIFIER;
 import static uk.gov.moj.cpp.pcfdlrm.builder.TestConstants.SOURCE_SYSTEM_XHIBIT;
@@ -62,8 +65,11 @@ import uk.gov.moj.cpp.pcfdlrm.refdata.proscase.CaseRefDataEnricher;
 import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
 import uk.gov.moj.cpp.pcfdlrm.validation.provider.CcProsecutionValidationRuleProvider;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseDetails;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseDocument;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CourtDocument;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CourtRoom;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.DefendantDocument;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.DocumentCategory;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.DocumentTypeAccessReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.HearingType;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.HearingTypes;
@@ -78,6 +84,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedWe
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigrationSourceSystem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ReceiveMigratedCaseFile;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialAddedPendingProcess;
+import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialReadyForCourtDocument;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseFileProcessed;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseNotFoundInAutomation;
 
@@ -183,6 +190,73 @@ class MigratedCaseFileAggregateTest {
         final ObjectToJsonObjectConverter objectToJsonObjectConverter = new ObjectToJsonObjectConverter(new ObjectMapperProducer().objectMapper());
         assertThat(objectToJsonObjectConverter.convert(eventStream.get(0)).toString(),
                 matchesWholePayload(fixture("json/aggregate/migrated-case-not-found-in-automation.json"), List.of()));
+    }
+
+    // DD-43463: a LIBRA case-level court document has no defendantDocument and is passed through as is.
+    @Test
+    void shouldPassLibraCaseLevelCourtDocumentThroughOnAccept() {
+        final CourtDocument caseLevelDocument = CourtDocument.courtDocument()
+                .withDocumentCategory(DocumentCategory.documentCategory()
+                        .withCaseDocument(CaseDocument.caseDocument().withProsecutionCaseId(CASE_ID).build())
+                        .build())
+                .build();
+
+        final MaterialReadyForCourtDocument event = acceptWithCourtDocument(sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER), caseLevelDocument);
+
+        assertThat(event.getCourtDocument(), is(caseLevelDocument));
+    }
+
+    // DD-43463: a defendant-level court document lists all case defendants on accept, for XHIBIT and LIBRA (unchanged).
+    @ParameterizedTest
+    @MethodSource("sourceSystems")
+    void shouldAttachAllCaseDefendantsToDefendantLevelCourtDocumentOnAccept(final SourceSystem sourceSystem) {
+        final CourtDocument defendantLevelDocument = CourtDocument.courtDocument()
+                .withDocumentCategory(DocumentCategory.documentCategory()
+                        .withDefendantDocument(DefendantDocument.defendantDocument()
+                                .withProsecutionCaseId(CASE_ID)
+                                .withDefendants(List.of(DEFENDANT_ID))
+                                .build())
+                        .build())
+                .build();
+
+        final MaterialReadyForCourtDocument event = acceptWithCourtDocument(sourceSystem, defendantLevelDocument);
+
+        final List<UUID> caseDefendantIds = caseDetails(sourceSystem).getDefendants().stream().map(MigratedDefendant::getId).toList();
+        assertThat(event.getCourtDocument().getDocumentCategory().getDefendantDocument().getDefendants(), is(caseDefendantIds));
+        assertThat(event.getCourtDocument().getDocumentCategory().getDefendantDocument().getProsecutionCaseId(), is(CASE_ID));
+    }
+
+    private static Stream<Arguments> sourceSystems() {
+        return Stream.of(
+                Arguments.of(sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER)),
+                Arguments.of(sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER)));
+    }
+
+    // Two defendants, so "all case defendants" is distinguishable from the one on the incoming court document.
+    private static MigratedCaseDetails caseDetails(final SourceSystem sourceSystem) {
+        final MigratedCaseDetails details = buildMigratedCaseDetails("MALE", "YYYY", W.name(), null, null, null, null, sourceSystem);
+        final MigratedDefendant firstDefendant = details.getDefendants().get(0);
+        return MigratedCaseDetails.migratedCaseDetails()
+                .withValuesFrom(details)
+                .withDefendants(List.of(firstDefendant, migratedDefendant().withValuesFrom(firstDefendant).withId(DEFENDANT_ID2).build()))
+                .build();
+    }
+
+    private MaterialReadyForCourtDocument acceptWithCourtDocument(final SourceSystem sourceSystem, final CourtDocument courtDocument) {
+        migratedCaseFileAggregate.apply(MigratedCaseFileReceived.migratedCaseFileReceived()
+                .withMigratedCaseSubmission(buildReceiveMigratedCaseFile(caseDetails(sourceSystem), List.of()))
+                .build());
+        migratedCaseFileAggregate.apply(MaterialAddedPendingProcess.materialAddedPendingProcess()
+                .withMaterialId(UUID.fromString("c1c1c1c1-1111-4111-8111-111111111111"))
+                .withCourtDocument(courtDocument)
+                .build());
+
+        final List<MaterialReadyForCourtDocument> events = migratedCaseFileAggregate.acceptMigratedCase()
+                .filter(MaterialReadyForCourtDocument.class::isInstance)
+                .map(MaterialReadyForCourtDocument.class::cast)
+                .toList();
+        assertThat(events, hasSize(1));
+        return events.get(0);
     }
 
     @Test

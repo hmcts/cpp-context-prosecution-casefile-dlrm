@@ -658,9 +658,12 @@ public class MigratedCaseFileAggregate implements Aggregate {
 
         } else {
 
+            // DD-43463: a non-XHIBIT case-level document has no defendantDocument, so it is passed through as is.
             materialsAddedPostProcessing.forEach((id, value) -> builder.add(materialReadyForCourtDocument()
                     .withMaterialId(id)
-                    .withCourtDocument(CourtDocument.courtDocument()
+                    .withCourtDocument(!isXhibit(receiveMigratedCaseFile) && Objects.isNull(value.getDocumentCategory().getDefendantDocument())
+                            ? value
+                            : CourtDocument.courtDocument()
                             .withValuesFrom(value)
                             .withDocumentCategory(DocumentCategory.documentCategory()
                                     .withValuesFrom(value.getDocumentCategory())
