@@ -6,6 +6,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.util.UUID.randomUUID;
+import static uk.gov.justice.services.messaging.JsonObjects.createArrayBuilder;
+import static uk.gov.justice.services.messaging.JsonObjects.createObjectBuilder;
 import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,9 +35,8 @@ import java.io.StringReader;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
 
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 
@@ -62,11 +63,11 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
                 .withName(PROSECUTION_CASE_CREATED_PUBLIC_EVENT)
                 .build();
 
-        final JsonObject payload = Json.createObjectBuilder()
-                .add("prosecutionCase", Json.createObjectBuilder()
+        final JsonObject payload = createObjectBuilder()
+                .add("prosecutionCase", createObjectBuilder()
                         .add("id", caseId)
-                        .add("defendants", Json.createArrayBuilder())
-                        .add("migrationSourceSystem", Json.createObjectBuilder()
+                        .add("defendants", createArrayBuilder())
+                        .add("migrationSourceSystem", createObjectBuilder()
                                 .add("migrationSourceSystemName", "LIBRA")
                                 .add("migrationSourceSystemCaseIdentifier", caseId)))
                 .build();

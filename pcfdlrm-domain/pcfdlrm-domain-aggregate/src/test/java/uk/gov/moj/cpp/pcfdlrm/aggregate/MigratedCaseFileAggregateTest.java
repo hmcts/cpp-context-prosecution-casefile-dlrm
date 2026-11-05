@@ -1422,11 +1422,15 @@ class MigratedCaseFileAggregateTest {
                 .getMigratedCaseDetails().getHearings().get(0).getTimeOfHearing(), is(expectedTimeOfHearing));
     }
 
+    // DD-43194 / FR7, AC4 — the java.time/tzdata DST pin, NOT a BC-08 Jackson carrier: the GMT + BST rows
+    // below pin MigratedCaseFileAggregate.toDefaultUtcTime's Europe/London → UTC arithmetic.
     private static Stream<Arguments> fixedHearingTimeDefaultingScenarios() {
         return Stream.of(
                 Arguments.of("2026-03-05", null, null, "past dateOfHearing raises warning — should not default timeOfHearing"),
                 Arguments.of("2027-01-15", "09:30", "09:30", "future dateOfHearing with existing time — should not overwrite timeOfHearing"),
+                // FR7 pin, GMT half: 10:00 Europe/London wall time is 10:00:00 UTC in winter.
                 Arguments.of("2027-01-15", null, "10:00:00", "GMT: future dateOfHearing with no time — should default to 10:00:00 UTC"),
+                // FR7 pin, BST half: the same 10:00 wall time is 09:00:00 UTC in summer — an hour apart, so a tzdata shift cannot hide in one season.
                 Arguments.of("2027-06-15", null, "09:00:00", "BST: future dateOfHearing with no time — should default to 09:00:00 UTC")
         );
     }

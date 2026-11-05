@@ -12,7 +12,7 @@ import uk.gov.moj.cpp.pcfdlrm.domain.DefendantsWithReferenceData;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 
 public class AlcoholLevelMethodsRefDataEnricher implements DefendantRefDataEnricher {

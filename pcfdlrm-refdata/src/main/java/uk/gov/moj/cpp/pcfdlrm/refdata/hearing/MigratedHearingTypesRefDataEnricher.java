@@ -9,7 +9,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedHe
 import java.util.List;
 import java.util.Optional;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 public class MigratedHearingTypesRefDataEnricher implements MigratedHearingRefDataEnricher {
 

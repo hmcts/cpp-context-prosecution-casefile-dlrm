@@ -16,6 +16,7 @@ import static uk.gov.moj.cpp.pcfdlrm.event.processor.utils.CaseReceivedHelper.bu
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.AlcoholLevelMethodReferenceData.alcoholLevelMethodReferenceData;
 
 import uk.gov.justice.core.courts.Defendant;
+import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.pcfdlrm.domain.ParamsVO;
 import uk.gov.moj.cpp.pcfdlrm.domain.ProsecutionWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
@@ -25,9 +26,14 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.PersonalInformation
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Prosecution;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant;
 
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -90,6 +96,38 @@ class ProsecutionCaseFileMigratedDefendantToCCDefendantConverterTest {
         assertThat(courtsDefendants.get(0).getOffences().get(0).getOffenceFacts().getAlcoholReadingMethodDescription(), is("Blood"));
         assertThat(courtsDefendants.get(0).getAssociatedPersons().get(0).getRole(), is("ParentGuardian"));
         assertNull(courtsDefendants.get(1).getAssociatedPersons());
+    }
+
+    // BC-08 (C3) zone-identity pin — see docs/j25-parity-checklist.md, 01-requirements.md FR6,
+    // 02-design.md §A2.
+    @Test
+    void shouldPinZoneIdentityOnCourtProceedingsInitiated() throws JsonProcessingException {
+        final ProsecutionWithReferenceData prosecutionWithReferenceData = buildProsecutionWithReferenceData(EITHER_WAY);
+        final List<MigratedDefendant> defendants = prosecutionWithReferenceData.getProsecution().getDefendants();
+        final ParamsVO paramsVO = new ParamsVO();
+        paramsVO.setMigrationSourceSystemName(XHIBIT);
+        paramsVO.setCaseId(prosecutionWithReferenceData.getProsecution().getCaseDetails().getCaseId());
+        paramsVO.setReferenceDataVO(prosecutionWithReferenceData.getReferenceDataVO());
+        paramsVO.setInitiationCode("J");
+
+        when(referenceDataQueryService.retrieveAlcoholLevelMethods()).thenReturn(asList(alcoholLevelMethodReferenceData().withMethodCode("A").withMethodDescription("Blood").build(),
+                alcoholLevelMethodReferenceData().withMethodCode("B").withMethodDescription("Breath").build()));
+
+        final List<Defendant> courtsDefendants = converter.convert(defendants, paramsVO);
+
+        final ZonedDateTime courtProceedingsInitiated = courtsDefendants.get(0).getCourtProceedingsInitiated();
+        assertThat(courtProceedingsInitiated.getZone(), is(ZoneId.of("UTC")));
+
+        final ObjectMapper objectMapper = new ObjectMapperProducer().objectMapper();
+        final String serialized = objectMapper.writeValueAsString(courtProceedingsInitiated);
+
+        // FR6 round-trip read side — see 01-requirements.md FR6.
+        // BC-08, J25: Jackson 2.21.x resolves the 'Z' timezone token to ZoneOffset.UTC rather than
+        // the J17-era ZoneId.of("UTC") region id — confirmed, precedented fix across 5 repos
+        // (docs/analysis/j25-upgrade/j25-behavioural-change-investigation-report.md §BC-08).
+        final ZonedDateTime roundTripped = objectMapper.readValue(serialized, ZonedDateTime.class);
+        assertThat("J25 read side: 'Z' now resolves back to ZoneOffset.UTC, not the J17-era region id ZoneId.of(\"UTC\")",
+                roundTripped.getZone(), is(ZoneOffset.UTC));
     }
 
     @Test

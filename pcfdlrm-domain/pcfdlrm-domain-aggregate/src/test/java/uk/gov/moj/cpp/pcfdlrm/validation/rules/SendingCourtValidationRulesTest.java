@@ -2,6 +2,8 @@ package uk.gov.moj.cpp.pcfdlrm.validation.rules;
 
 import static org.mockito.Mockito.when;
 
+import java.util.Optional;
+
 import uk.gov.moj.cpp.pcfdlrm.domain.ProsecutionWithReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OrganisationUnitReferenceData;
 
@@ -20,9 +22,8 @@ class SendingCourtValidationRulesTest {
         ProsecutionWithReferenceData mocked = Mockito.mock(ProsecutionWithReferenceData.class, Answers.RETURNS_DEEP_STUBS);
 
         when(mocked.getProsecution().getCaseDetails().getSendingCourt()).thenReturn("ABCDE00");
-        Mockito.mock(OrganisationUnitReferenceData.class);
-        when(mocked.getReferenceDataVO().getSendingCourtOrganisationUnit().isPresent())
-                .thenReturn(true);
+        when(mocked.getReferenceDataVO().getSendingCourtOrganisationUnit())
+                .thenReturn(Optional.of(Mockito.mock(OrganisationUnitReferenceData.class)));
 
 
         final ValidationResult result = sendingCourtValidationRules.validate(mocked, null);
@@ -38,8 +39,8 @@ class SendingCourtValidationRulesTest {
         ProsecutionWithReferenceData mocked = Mockito.mock(ProsecutionWithReferenceData.class, Answers.RETURNS_DEEP_STUBS);
 
         when(mocked.getProsecution().getCaseDetails().getSendingCourt()).thenReturn(null);
-        when(mocked.getReferenceDataVO().getSendingCourtOrganisationUnit().isPresent())
-                .thenReturn(true);
+        when(mocked.getReferenceDataVO().getSendingCourtOrganisationUnit())
+                .thenReturn(Optional.of(Mockito.mock(OrganisationUnitReferenceData.class)));
 
 
         final ValidationResult result = sendingCourtValidationRules.validate(mocked, null);
@@ -55,9 +56,8 @@ class SendingCourtValidationRulesTest {
         ProsecutionWithReferenceData mocked = Mockito.mock(ProsecutionWithReferenceData.class, Answers.RETURNS_DEEP_STUBS);
 
         when(mocked.getProsecution().getCaseDetails().getSendingCourt()).thenReturn("ABCDE00");
-        Mockito.mock(OrganisationUnitReferenceData.class);
-        when(mocked.getReferenceDataVO().getSendingCourtOrganisationUnit().isPresent())
-                .thenReturn(false);
+        when(mocked.getReferenceDataVO().getSendingCourtOrganisationUnit())
+                .thenReturn(Optional.empty());
 
 
         final ValidationResult result = sendingCourtValidationRules.validate(mocked, null);

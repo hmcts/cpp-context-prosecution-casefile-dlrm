@@ -8,7 +8,7 @@ import uk.gov.moj.cpp.pcfdlrm.domain.DefendantsWithReferenceData;
 
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 public class SelfDefineEthnictyRefDataEnricher implements DefendantRefDataEnricher {
     @Inject
