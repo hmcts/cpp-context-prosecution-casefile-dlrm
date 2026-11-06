@@ -38,6 +38,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.PleaReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Prosecution;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Prosecutor;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ProsecutorsReferenceData;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.SelfDefinedInformation;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.VerdictReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ListedDefendant;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedCaseDetails;
@@ -341,6 +342,16 @@ final class AggregateScenarioInputs {
         return new CaseFileInput(receiveMigratedCase, new ProsecutionWithReferenceData(prosecution));
     }
 
+    /** XHIBIT defendant with the given date of birth. */
+    static CaseFileInput xhibitDateOfBirthInput(final LocalDate dateOfBirth) {
+        final MigratedCaseDetails xhibitMigratedCaseDetails = buildMigratedCaseDetails("MALE", "MALE", E.name(), E.name(), null, null, null,
+                sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
+        final MigratedCaseDetails migCaseDetails = withDefendantIndividuals(xhibitMigratedCaseDetails, withDateOfBirth(dateOfBirth));
+        final Prosecution prosecution = buildProsecution(migCaseDetails);
+        final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, createMigratedMaterials(1, "pdf"));
+        return new CaseFileInput(receiveMigratedCase, new ProsecutionWithReferenceData(prosecution));
+    }
+
     static CaseFileInput guiltyPleaWithDateInput() {
         final List<MigratedMaterial> migratedMaterials = List.of(createMigratedMaterials(2, "pdf").get(0));
         final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails(null, null, null, null, "998A", "G", PLEA_DATE_ANCHOR, sourceSystem(SOURCE_SYSTEM_XHIBIT, SOURCE_SYSTEM_XHIBIT_IDENDIFIER));
@@ -601,20 +612,40 @@ final class AggregateScenarioInputs {
         return libraInput(caseDetails, resolvedProsecutor, UNCONDITIONAL_BAIL);
     }
 
-    private static CaseFileInput libraInput(final CaseDetails caseDetails, final ProsecutorsReferenceData resolvedProsecutor, final String custodyStatus) {
-        final MigratedCaseDetails libraMigratedCaseDetails = buildLibraMigratedCaseDetails(caseDetails, sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER));
-        final MigratedCaseDetails migCaseDetails = MigratedCaseDetails.migratedCaseDetails()
-                .withValuesFrom(libraMigratedCaseDetails)
-                .withDefendants(libraMigratedCaseDetails.getDefendants().stream()
-                        .map(defendant -> MigratedDefendant.migratedDefendant()
+    /** LIBRA Charge defendant with the given date of birth. */
+    static CaseFileInput libraDateOfBirthInput(final LocalDate dateOfBirth) {
+        return libraInput(libraCaseDetails().withInitiationCode("C").build(), ProsecutorsReferenceData.prosecutorsReferenceData().build(),
+                UNCONDITIONAL_BAIL, withDateOfBirth(dateOfBirth));
+    }
+
+    private static UnaryOperator<Individual.Builder> withDateOfBirth(final LocalDate dateOfBirth) {
+        return individual -> individual.withSelfDefinedInformation(SelfDefinedInformation.selfDefinedInformation()
+                .withValuesFrom(individual.build().getSelfDefinedInformation())
+                .withDateOfBirth(dateOfBirth)
+                .build());
+    }
+
+    private static MigratedCaseDetails withDefendantIndividuals(final MigratedCaseDetails migratedCaseDetails, final UnaryOperator<Individual.Builder> individualUpdate) {
+        return MigratedCaseDetails.migratedCaseDetails()
+                .withValuesFrom(migratedCaseDetails)
+                .withDefendants(migratedCaseDetails.getDefendants().stream()
+                        .map(defendant -> migratedDefendant()
                                 .withValuesFrom(defendant)
-                                .withIndividual(Individual.individual()
-                                        .withValuesFrom(defendant.getIndividual())
-                                        .withCustodyStatus(custodyStatus)
-                                        .build())
+                                .withIndividual(individualUpdate.apply(Individual.individual().withValuesFrom(defendant.getIndividual())).build())
                                 .build())
                         .toList())
                 .build();
+    }
+
+    private static CaseFileInput libraInput(final CaseDetails caseDetails, final ProsecutorsReferenceData resolvedProsecutor, final String custodyStatus) {
+        return libraInput(caseDetails, resolvedProsecutor, custodyStatus, individual -> individual);
+    }
+
+    private static CaseFileInput libraInput(final CaseDetails caseDetails, final ProsecutorsReferenceData resolvedProsecutor, final String custodyStatus,
+                                            final UnaryOperator<Individual.Builder> individualUpdate) {
+        final MigratedCaseDetails libraMigratedCaseDetails = buildLibraMigratedCaseDetails(caseDetails, sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER));
+        final MigratedCaseDetails migCaseDetails = withDefendantIndividuals(libraMigratedCaseDetails,
+                individual -> individualUpdate.apply(individual.withCustodyStatus(custodyStatus)));
         final Prosecution prosecution = buildProsecution(migCaseDetails, caseDetails);
         final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, List.of());
         final ReferenceDataVO referenceDataVO = new ReferenceDataVO();

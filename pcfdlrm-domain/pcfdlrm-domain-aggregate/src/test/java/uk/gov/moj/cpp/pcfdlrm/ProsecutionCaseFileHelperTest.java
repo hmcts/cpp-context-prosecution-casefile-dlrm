@@ -2,6 +2,7 @@ package uk.gov.moj.cpp.pcfdlrm;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -9,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static uk.gov.moj.cpp.pcfdlrm.test.FixtureLoader.fixture;
 import static uk.gov.moj.cpp.pcfdlrm.test.WholePayloadMatcher.matchesWholePayload;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_DOB_IN_FUTURE;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.PARENT_GUARDIAN_GENDER_INVALID;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.BailStatusReferenceData.bailStatusReferenceData;
 import static uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel.DLRM_MIGRATION;
@@ -28,12 +30,14 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Individual;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.ParentGuardianInformation;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.PersonalInformation;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Problem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.SelfDefinedInformation;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendantWithProblem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedHearing;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedOffence;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ListedDefendant;
+import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.DefendantValidationFailed;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -294,6 +298,64 @@ class ProsecutionCaseFileHelperTest {
                 () -> assertThat(parentGuardian.getDateOfBirth(), is(expectedDateOfBirth)),
                 () -> assertThat(parentGuardian.getPersonalInformation().getObservedEthnicity(), is(expectedObservedEthnicity)),
                 () -> assertThat(parentGuardian.getSelfDefinedEthnicity(), is(expectedSelfDefinedEthnicity)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"XHIBIT", "LIBRA"})
+    void shouldClearFutureDefendantDateOfBirth(final String migrationSourceSystemName) {
+        final LocalDate futureDateOfBirth = LocalDate.now(ZoneId.of("Europe/London")).plusDays(1);
+        final Stream.Builder<Object> events = Stream.builder();
+
+        final MigratedDefendant result = validateDefendantWithDateOfBirth(futureDateOfBirth, migrationSourceSystemName, events);
+
+        final DefendantValidationFailed defendantValidationFailed = events.build()
+                .filter(DefendantValidationFailed.class::isInstance)
+                .map(DefendantValidationFailed.class::cast)
+                .findFirst()
+                .orElseThrow();
+        final Problem dobProblem = defendantValidationFailed.getProblems().stream()
+                .filter(problem -> DEFENDANT_DOB_IN_FUTURE.name().equals(problem.getCode()))
+                .findFirst()
+                .orElseThrow();
+
+        assertAll(
+                () -> assertThat(result.getIndividual().getSelfDefinedInformation().getDateOfBirth(), nullValue()),
+                () -> assertThat(result.getIndividual().getSelfDefinedInformation().getGender(), is("MALE")),
+                () -> assertThat(dobProblem.getValues().get(0).getValue(), is(futureDateOfBirth.toString())));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"XHIBIT, 0", "XHIBIT, 1", "XHIBIT, 10000", "LIBRA, 0", "LIBRA, 1", "LIBRA, 10000"})
+    void shouldKeepDefendantDateOfBirthOfTodayOrEarlier(final String migrationSourceSystemName, final long daysAgo) {
+        final LocalDate dateOfBirth = LocalDate.now(ZoneId.of("Europe/London")).minusDays(daysAgo);
+
+        final MigratedDefendant result = validateDefendantWithDateOfBirth(dateOfBirth, migrationSourceSystemName, Stream.builder());
+
+        assertThat(result.getIndividual().getSelfDefinedInformation().getDateOfBirth(), is(dateOfBirth));
+    }
+
+    private MigratedDefendant validateDefendantWithDateOfBirth(final LocalDate dateOfBirth, final String migrationSourceSystemName,
+                                                               final Stream.Builder<Object> events) {
+        final MigratedDefendant defendant = migratedDefendant()
+                .withDocumentationLanguage("E")
+                .withHearingLanguage("E")
+                .withIndividual(Individual.individual()
+                        .withPersonalInformation(PersonalInformation.personalInformation().build())
+                        .withSelfDefinedInformation(SelfDefinedInformation.selfDefinedInformation()
+                                .withGender("MALE")
+                                .withDateOfBirth(dateOfBirth)
+                                .build())
+                        .build())
+                .build();
+
+        final CaseDetails caseDetails = CaseDetails.caseDetails().withCaseId(UUID.randomUUID()).build();
+        final DefendantsWithReferenceData defendantsWithReferenceData = new DefendantsWithReferenceData(List.of(defendant));
+        defendantsWithReferenceData.setReferenceDataVO(new ReferenceDataVO());
+        defendantsWithReferenceData.setCaseDetails(caseDetails);
+
+        return ProsecutionCaseFileHelper.validateDefendantErrors(
+                caseDetails, DLRM_MIGRATION, defendantsWithReferenceData, referenceDataQueryService,
+                events, false, migrationSourceSystemName).getMigratedDefendants().get(0);
     }
 
     @ParameterizedTest

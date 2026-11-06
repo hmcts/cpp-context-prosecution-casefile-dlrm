@@ -5,6 +5,8 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -21,10 +23,12 @@ import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraAllo
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraArrestDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraBadPleaCodeInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraCustodyStatusInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraDateOfBirthInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraFutureChargeDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.libraNotGuiltyMissingPleaDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.missingEndDateInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.noMaterialsInput;
+import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarioInputs.xhibitDateOfBirthInput;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_DATE;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_DATE_OF_HEARING_EXCLUSIONS;
 import static uk.gov.moj.cpp.pcfdlrm.aggregate.AggregateScenarios.FUTURE_HEARING_DATE_GMT;
@@ -55,6 +59,7 @@ import uk.gov.justice.services.common.converter.jackson.ObjectMapperProducer;
 import uk.gov.moj.cpp.pcfdlrm.builder.SourceSystem;
 import uk.gov.moj.cpp.pcfdlrm.domain.ProsecutionWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseFileReceived;
+import uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseValidatedCreationPending;
 import uk.gov.moj.cpp.pcfdlrm.event.MigratedCaseValidatedWithWarnings;
 import uk.gov.moj.cpp.pcfdlrm.refdata.defendant.DefendantRefDataEnricher;
 import uk.gov.moj.cpp.pcfdlrm.refdata.hearing.MigratedHearingRefDataEnricher;
@@ -81,6 +86,8 @@ import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialAddedPendin
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseFileProcessed;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseNotFoundInAutomation;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -606,6 +613,46 @@ class MigratedCaseFileAggregateTest {
                 .filter(MigratedCaseValidatedWithWarnings.class::isInstance)
                 .map(MigratedCaseValidatedWithWarnings.class::cast)
                 .anyMatch(warning -> "Offence validation".equals(warning.getType()) && warning.getMessage().startsWith("INVALID_PLEA")), is(true));
+    }
+
+    private static final LocalDate FUTURE_DATE_OF_BIRTH = LocalDate.now(ZoneId.of("Europe/London")).plusYears(1);
+
+    static Stream<Arguments> futureDefendantDateOfBirthInputs() {
+        return Stream.of(
+                Arguments.of("LIBRA", libraDateOfBirthInput(FUTURE_DATE_OF_BIRTH)),
+                Arguments.of("XHIBIT", xhibitDateOfBirthInput(FUTURE_DATE_OF_BIRTH)));
+    }
+
+    // A future defendant date of birth is cleared and the case accepted, with the warning kept.
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("futureDefendantDateOfBirthInputs")
+    void shouldAcceptCaseAndClearFutureDefendantDateOfBirth(final String sourceSystemName, final CaseFileInput input) {
+        final List<Object> actual = receiveMigratedCaseFile(input.receiveMigratedCaseFile(), input.prosecutionWithReferenceData());
+
+        final ReceiveMigratedCaseFile accepted = acceptedCaseFile(actual);
+        assertAll(
+                () -> assertThat(actual.stream().anyMatch(MigratedCaseFileProcessed.class::isInstance), is(false)),
+                () -> assertThat(accepted.getMigratedCaseDetails().getDefendants().get(0)
+                        .getIndividual().getSelfDefinedInformation().getDateOfBirth(), nullValue()),
+                () -> assertThat(actual.stream()
+                        .filter(MigratedCaseValidatedWithWarnings.class::isInstance)
+                        .map(MigratedCaseValidatedWithWarnings.class::cast)
+                        .anyMatch(warning -> "Defendant validation".equals(warning.getType())
+                                && warning.getMessage().equals("DEFENDANT_DOB_IN_FUTURE : [" + FUTURE_DATE_OF_BIRTH + "]")), is(true)));
+    }
+
+    private static ReceiveMigratedCaseFile acceptedCaseFile(final List<Object> events) {
+        return Stream.concat(
+                        events.stream()
+                                .filter(MigratedCaseFileReceived.class::isInstance)
+                                .map(MigratedCaseFileReceived.class::cast)
+                                .map(MigratedCaseFileReceived::getReceiveMigratedCaseFile),
+                        events.stream()
+                                .filter(MigratedCaseValidatedCreationPending.class::isInstance)
+                                .map(MigratedCaseValidatedCreationPending.class::cast)
+                                .map(MigratedCaseValidatedCreationPending::getReceiveMigratedCaseFile))
+                .findFirst()
+                .orElseThrow();
     }
 
     @ParameterizedTest
