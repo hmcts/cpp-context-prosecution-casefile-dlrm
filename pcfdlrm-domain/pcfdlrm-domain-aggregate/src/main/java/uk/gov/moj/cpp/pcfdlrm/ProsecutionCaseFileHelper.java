@@ -8,6 +8,7 @@ import static uk.gov.moj.cpp.json.schemas.prosecution.casefile.dlrm.events.Defen
 import static uk.gov.moj.cpp.pcfdlrm.validation.CaseType.CHARGE;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_STATUS_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_CUSTODY_TIME_LIMIT_IS_MISSING;
+import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_DOB_IN_FUTURE;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_GENDER_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_NATIONALITY_INVALID;
 import static uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode.DEFENDANT_OBSERVED_ETHNICITY_INVALID;
@@ -127,6 +128,7 @@ public class ProsecutionCaseFileHelper {
                             .withPoliceSystemId(caseDetails.getPoliceSystemId()).build());
 
                     applyRuleToDefendantFields(migratedDefendantBuilder, referenceDataQueryService, defendantWithReferenceData, defendantProblemList);
+                    applyDefendantDateOfBirthRule(migratedDefendantBuilder, defendantProblemList);
                     if (LIBRA.equals(migrationSourceSystemName)) {
                         applyParentGuardianRules(migratedDefendantBuilder, defendantProblemList);
                     }
@@ -290,6 +292,19 @@ public class ProsecutionCaseFileHelper {
                     .withParentGuardianInformation(ParentGuardianInformation.parentGuardianInformation()
                             .withValuesFrom(builder.build().getIndividual().getParentGuardianInformation())
                             .withGender(NOT_KNOWN.name())
+                            .build())
+                    .build());
+        }
+    }
+
+    private static void applyDefendantDateOfBirthRule(MigratedDefendant.Builder builder, final List<Problem> defendantProblemList) {
+        if (hasProblem(defendantProblemList, DEFENDANT_DOB_IN_FUTURE)) {
+            final Individual individual = builder.build().getIndividual();
+            builder.withIndividual(Individual.individual()
+                    .withValuesFrom(individual)
+                    .withSelfDefinedInformation(SelfDefinedInformation.selfDefinedInformation()
+                            .withValuesFrom(individual.getSelfDefinedInformation())
+                            .withDateOfBirth(null)
                             .build())
                     .build());
         }

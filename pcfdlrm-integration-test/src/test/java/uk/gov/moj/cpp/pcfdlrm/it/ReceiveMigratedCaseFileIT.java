@@ -261,14 +261,18 @@ class ReceiveMigratedCaseFileIT {
         receiveMigratedCaseFileHelper.verifyCaseProcessed(addMaterialHelper, submissionId, NO_MATCHING_DEFENDANTS_WITH_HEARINGS_FOUND_FOR_HEARING);
     }
 
+    // A future defendant date of birth is cleared, so the request sent to progression matches the same fixture.
     @ParameterizedTest
     @CsvSource({
-            "command-json/pcfdlrm.command.receive-migrated-case-file-xhibit-no-material.json, no-material",
-            "command-json/pcfdlrm.command.receive-migrated-case-file-libra-journey.json, libra-journey",
-            "command-json/pcfdlrm.command.receive-migrated-case-file-libra-indicated-plea.json, libra-indicated-plea",
-            "command-json/pcfdlrm.command.receive-migrated-case-file-libra-indicated-guilty-plea.json, libra-indicated-guilty-plea"
+            "command-json/pcfdlrm.command.receive-migrated-case-file-xhibit-no-material.json, no-material, false",
+            "command-json/pcfdlrm.command.receive-migrated-case-file-libra-journey.json, libra-journey, false",
+            "command-json/pcfdlrm.command.receive-migrated-case-file-libra-indicated-plea.json, libra-indicated-plea, false",
+            "command-json/pcfdlrm.command.receive-migrated-case-file-libra-indicated-guilty-plea.json, libra-indicated-guilty-plea, false",
+            "command-json/pcfdlrm.command.receive-migrated-case-file-xhibit-no-material.json, no-material, true",
+            "command-json/pcfdlrm.command.receive-migrated-case-file-libra-journey.json, libra-journey, true"
     })
-    void receiveMigratedCaseFileWithoutMaterialInitiatesCourtProceedings(final String commandJson, final String expectedFixture) {
+    void receiveMigratedCaseFileWithoutMaterialInitiatesCourtProceedings(final String commandJson, final String expectedFixture,
+                                                                        final boolean futureDefendantDateOfBirth) {
         final String submissionId = UUID.randomUUID().toString();
         final String caseId = UUID.randomUUID().toString();
         final String caseUrn = RandomStringUtils.secure().nextAlphanumeric(10);
@@ -277,8 +281,16 @@ class ReceiveMigratedCaseFileIT {
                 .replace("CASE_ID", caseId)
                 .replace("CASE_URN", caseUrn)
                 .replace("HEARING_DATE", LocalDate.now().plusDays(1).toString());
-        receiveMigratedCaseFileHelper.receiveMigratedCaseFile(staticPayLoad);
+        final String payload = futureDefendantDateOfBirth ? withDefendantDateOfBirth(staticPayLoad, LocalDate.now().plusYears(1)) : staticPayLoad;
+        receiveMigratedCaseFileHelper.receiveMigratedCaseFile(payload);
         receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiated(caseUrn, expectedFixture);
+    }
+
+    private static String withDefendantDateOfBirth(final String payload, final LocalDate dateOfBirth) {
+        final String dateOfBirthField = "\"dateOfBirth\": \"" + dateOfBirth + "\"";
+        final String updated = payload.replace("\"selfDefinedInformation\": {", "\"selfDefinedInformation\": {" + dateOfBirthField + ",");
+        assertThat(updated, containsString(dateOfBirthField));
+        return updated;
     }
 
     @Test
