@@ -14,7 +14,7 @@ import javax.inject.Inject;
 
 @ServiceComponent(COMMAND_API)
 public class MigratedCaseFileApi {
-
+//test
     @Inject
     private Sender sender;
 
