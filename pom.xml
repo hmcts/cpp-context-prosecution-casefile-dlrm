@@ -9,7 +9,7 @@
 
     <groupId>uk.gov.moj.cpp.pcfdlrm</groupId>
     <artifactId>pcfdlrm-parent</artifactId>
-    <version>17.104.41-LIBRA1-SNAPSHOT</version>
+    <version>17.104.41-LIBRA4-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Prosecution Casefile DLRM Microservice - Parent</name>
     <description>Casefile DLRM Microservice - Prosecution Context</description>
@@ -28,7 +28,7 @@
         <referencedata.offences.version>17.104.52</referencedata.offences.version>
         <system.enterprise-id.version>0.0.3</system.enterprise-id.version>
         <resulting.version>17.0.50</resulting.version>
-        <progression.version>17.104.306</progression.version>
+        <progression.version>17.104.308</progression.version>
         <defence.version>17.104.102</defence.version>
         <material.version>17.0.85</material.version>
         <notification.notify.version>17.0.38</notification.notify.version>
