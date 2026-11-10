@@ -19,6 +19,7 @@ import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMatch
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopeMetadataMatcher.metadata;
 import static uk.gov.justice.services.test.utils.core.matchers.JsonEnvelopePayloadMatcher.payload;
 import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MATERIAL_ADDED_EVENT;
+import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MATERIAL_READY_FOR_COURT_DOCUMENT;
 import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_FILE_PROCESSED;
 import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_FILE_RECEIVED;
 import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_NOT_FOUND_IN_AUTOMATION;
@@ -61,6 +62,7 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
     private final JmsMessageConsumerClient migratedCaseFileProcessedConsumer = newPrivateJmsMessageConsumerClientProvider(CONTEXT_NAME).withEventNames(MIGRATED_CASE_FILE_PROCESSED).getMessageConsumerClient();
     private final JmsMessageConsumerClient migratedCaseFileReceivedConsumer = newPrivateJmsMessageConsumerClientProvider(CONTEXT_NAME).withEventNames(MIGRATED_CASE_FILE_RECEIVED).getMessageConsumerClient();
     private final JmsMessageConsumerClient migratedCaseNotFoundInAutomationConsumer = newPrivateJmsMessageConsumerClientProvider(CONTEXT_NAME).withEventNames(MIGRATED_CASE_NOT_FOUND_IN_AUTOMATION).getMessageConsumerClient();
+    private final JmsMessageConsumerClient materialReadyForCourtDocumentConsumer = newPrivateJmsMessageConsumerClientProvider(CONTEXT_NAME).withEventNames(MATERIAL_READY_FOR_COURT_DOCUMENT).getMessageConsumerClient();
 
     public void receiveMigratedCaseFile(final String payload) {
         makePostCall(getWriteUrl("/receive-migrated-case-file"),
@@ -99,6 +101,25 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
                             withJsonPath("processingIsSuccessful", is(true))
                     ))));
                 });
+    }
+
+    public void verifyMigratedCaseFileReceived(final AddMaterialHelper addMaterialHelper, final String submissionId) {
+        await()
+                .atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(() -> {
+                    final JsonEnvelope event = addMaterialHelper.verifyInMessagingQueue(migratedCaseFileReceivedConsumer);
+                    assertThat(event, jsonEnvelope(metadata().withName(MIGRATED_CASE_FILE_RECEIVED), payload().isJson(
+                            withJsonPath("receiveMigratedCaseFile.submissionId", is(submissionId))
+                    )));
+                });
+    }
+
+    public JsonEnvelope nextMaterialAdded(final AddMaterialHelper addMaterialHelper) {
+        return addMaterialHelper.verifyInMessagingQueue(materialAddedEventProcessConsumer);
+    }
+
+    public JsonEnvelope nextMaterialReadyForCourtDocument(final AddMaterialHelper addMaterialHelper) {
+        return addMaterialHelper.verifyInMessagingQueue(materialReadyForCourtDocumentConsumer);
     }
 
     public void verifyMigratedCaseNotFoundInAutomation(final AddMaterialHelper addMaterialHelper) {
