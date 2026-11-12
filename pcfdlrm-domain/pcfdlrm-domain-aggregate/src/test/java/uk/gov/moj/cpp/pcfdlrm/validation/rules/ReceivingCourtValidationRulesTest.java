@@ -2,6 +2,8 @@ package uk.gov.moj.cpp.pcfdlrm.validation.rules;
 
 import static org.mockito.Mockito.when;
 
+import java.util.Optional;
+
 import uk.gov.moj.cpp.pcfdlrm.domain.ProsecutionWithReferenceData;
 import uk.gov.moj.cpp.pcfdlrm.validation.rules.ReceivingCourtValidationRules;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OrganisationUnitReferenceData;
@@ -21,9 +23,8 @@ class ReceivingCourtValidationRulesTest {
         ProsecutionWithReferenceData mocked = Mockito.mock(ProsecutionWithReferenceData.class, Answers.RETURNS_DEEP_STUBS);
 
         when(mocked.getProsecution().getCaseDetails().getReceivingCourt()).thenReturn("ABCDE00");
-        Mockito.mock(OrganisationUnitReferenceData.class);
-        when(mocked.getReferenceDataVO().getReceivingCourtOrganisationUnit().isPresent())
-                .thenReturn(true);
+        when(mocked.getReferenceDataVO().getReceivingCourtOrganisationUnit())
+                .thenReturn(Optional.of(Mockito.mock(OrganisationUnitReferenceData.class)));
 
 
         final ValidationResult result = receivingCourtValidationRules.validate(mocked, null);
@@ -39,8 +40,8 @@ class ReceivingCourtValidationRulesTest {
         ProsecutionWithReferenceData mocked = Mockito.mock(ProsecutionWithReferenceData.class, Answers.RETURNS_DEEP_STUBS);
 
         when(mocked.getProsecution().getCaseDetails().getReceivingCourt()).thenReturn(null);
-        when(mocked.getReferenceDataVO().getReceivingCourtOrganisationUnit().isPresent())
-                .thenReturn(true);
+        when(mocked.getReferenceDataVO().getReceivingCourtOrganisationUnit())
+                .thenReturn(Optional.of(Mockito.mock(OrganisationUnitReferenceData.class)));
 
 
         final ValidationResult result = receivingCourtValidationRules.validate(mocked, null);
@@ -56,9 +57,8 @@ class ReceivingCourtValidationRulesTest {
         ProsecutionWithReferenceData mocked = Mockito.mock(ProsecutionWithReferenceData.class, Answers.RETURNS_DEEP_STUBS);
 
         when(mocked.getProsecution().getCaseDetails().getReceivingCourt()).thenReturn("ABCDE00");
-        Mockito.mock(OrganisationUnitReferenceData.class);
-        when(mocked.getReferenceDataVO().getReceivingCourtOrganisationUnit().isPresent())
-                .thenReturn(false);
+        when(mocked.getReferenceDataVO().getReceivingCourtOrganisationUnit())
+                .thenReturn(Optional.empty());
 
 
         final ValidationResult result = receivingCourtValidationRules.validate(mocked, null);

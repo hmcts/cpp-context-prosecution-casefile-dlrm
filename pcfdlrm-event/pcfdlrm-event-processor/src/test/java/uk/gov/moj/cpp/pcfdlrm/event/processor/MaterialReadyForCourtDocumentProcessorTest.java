@@ -2,7 +2,7 @@ package uk.gov.moj.cpp.pcfdlrm.event.processor;
 
 
 import static java.util.UUID.randomUUID;
-import static javax.json.JsonValue.NULL;
+import static jakarta.json.JsonValue.NULL;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.verify;
