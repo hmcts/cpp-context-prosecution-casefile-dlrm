@@ -43,6 +43,9 @@
     "receivedDateTime": {
       "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date-time"
     },
+    "uploadDateTime": {
+      "$ref": "http://justice.gov.uk/domain/core/common/definitions.json#/definitions/date-time"
+    },
     "sectionCode": {
       "type": "string"
     }

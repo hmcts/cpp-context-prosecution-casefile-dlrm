@@ -53,6 +53,7 @@ public class MaterialEventProcessor {
     private static final String IS_UNBUNDLED_DOCUMENT = "isUnbundledDocument";
     private static final String FILE_CLOUD_LOCATION = "fileCloudLocation";
     public static final String RECEIVED_DATE_TIME = "receivedDateTime";
+    public static final String UPLOAD_DATE_TIME = "uploadDateTime";
     public static final String SECTION_CODE = "sectionCode";
     public static final String IS_CPS_CASE = "isCpsCase";
     private static final String APPLICATION_ID_FIELD = "applicationId";
@@ -120,6 +121,10 @@ public class MaterialEventProcessor {
             ccMetadataBuilder.add(RECEIVED_DATE_TIME, materialAdded.getReceivedDateTime().toOffsetDateTime().toString());
         }
 
+        if (nonNull(materialAdded.getUploadDateTime())) {
+            ccMetadataBuilder.add(UPLOAD_DATE_TIME, materialAdded.getUploadDateTime().toOffsetDateTime().toString());
+        }
+
         if (DEFENDANT_LEVEL.toString().equalsIgnoreCase(materialAdded.getDocumentCategory())) {
             ccMetadataBuilder.add(DEFENDANT_ID_FIELD, materialAdded.getDefendantId().toString());
         }
@@ -161,6 +166,7 @@ public class MaterialEventProcessor {
         final String documentTypeDescription = ccMetadata.getString(DOCUMENT_TYPE_DESCRIPTION_FIELD);
         final String documentCategory = ccMetadata.getString(DOCUMENT_CATEGORY_FIELD);
         final String receivedDateTime = ccMetadata.containsKey(RECEIVED_DATE_TIME) ? ccMetadata.getString(RECEIVED_DATE_TIME) : null;
+        final String uploadDateTime = ccMetadata.containsKey(UPLOAD_DATE_TIME) ? ccMetadata.getString(UPLOAD_DATE_TIME) : null;
 
         LOGGER.info("handleDocumentUploadedEvent fileCloudLocationId {} ", fileCloudLocationId);
 
@@ -170,7 +176,7 @@ public class MaterialEventProcessor {
                 .add("mimeType", materialAddedEvent.payloadAsJsonObject().getJsonObject("fileDetails").getString("mimeType"))
                 .add(DOCUMENT_TYPE_ID_FIELD, documentTypeId)
                 .add(DOCUMENT_TYPE_DESCRIPTION_FIELD, documentTypeDescription)
-                .add("materials", buildMaterials(materialId, receivedDateTime))
+                .add("materials", buildMaterials(materialId, receivedDateTime, uploadDateTime))
                 .add("containsFinancialMeans", false);
 
 
@@ -224,10 +230,13 @@ public class MaterialEventProcessor {
         }
     }
 
-    private JsonArray buildMaterials(final String materialId, final String receivedDateTime) {
+    private JsonArray buildMaterials(final String materialId, final String receivedDateTime, final String uploadDateTime) {
         JsonObjectBuilder materialBuilder = createObjectBuilder().add("id", materialId);
         if (receivedDateTime != null) {
             materialBuilder = materialBuilder.add(RECEIVED_DATE_TIME, receivedDateTime);
+        }
+        if (uploadDateTime != null) {
+            materialBuilder = materialBuilder.add(UPLOAD_DATE_TIME, uploadDateTime);
         }
         return createArrayBuilder().add(materialBuilder.build())
                 .build();

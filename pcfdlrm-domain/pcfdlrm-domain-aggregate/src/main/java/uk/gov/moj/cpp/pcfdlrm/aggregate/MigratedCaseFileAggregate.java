@@ -644,7 +644,10 @@ public class MigratedCaseFileAggregate implements Aggregate {
                 referenceDataQueryService, receivedDateTime, isCpsCase, sections.get(migratedMaterial.getFileType()).left, defendants,
                 documentMetadataReferenceDataList, caseType);
         if (materialEvent instanceof MaterialAdded materialAdded) {
-            return materialAdded;
+            return MaterialAdded.materialAdded()
+                    .withValuesFrom(materialAdded)
+                    .withUploadDateTime(migratedMaterial.getReceivedDateTime())
+                    .build();
         } else {
             throw new NotYetImplementedException("Only happy path implemented now");
         }
