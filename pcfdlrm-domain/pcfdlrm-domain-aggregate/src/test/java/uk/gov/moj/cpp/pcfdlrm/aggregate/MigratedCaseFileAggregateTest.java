@@ -5,6 +5,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -88,6 +89,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedMa
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedWeekCommencingDate;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigrationSourceSystem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ReceiveMigratedCaseFile;
+import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialAdded;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialAddedPendingProcess;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialReadyForCourtDocument;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseFileProcessed;
@@ -95,6 +97,7 @@ import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseNotFoun
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -264,6 +267,44 @@ class MigratedCaseFileAggregateTest {
                 .toList();
         assertThat(events, hasSize(1));
         return events.get(0);
+    }
+
+    @Test
+    void shouldSetUploadDateTimeFromMigratedMaterialReceivedDateTime() {
+        final ZonedDateTime libraUploadDateTime = ZonedDateTime.parse("2019-03-14T10:22:31.107Z");
+        final MigratedMaterial migratedMaterial = MigratedMaterial.migratedMaterial()
+                .withValuesFrom(createMigratedMaterials(1, "pdf").get(0))
+                .withReceivedDateTime(libraUploadDateTime)
+                .build();
+
+        final MaterialAdded materialAdded = receiveSingleMaterial(migratedMaterial);
+
+        assertAll(
+                () -> assertThat(materialAdded.getUploadDateTime(), is(libraUploadDateTime)),
+                () -> assertThat(materialAdded.getReceivedDateTime().isAfter(libraUploadDateTime), is(true)));
+    }
+
+    @Test
+    void shouldNotSetUploadDateTimeWhenMigratedMaterialHasNoReceivedDateTime() {
+        final MaterialAdded materialAdded = receiveSingleMaterial(createMigratedMaterials(1, "pdf").get(0));
+
+        assertAll(
+                () -> assertThat(materialAdded.getUploadDateTime(), nullValue()),
+                () -> assertThat(materialAdded.getReceivedDateTime(), notNullValue()));
+    }
+
+    private MaterialAdded receiveSingleMaterial(final MigratedMaterial migratedMaterial) {
+        final MigratedCaseDetails migCaseDetails = buildMigratedCaseDetails("MALE", "YYYY", W.name(), null, null, null, null, sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER));
+        final ReceiveMigratedCaseFile receiveMigratedCase = buildReceiveMigratedCaseFile(migCaseDetails, singletonList(migratedMaterial));
+        prosecutionWithReferenceData = new ProsecutionWithReferenceData(buildProsecution(migCaseDetails, CaseDetails.caseDetails().build()));
+
+        final List<MaterialAdded> materialsAdded = receiveMigratedCaseFile(receiveMigratedCase, prosecutionWithReferenceData).stream()
+                .filter(MaterialAdded.class::isInstance)
+                .map(MaterialAdded.class::cast)
+                .toList();
+
+        assertThat(materialsAdded, hasSize(1));
+        return materialsAdded.get(0);
     }
 
     @Test

@@ -44,6 +44,7 @@ import uk.gov.moj.cpp.pcfdlrm.event.processor.utils.MetadataHelper;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Material;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialAdded;
 
+import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -272,6 +273,69 @@ class MaterialEventProcessorTest {
         verify(pcfMaterialUploadedCounter).increment();
     }
 
+
+    @Test
+    void shouldAddUploadDateTimeToCcMetadataWhenMaterialAddedHasUploadDateTime() {
+        final ZonedDateTime uploadDateTime = ZonedDateTime.parse("2019-03-14T10:22:31.107Z");
+        final Envelope<MaterialAdded> event = createMaterialAddedEventWithReceivedDateTime(null, false, null, randomAlphanumeric(20));
+        final Envelope<MaterialAdded> materialAddedEvent = envelopeFrom(event.metadata(),
+                materialAdded().withValuesFrom(event.payload()).withUploadDateTime(uploadDateTime).build());
+
+        materialEventProcessor.handleMaterialAdded(materialAddedEvent);
+
+        assertThat(captureUploadCcMetadata().getString("uploadDateTime"), is(uploadDateTime.toOffsetDateTime().toString()));
+    }
+
+    @Test
+    void shouldNotAddUploadDateTimeToCcMetadataWhenMaterialAddedHasNoUploadDateTime() {
+        materialEventProcessor.handleMaterialAdded(createMaterialAddedEventWithReceivedDateTime(null, false, null, randomAlphanumeric(20)));
+
+        assertThat(captureUploadCcMetadata().containsKey("uploadDateTime"), is(false));
+    }
+
+    @Test
+    void shouldAddUploadDateTimeToCourtDocumentMaterialWhenCcMetadataHasUploadDateTime() {
+        final String uploadDateTime = "2019-03-14T10:22:31.107Z";
+        final JsonObject ccMetadata = createObjectBuilder(getCCMetadataJsonObjectWithReceivedDateTime(null, now().toString()).getJsonObject("ccMetadata"))
+                .add("uploadDateTime", uploadDateTime)
+                .build();
+
+        final JsonEnvelope addCourtDocument = handleMaterialAddedFromMaterialContext(ccMetadata);
+
+        assertThat(addCourtDocument, jsonEnvelope(metadata().withName("pcfdlrm.command.add-case-court-document"), payloadIsJson(withJsonPath("$.courtDocument.materials[0].uploadDateTime", equalTo(uploadDateTime)))));
+    }
+
+    @Test
+    void shouldNotAddUploadDateTimeToCourtDocumentMaterialWhenCcMetadataHasNoUploadDateTime() {
+        final JsonObject ccMetadata = getCCMetadataJsonObjectWithReceivedDateTime(null, now().toString()).getJsonObject("ccMetadata");
+
+        final JsonEnvelope addCourtDocument = handleMaterialAddedFromMaterialContext(ccMetadata);
+
+        assertThat(addCourtDocument, jsonEnvelope(metadata().withName("pcfdlrm.command.add-case-court-document"), payloadIsJson(hasNoJsonPath("$.courtDocument.materials[0].uploadDateTime"))));
+    }
+
+    private JsonObject captureUploadCcMetadata() {
+        verify(metadataHelper).envelopeWithCustomMetadata(
+                metadataArgumentCaptor.capture(),
+                jsonObjectArgumentCaptor.capture(),
+                jsonObjectArgumentCaptor.capture(),
+                eq(null));
+        return jsonObjectArgumentCaptor.getAllValues().get(0);
+    }
+
+    private JsonEnvelope handleMaterialAddedFromMaterialContext(final JsonObject ccMetadata) {
+        final JsonEnvelope materialAddedEventFromMaterialContext = createDocumentAddedV2PayloadForNonSJP(null, fileCloudLocation);
+        final JsonObject ccMetadataJsonObject = Mockito.spy(ccMetadata);
+        when(metadataHelper.getCCMetadata(materialAddedEventFromMaterialContext)).thenReturn(Optional.of(ccMetadataJsonObject));
+        when(ccMetadataJsonObject.getString("fileCloudLocation", null)).thenReturn(fileCloudLocation);
+        when(metadataHelper.getFileStoreId(materialAddedEventFromMaterialContext)).thenReturn(null);
+        when(envelopeHelper.withMetadataInPayloadForEnvelope(any())).thenReturn(JsonEnvelope.envelopeFrom(metadataWithRandomUUIDAndName(), NULL));
+
+        materialEventProcessor.handleMaterialAddedFromMaterialContext(materialAddedEventFromMaterialContext);
+
+        verify(envelopeHelper).withMetadataInPayloadForEnvelope(jsonEnvelopeCaptor.capture());
+        return jsonEnvelopeCaptor.getValue();
+    }
 
     private static Envelope<MaterialAdded> createMaterialAddedEvent(final Boolean isCpsCase, final boolean isUnbundledDocument, UUID fileStoreId, String fileCloudLocation) {
         MaterialAdded.Builder builder = materialAdded()

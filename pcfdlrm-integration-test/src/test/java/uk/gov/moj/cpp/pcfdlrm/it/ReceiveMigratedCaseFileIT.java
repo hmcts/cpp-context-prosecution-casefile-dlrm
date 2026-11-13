@@ -43,6 +43,7 @@ import java.util.stream.Stream;
 
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
@@ -286,6 +287,55 @@ class ReceiveMigratedCaseFileIT {
         receiveMigratedCaseFileHelper.verifyMigratedCaseAccepted(addMaterialHelper, submissionId, caseId, caseUrn);
     }
 
+    // The LIBRA upload date arrives as the migrated material's receivedDateTime and reaches the court
+    // document as materials[0].uploadDateTime. Upload location 31 is unique across the run.
+    @Test
+    void shouldSendLibraMaterialUploadDateAsCourtDocumentUploadDateTimeOnAccept() {
+        final String submissionId = UUID.randomUUID().toString();
+        final String caseId = UUID.randomUUID().toString();
+        final String defendantId = UUID.randomUUID().toString();
+        final String caseUrn = RandomStringUtils.secure().nextAlphanumeric(10);
+        final ZonedDateTime libraUploadDateTime = ZonedDateTime.parse("2019-03-14T10:22:31.107Z");
+
+        final String staticPayLoad = getStringFromResource("command-json/pcfdlrm.command.receive-migrated-case-file-with-allocation-decision.json")
+                .replace("SUBMISSION_ID", submissionId)
+                .replace("CASE_ID", caseId)
+                .replace("CASE_URN", caseUrn)
+                .replace("DEFENDANT_ID", defendantId)
+                .replace("HEARING_DATE", LocalDate.now().plusDays(1).toString())
+                .replace("\"migrationSourceSystemName\": \"XHIBIT\"", "\"migrationSourceSystemName\": \"LIBRA\"");
+
+        final JsonObject receiveMigratedCaseFile = JsonObjects.createReader(new StringReader(staticPayLoad)).readObject();
+        receiveMigratedCaseFileHelper.receiveMigratedCaseFile(JsonObjects.createObjectBuilder(receiveMigratedCaseFile)
+                .add("materials", JsonObjects.createArrayBuilder().add(createObjectBuilder()
+                        .add("id", randomUUID().toString())
+                        .add("azureLocation", "http://inazure/secrets/31")
+                        .add("fileName", "bundle-3.pdf")
+                        .add("fileType", "3")
+                        .add("documentType", 2)
+                        .add("receivedDateTime", libraUploadDateTime.toOffsetDateTime().toString())))
+                .build()
+                .toString());
+
+        final JsonObject materialAdded = receiveMigratedCaseFileHelper.nextMaterialAdded(addMaterialHelper).payloadAsJsonObject();
+        final String uploadDateTime = materialAdded.getString("uploadDateTime");
+        assertThat(ZonedDateTime.parse(uploadDateTime).toInstant(), is(libraUploadDateTime.toInstant()));
+
+        // Material echoes back the ccMetadata pcfdlrm sent it, including uploadDateTime.
+        final String materialId = randomUUID().toString();
+        sendMaterialAdded(createMaterialAddedPayload(materialId, caseId, defendantId, materialAdded.getString("documentCategory"), uploadDateTime));
+
+        receiveMigratedCaseFileHelper.verifyMigratedCaseFileReceived(addMaterialHelper, submissionId);
+        receiveMigratedCaseFileHelper.triggerAcceptMigratedCase(caseId);
+
+        final JsonObject event = receiveMigratedCaseFileHelper.nextMaterialReadyForCourtDocument(addMaterialHelper).payloadAsJsonObject();
+        assertThat(event.getString("materialId"), is(materialId));
+        final JsonObject material = event.getJsonObject("courtDocument").getJsonArray("materials").getJsonObject(0);
+        assertThat(ZonedDateTime.parse(material.getString("uploadDateTime")).toInstant(), is(libraUploadDateTime.toInstant()));
+
+        receiveMigratedCaseFileHelper.verifyMigratedCaseAccepted(addMaterialHelper, submissionId, caseId, caseUrn);
+    }
+
     private static String withLibraMaterials(final String payload) {
         final JsonObject receiveMigratedCaseFile = JsonObjects.createReader(new StringReader(payload)).readObject();
         final JsonArrayBuilder materials = JsonObjects.createArrayBuilder();
@@ -471,9 +521,14 @@ class ReceiveMigratedCaseFileIT {
     }
 
     private JsonEnvelope createMaterialAddedPayload(final String materialId, final String caseId, final String defendantId, final String documentCategory) {
+        return createMaterialAddedPayload(materialId, caseId, defendantId, documentCategory, null);
+    }
+
+    private JsonEnvelope createMaterialAddedPayload(final String materialId, final String caseId, final String defendantId,
+                                                    final String documentCategory, final String uploadDateTime) {
 
         final Metadata metadata = JsonEnvelope
-                .metadataFrom(getCCMetadataJsonObject(caseId, defendantId, documentCategory))
+                .metadataFrom(getCCMetadataJsonObject(caseId, defendantId, documentCategory, uploadDateTime))
                 .build();
 
         final JsonObject payload = createObjectBuilder()
@@ -489,21 +544,26 @@ class ReceiveMigratedCaseFileIT {
         return JsonEnvelope.envelopeFrom(metadata, payload);
     }
 
-    private static JsonObject getCCMetadataJsonObject(final String caseId, final String defendantId, final String documentCategory) {
+    private static JsonObject getCCMetadataJsonObject(final String caseId, final String defendantId, final String documentCategory,
+                                                      final String uploadDateTime) {
+        final JsonObjectBuilder ccMetadata = createObjectBuilder()
+                .add("caseId", caseId)
+                .add("defendantId", defendantId)
+                .add("documentCategory", documentCategory)
+                .add("documentTypeDescription", "SJPN")
+                .add("documentTypeId", randomUUID().toString())
+                .add("fileCloudLocation", "azure.net")
+                .add("receivedDateTime", ZonedDateTime.now().toOffsetDateTime().toString())
+                .add("isCpsCase", false);
+        if (uploadDateTime != null) {
+            ccMetadata.add("uploadDateTime", uploadDateTime);
+        }
         return JsonObjects
                 .createObjectBuilder(metadataBuilder()
                         .withId(randomUUID())
                         .withName("material.material-added")
                         .build().asJsonObject())
-                .add("ccMetadata", createObjectBuilder()
-                        .add("caseId", caseId)
-                        .add("defendantId", defendantId)
-                        .add("documentCategory", documentCategory)
-                        .add("documentTypeDescription", "SJPN")
-                        .add("documentTypeId", randomUUID().toString())
-                        .add("fileCloudLocation", "azure.net")
-                        .add("receivedDateTime", ZonedDateTime.now().toOffsetDateTime().toString())
-                        .add("isCpsCase", false))
+                .add("ccMetadata", ccMetadata)
                 .build();
     }
 
