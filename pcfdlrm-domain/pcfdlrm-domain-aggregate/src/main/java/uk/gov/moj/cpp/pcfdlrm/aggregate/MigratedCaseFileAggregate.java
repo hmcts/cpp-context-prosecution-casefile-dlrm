@@ -61,6 +61,8 @@ import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
 import uk.gov.moj.cpp.pcfdlrm.validation.ProblemCode;
 import uk.gov.moj.cpp.pcfdlrm.validation.provider.MaterialFileTypwWithCountValidationRuleProvider;
 import uk.gov.moj.cpp.pcfdlrm.validation.provider.MaterialValidationRuleProvider;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.FirstCourtHearingLocationValidationRule;
+import uk.gov.moj.cpp.pcfdlrm.validation.rules.ValidationRule;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Channel;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CourtDocument;
@@ -77,6 +79,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedHe
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendant;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedDefendantWithProblem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedMaterial;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigrationSourceSystem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ReceiveMigratedCaseFile;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialAdded;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MaterialAddedPendingProcess;
@@ -136,6 +139,8 @@ public class MigratedCaseFileAggregate implements Aggregate {
 
     private final List<MaterialAdded> materialsAdded = new ArrayList<>();
 
+    private static final List<ValidationRule<MigrationSourceSystem, ReferenceDataQueryService>> FIRST_COURT_HEARING_LOCATION_RULES =
+            List.of(new FirstCourtHearingLocationValidationRule());
     private final Map<UUID, CourtDocument> materialsAddedPostProcessing = new HashMap<>();
 
     private final Map<UUID, CourtDocument> materialsReadyForCourtDocument = new HashMap<>();
@@ -317,6 +322,23 @@ public class MigratedCaseFileAggregate implements Aggregate {
             caseValidationWarningsList.forEach(builder::add);
         }
 
+        final List<Problem> firstCourtHearingLocationProblems = validate(
+                migratedCaseDetails.getMigrationSourceSystem(), referenceDataQueryService, FIRST_COURT_HEARING_LOCATION_RULES);
+        firstCourtHearingLocationProblems.stream()
+                .map(problem -> migratedCaseValidatedWithWarnings()
+                        .withCaseId(migratedCaseDetails.getCaseDetails().getCaseId())
+                        .withCaseUrn(migratedCaseDetails.getCaseDetails().getProsecutorCaseReference())
+                        .withType("Case validation")
+                        .withWarnings(problem.getCode() + " : " + problem.getValues().stream().map(ProblemValue::getValue).toList())
+                        .build())
+                .forEach(builder::add);
+        final MigrationSourceSystem migrationSourceSystem = firstCourtHearingLocationProblems.isEmpty()
+                ? migratedCaseDetails.getMigrationSourceSystem()
+                : MigrationSourceSystem.migrationSourceSystem()
+                        .withValuesFrom(migratedCaseDetails.getMigrationSourceSystem())
+                        .withFirstCourtHearingLocation(null)
+                        .build();
+
         final List<DefendantProblem> defendantProblems = migratedDefendantWithProblem.getDefendantProblems();
 
         final List<MigratedCaseValidatedWithWarnings> defendantValidationWarningsList = defendantProblems.stream()
@@ -358,6 +380,7 @@ public class MigratedCaseFileAggregate implements Aggregate {
                 .withValuesFrom(receiveMigratedCaseFile)
                 .withMigratedCaseDetails(MigratedCaseDetails.migratedCaseDetails()
                         .withValuesFrom(migratedCaseDetails)
+                        .withMigrationSourceSystem(migrationSourceSystem)
                         .withDefendants(migratedDefendants)
                         .withHearings(defaultedHearings)
                         .build()).build();
@@ -382,6 +405,7 @@ public class MigratedCaseFileAggregate implements Aggregate {
                                             .withValuesFrom(finalReceiveMigratedCaseFile)
                                             .withMigratedCaseDetails(MigratedCaseDetails.migratedCaseDetails()
                                                     .withValuesFrom(migratedCaseDetails)
+                                                    .withMigrationSourceSystem(migrationSourceSystem)
                                                     .withDefendants(migratedDefendants)
                                                     .withHearings(defaultedHearings)
                                                     .build()).build())

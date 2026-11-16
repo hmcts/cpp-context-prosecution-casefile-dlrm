@@ -110,6 +110,7 @@
         "id": "EXCLUDED",
         "initiationCode": "J",
         "migrationSourceSystem": {
+          "firstCourtHearingLocation": "C55BN00",
           "migrationSourceSystemCaseIdentifier": "This is from Libra",
           "migrationSourceSystemName": "LIBRA"
         },

@@ -8,6 +8,7 @@ import java.util.Collections;
 import static java.util.UUID.randomUUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -25,6 +26,7 @@ import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.CaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedCaseDetails;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigratedMaterial;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigrationSourceSystem;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ReceiveMigratedCaseFile;
 
 import java.util.ArrayList;
@@ -79,6 +81,7 @@ public class MigratedCaseToProsecutionCaseConverterTest {
         assertThat(convertedProsecutionCase.getOriginatingOrganisation(), equalTo(caseDetails.getOriginatingOrganisation()));
         assertThat(convertedProsecutionCase.getCpsOrganisation(), equalTo(caseDetails.getCpsOrganisation()));
         assertThat(convertedProsecutionCase.getMigrationSourceSystem().getMigrationSourceSystemName(), equalTo("LIBRA"));
+        assertThat(convertedProsecutionCase.getMigrationSourceSystem().getFirstCourtHearingLocation(), nullValue());
         assertThat(convertedProsecutionCase.getSendingCourt().getId().toString(), equalTo(courtId));
 
     }
@@ -296,6 +299,36 @@ public class MigratedCaseToProsecutionCaseConverterTest {
         final ProsecutionCase convertedProsecutionCase = convertedCourtProceedings.getInitiateCourtProceedings().getProsecutionCases().get(0);
 
         assertThat(convertedProsecutionCase.getMigrationSourceSystem().getMigrationSourceSystemName(), equalTo("XHIBIT"));
+    }
+
+    @Test
+    void shouldConvertFirstCourtHearingLocationInMigrationSourceSystem() {
+        final var materials = CaseReceivedHelper.getMaterials(caseID);
+        final MigratedCaseDetails libraCaseDetails = CaseReceivedHelper.getMigratedCaseDetails(caseID);
+        final MigratedCaseDetails migratedCaseDetails = MigratedCaseDetails.migratedCaseDetails()
+                .withValuesFrom(libraCaseDetails)
+                .withMigrationSourceSystem(MigrationSourceSystem.migrationSourceSystem()
+                        .withValuesFrom(libraCaseDetails.getMigrationSourceSystem())
+                        .withFirstCourtHearingLocation("B01LY00")
+                        .build())
+                .build();
+        final ReceiveMigratedCaseFile receiveMigratedCaseFile = new ReceiveMigratedCaseFile(DLRM_MIGRATION, materials, migratedCaseDetails, randomUUID());
+        final ReferenceDataVO referenceDataVO = CaseReceivedHelper.buildReferenceDataWithOffenceAndModeOfTrialWithCourtOrganisation("Either Way", courtId);
+
+        final MigratedHearingWithReferenceData hearingWithReferenceData = new MigratedHearingWithReferenceData();
+        hearingWithReferenceData.setMigratedDefendantWithOffences(new ArrayList<>());
+
+        final MigratedCaseFileReceived migratedCaseFileReceived = migratedCaseFileReceived()
+                .withMigratedCaseSubmission(receiveMigratedCaseFile)
+                .withReferenceDataVO(referenceDataVO)
+                .withMigratedHearingWithReferenceData(singletonList(hearingWithReferenceData))
+                .build();
+
+        final ProsecutionCase convertedProsecutionCase = migratedCaseToProsecutionCaseConverter.convert(migratedCaseFileReceived)
+                .getInitiateCourtProceedings().getProsecutionCases().get(0);
+
+        assertThat(convertedProsecutionCase.getMigrationSourceSystem().getFirstCourtHearingLocation(), equalTo("B01LY00"));
+        assertThat(convertedProsecutionCase.getMigrationSourceSystem().getMigrationSourceSystemName(), equalTo("LIBRA"));
     }
 
     @Test

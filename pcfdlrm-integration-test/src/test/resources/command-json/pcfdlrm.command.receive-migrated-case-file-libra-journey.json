@@ -117,7 +117,8 @@
     ],
     "migrationSourceSystem": {
       "migrationSourceSystemName": "LIBRA",
-      "migrationSourceSystemCaseIdentifier": "This is from Libra"
+      "migrationSourceSystemCaseIdentifier": "This is from Libra",
+      "firstCourtHearingLocation": "C55BN00"
     }
   },
   "submissionId": "SUBMISSION_ID"
