@@ -4,6 +4,7 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -79,6 +80,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.DocumentCategory;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.DocumentTypeAccessReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.HearingType;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.HearingTypes;
+import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OrganisationUnitReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OrganisationUnitWithCourtroomsReferenceData;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.Prosecution;
 import uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.ListedDefendant;
@@ -335,6 +337,63 @@ class MigratedCaseFileAggregateTest {
                 receiveMigratedCaseFile(receiveMigratedCase, prosecutionWithReferenceData)
         );
         assertEquals("File type matching cps bundle code is not found in map", exception.getMessage());
+    }
+
+    @Test
+    void shouldClearUnknownFirstCourtHearingLocationAndRaiseCaseWarning() {
+        when(referenceDataQueryService.retrieveOrganisationUnits("Z99ZZ99")).thenReturn(List.of());
+
+        final List<Object> events = receiveWithFirstCourtHearingLocation("Z99ZZ99");
+
+        final MigratedCaseFileReceived received = single(events, MigratedCaseFileReceived.class);
+        assertThat(received.getReceiveMigratedCaseFile().getMigratedCaseDetails().getMigrationSourceSystem().getFirstCourtHearingLocation(), nullValue());
+        assertThat(received.getReceiveMigratedCaseFile().getMigratedCaseDetails().getMigrationSourceSystem().getMigrationSourceSystemCaseIdentifier(), is(SOURCE_SYSTEM_LIBRA_IDENTIFIER));
+        assertThat(events.stream()
+                .filter(MigratedCaseValidatedWithWarnings.class::isInstance)
+                .map(MigratedCaseValidatedWithWarnings.class::cast)
+                .filter(warning -> "Case validation".equals(warning.getType()))
+                .map(MigratedCaseValidatedWithWarnings::getMessage)
+                .toList(), hasItem("FIRST_COURT_LOCATION_OUCODE_INVALID : [Z99ZZ99]"));
+    }
+
+    @Test
+    void shouldKeepKnownFirstCourtHearingLocationWithoutWarning() {
+        when(referenceDataQueryService.retrieveOrganisationUnits("B01LY00"))
+                .thenReturn(List.of(OrganisationUnitReferenceData.organisationUnitReferenceData().build()));
+
+        final List<Object> events = receiveWithFirstCourtHearingLocation("B01LY00");
+
+        assertThat(single(events, MigratedCaseFileReceived.class).getReceiveMigratedCaseFile().getMigratedCaseDetails()
+                .getMigrationSourceSystem().getFirstCourtHearingLocation(), is("B01LY00"));
+        assertThat(events.stream()
+                .filter(MigratedCaseValidatedWithWarnings.class::isInstance)
+                .map(MigratedCaseValidatedWithWarnings.class::cast)
+                .map(MigratedCaseValidatedWithWarnings::getMessage)
+                .noneMatch(warning -> warning.startsWith("FIRST_COURT_LOCATION_OUCODE_INVALID")), is(true));
+    }
+
+    private List<Object> receiveWithFirstCourtHearingLocation(final String firstCourtHearingLocation) {
+        final CaseFileInput input = noMaterialsInput(sourceSystem(SOURCE_SYSTEM_LIBRA, SOURCE_SYSTEM_LIBRA_IDENTIFIER));
+        final ReceiveMigratedCaseFile command = input.receiveMigratedCaseFile();
+        final MigratedCaseDetails details = command.getMigratedCaseDetails();
+        final ReceiveMigratedCaseFile withLocation = ReceiveMigratedCaseFile.receiveMigratedCaseFile()
+                .withValuesFrom(command)
+                .withMigratedCaseDetails(MigratedCaseDetails.migratedCaseDetails()
+                        .withValuesFrom(details)
+                        .withMigrationSourceSystem(MigrationSourceSystem.migrationSourceSystem()
+                                .withValuesFrom(details.getMigrationSourceSystem())
+                                .withFirstCourtHearingLocation(firstCourtHearingLocation)
+                                .build())
+                        .build())
+                .build();
+        prosecutionWithReferenceData = input.prosecutionWithReferenceData();
+        return receiveMigratedCaseFile(withLocation, prosecutionWithReferenceData);
+    }
+
+    private static <T> T single(final List<Object> events, final Class<T> type) {
+        final List<T> matching = events.stream().filter(type::isInstance).map(type::cast).toList();
+        assertThat(matching, hasSize(1));
+        return matching.get(0);
     }
 
     // Call-argument check, not output — LIBRA must resolve to the LIBRA case rule set.

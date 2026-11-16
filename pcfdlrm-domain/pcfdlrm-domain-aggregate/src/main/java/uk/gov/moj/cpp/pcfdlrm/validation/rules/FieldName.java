@@ -50,6 +50,7 @@ public enum FieldName {
     COURT_RECEIVED_FROM("courtReceivedFromCode"),
     RECEIVING_COURT("receivingCourt"),
     SENDING_COURT("sendingCourt"),
+    FIRST_COURT_HEARING_LOCATION("firstCourtHearingLocation"),
     POLICE_FORCE_CODE("policeForceCode"),
     HEARING_TYPE_CODE("hearingTypeCode"),
     PROSECUTING_AUTHORITY("prosecutingAuthority") ,

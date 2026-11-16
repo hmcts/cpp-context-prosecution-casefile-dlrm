@@ -126,6 +126,7 @@ public class MigratedCaseToProsecutionCaseConverter implements Converter<Migrate
     private MigrationSourceSystem buildMigrationSourceSystem(final uk.gov.moj.cpp.prosecution.casefile.dlrm.migrated.json.schemas.MigrationSourceSystem migrationSourceSystem) {
         return  MigrationSourceSystem.migrationSourceSystem().withMigrationSourceSystemName(migrationSourceSystem.getMigrationSourceSystemName()).
                 withMigrationSourceSystemCaseIdentifier(migrationSourceSystem.getMigrationSourceSystemCaseIdentifier())
+                .withFirstCourtHearingLocation(migrationSourceSystem.getFirstCourtHearingLocation())
                 .build();
     }
 
