@@ -57,5 +57,3 @@ reaches `buildMaterials`; `uploadDateTime` uses the same route (Q2).
 - Tests: `MigratedCaseFileAggregateTest` (LIBRA date as `receivedDateTime`; `now()` without),
   `MaterialEventProcessorTest` (court document material has no `uploadDateTime`), and
   `ReceiveMigratedCaseFileIT.shouldSendLibraMaterialUploadDateAsCourtDocumentReceivedDateTimeOnAccept`.
-- Stored `material-added` events that carry `uploadDateTime` (environments where the first DD-43946
-  version ran) must be cleared or re-migrated.
