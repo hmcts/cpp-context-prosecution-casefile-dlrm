@@ -288,9 +288,9 @@ class ReceiveMigratedCaseFileIT {
     }
 
     // The LIBRA upload date arrives as the migrated material's receivedDateTime and reaches the court
-    // document as materials[0].uploadDateTime. Upload location 31 is unique across the run.
+    // document as materials[0].receivedDateTime. Upload location 31 is unique across the run.
     @Test
-    void shouldSendLibraMaterialUploadDateAsCourtDocumentUploadDateTimeOnAccept() {
+    void shouldSendLibraMaterialUploadDateAsCourtDocumentReceivedDateTimeOnAccept() {
         final String submissionId = UUID.randomUUID().toString();
         final String caseId = UUID.randomUUID().toString();
         final String defendantId = UUID.randomUUID().toString();
@@ -318,12 +318,13 @@ class ReceiveMigratedCaseFileIT {
                 .toString());
 
         final JsonObject materialAdded = receiveMigratedCaseFileHelper.nextMaterialAdded(addMaterialHelper).payloadAsJsonObject();
-        final String uploadDateTime = materialAdded.getString("uploadDateTime");
-        assertThat(ZonedDateTime.parse(uploadDateTime).toInstant(), is(libraUploadDateTime.toInstant()));
+        final String receivedDateTime = materialAdded.getString("receivedDateTime");
+        assertThat(ZonedDateTime.parse(receivedDateTime).toInstant(), is(libraUploadDateTime.toInstant()));
+        assertThat(materialAdded.containsKey("uploadDateTime"), is(false));
 
-        // Material echoes back the ccMetadata pcfdlrm sent it, including uploadDateTime.
+        // Material echoes back the ccMetadata pcfdlrm sent it, whose receivedDateTime is the LIBRA upload date.
         final String materialId = randomUUID().toString();
-        sendMaterialAdded(createMaterialAddedPayload(materialId, caseId, defendantId, materialAdded.getString("documentCategory"), uploadDateTime));
+        sendMaterialAdded(createMaterialAddedPayload(materialId, caseId, defendantId, materialAdded.getString("documentCategory"), receivedDateTime));
 
         receiveMigratedCaseFileHelper.verifyMigratedCaseFileReceived(addMaterialHelper, submissionId);
         receiveMigratedCaseFileHelper.triggerAcceptMigratedCase(caseId);
@@ -331,7 +332,8 @@ class ReceiveMigratedCaseFileIT {
         final JsonObject event = receiveMigratedCaseFileHelper.nextMaterialReadyForCourtDocument(addMaterialHelper).payloadAsJsonObject();
         assertThat(event.getString("materialId"), is(materialId));
         final JsonObject material = event.getJsonObject("courtDocument").getJsonArray("materials").getJsonObject(0);
-        assertThat(ZonedDateTime.parse(material.getString("uploadDateTime")).toInstant(), is(libraUploadDateTime.toInstant()));
+        assertThat(ZonedDateTime.parse(material.getString("receivedDateTime")).toInstant(), is(libraUploadDateTime.toInstant()));
+        assertThat(material.containsKey("uploadDateTime"), is(false));
 
         receiveMigratedCaseFileHelper.verifyMigratedCaseAccepted(addMaterialHelper, submissionId, caseId, caseUrn);
     }
@@ -525,10 +527,10 @@ class ReceiveMigratedCaseFileIT {
     }
 
     private JsonEnvelope createMaterialAddedPayload(final String materialId, final String caseId, final String defendantId,
-                                                    final String documentCategory, final String uploadDateTime) {
+                                                    final String documentCategory, final String receivedDateTime) {
 
         final Metadata metadata = JsonEnvelope
-                .metadataFrom(getCCMetadataJsonObject(caseId, defendantId, documentCategory, uploadDateTime))
+                .metadataFrom(getCCMetadataJsonObject(caseId, defendantId, documentCategory, receivedDateTime))
                 .build();
 
         final JsonObject payload = createObjectBuilder()
@@ -545,7 +547,7 @@ class ReceiveMigratedCaseFileIT {
     }
 
     private static JsonObject getCCMetadataJsonObject(final String caseId, final String defendantId, final String documentCategory,
-                                                      final String uploadDateTime) {
+                                                      final String receivedDateTime) {
         final JsonObjectBuilder ccMetadata = createObjectBuilder()
                 .add("caseId", caseId)
                 .add("defendantId", defendantId)
@@ -553,11 +555,8 @@ class ReceiveMigratedCaseFileIT {
                 .add("documentTypeDescription", "SJPN")
                 .add("documentTypeId", randomUUID().toString())
                 .add("fileCloudLocation", "azure.net")
-                .add("receivedDateTime", ZonedDateTime.now().toOffsetDateTime().toString())
+                .add("receivedDateTime", receivedDateTime != null ? receivedDateTime : ZonedDateTime.now().toOffsetDateTime().toString())
                 .add("isCpsCase", false);
-        if (uploadDateTime != null) {
-            ccMetadata.add("uploadDateTime", uploadDateTime);
-        }
         return JsonObjects
                 .createObjectBuilder(metadataBuilder()
                         .withId(randomUUID())
