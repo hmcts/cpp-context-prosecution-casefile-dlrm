@@ -46,3 +46,16 @@ reaches `buildMaterials`; `uploadDateTime` uses the same route (Q2).
   `materials[0].uploadDateTime` set from `ccMetadata`.
 - `ReceiveMigratedCaseFileIT`: LIBRA payload with `materials[].receivedDateTime` → the
   `progression` court document has `materials[0].uploadDateTime` equal to it.
+
+## Amendment (2026-11-19)
+
+- C-1: `uploadDateTime` removed from `pcfdlrm.events.material-added.json`.
+- C-2 `MigratedCaseFileAggregate.addMaterial`: `receivedDateTime` = `migratedMaterial.receivedDateTime`
+  when set, else `ZonedDateTime.now()`.
+- C-3 / C-4 `MaterialEventProcessor`: unchanged from before DD-43946 — `ccMetadata.receivedDateTime`
+  from the event, `materials[0].receivedDateTime` from `ccMetadata`; no `uploadDateTime`.
+- Tests: `MigratedCaseFileAggregateTest` (LIBRA date as `receivedDateTime`; `now()` without),
+  `MaterialEventProcessorTest` (court document material has no `uploadDateTime`), and
+  `ReceiveMigratedCaseFileIT.shouldSendLibraMaterialUploadDateAsCourtDocumentReceivedDateTimeOnAccept`.
+- Stored `material-added` events that carry `uploadDateTime` (environments where the first DD-43946
+  version ran) must be cleared or re-migrated.

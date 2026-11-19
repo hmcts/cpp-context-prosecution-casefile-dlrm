@@ -664,14 +664,12 @@ public class MigratedCaseFileAggregate implements Aggregate {
                 .withFileType(migratedMaterial.getFileType())
                 .withFileCloudLocation(migratedMaterial.getAzureLocation())
                 .build();
+        final ZonedDateTime materialReceivedDateTime = Optional.ofNullable(migratedMaterial.getReceivedDateTime()).orElse(receivedDateTime);
         Object materialEvent = validateMaterialWithDocumentDetails(caseId, prosecutingAuthority, prosecutorDefendantId, material,
-                referenceDataQueryService, receivedDateTime, isCpsCase, sections.get(migratedMaterial.getFileType()).left, defendants,
+                referenceDataQueryService, materialReceivedDateTime, isCpsCase, sections.get(migratedMaterial.getFileType()).left, defendants,
                 documentMetadataReferenceDataList, caseType);
         if (materialEvent instanceof MaterialAdded materialAdded) {
-            return MaterialAdded.materialAdded()
-                    .withValuesFrom(materialAdded)
-                    .withUploadDateTime(migratedMaterial.getReceivedDateTime())
-                    .build();
+            return materialAdded;
         } else {
             throw new NotYetImplementedException("Only happy path implemented now");
         }

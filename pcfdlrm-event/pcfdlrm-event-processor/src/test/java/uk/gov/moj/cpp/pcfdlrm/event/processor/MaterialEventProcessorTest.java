@@ -275,43 +275,17 @@ class MaterialEventProcessorTest {
 
 
     @Test
-    void shouldAddUploadDateTimeToCcMetadataWhenMaterialAddedHasUploadDateTime() {
-        final ZonedDateTime uploadDateTime = ZonedDateTime.parse("2019-03-14T10:22:31.107Z");
-        final Envelope<MaterialAdded> event = createMaterialAddedEventWithReceivedDateTime(null, false, null, randomAlphanumeric(20));
-        final Envelope<MaterialAdded> materialAddedEvent = envelopeFrom(event.metadata(),
-                materialAdded().withValuesFrom(event.payload()).withUploadDateTime(uploadDateTime).build());
-
-        materialEventProcessor.handleMaterialAdded(materialAddedEvent);
-
-        assertThat(captureUploadCcMetadata().getString("uploadDateTime"), is(uploadDateTime.toOffsetDateTime().toString()));
-    }
-
-    @Test
-    void shouldNotAddUploadDateTimeToCcMetadataWhenMaterialAddedHasNoUploadDateTime() {
-        materialEventProcessor.handleMaterialAdded(createMaterialAddedEventWithReceivedDateTime(null, false, null, randomAlphanumeric(20)));
-
-        assertThat(captureUploadCcMetadata().containsKey("uploadDateTime"), is(false));
-    }
-
-    @Test
-    void shouldAddUploadDateTimeToCourtDocumentMaterialWhenCcMetadataHasUploadDateTime() {
-        final String uploadDateTime = "2019-03-14T10:22:31.107Z";
-        final JsonObject ccMetadata = createObjectBuilder(getCCMetadataJsonObjectWithReceivedDateTime(null, now().toString()).getJsonObject("ccMetadata"))
-                .add("uploadDateTime", uploadDateTime)
+    void shouldSendOnlyReceivedDateTimeOnCourtDocumentMaterial() {
+        final String receivedDateTime = "2019-03-14T10:22:31.107Z";
+        final JsonObject ccMetadata = createObjectBuilder(getCCMetadataJsonObjectWithReceivedDateTime(null, receivedDateTime).getJsonObject("ccMetadata"))
+                .add("uploadDateTime", "2019-03-14T10:22:31.107Z")
                 .build();
 
         final JsonEnvelope addCourtDocument = handleMaterialAddedFromMaterialContext(ccMetadata);
 
-        assertThat(addCourtDocument, jsonEnvelope(metadata().withName("pcfdlrm.command.add-case-court-document"), payloadIsJson(withJsonPath("$.courtDocument.materials[0].uploadDateTime", equalTo(uploadDateTime)))));
-    }
-
-    @Test
-    void shouldNotAddUploadDateTimeToCourtDocumentMaterialWhenCcMetadataHasNoUploadDateTime() {
-        final JsonObject ccMetadata = getCCMetadataJsonObjectWithReceivedDateTime(null, now().toString()).getJsonObject("ccMetadata");
-
-        final JsonEnvelope addCourtDocument = handleMaterialAddedFromMaterialContext(ccMetadata);
-
-        assertThat(addCourtDocument, jsonEnvelope(metadata().withName("pcfdlrm.command.add-case-court-document"), payloadIsJson(hasNoJsonPath("$.courtDocument.materials[0].uploadDateTime"))));
+        assertThat(addCourtDocument, jsonEnvelope(metadata().withName("pcfdlrm.command.add-case-court-document"), payloadIsJson(allOf(
+                withJsonPath("$.courtDocument.materials[0].receivedDateTime", equalTo(receivedDateTime)),
+                hasNoJsonPath("$.courtDocument.materials[0].uploadDateTime")))));
     }
 
     private JsonObject captureUploadCcMetadata() {

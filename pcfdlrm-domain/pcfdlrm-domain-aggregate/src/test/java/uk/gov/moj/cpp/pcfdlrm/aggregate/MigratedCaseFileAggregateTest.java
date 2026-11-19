@@ -6,7 +6,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -272,27 +271,23 @@ class MigratedCaseFileAggregateTest {
     }
 
     @Test
-    void shouldSetUploadDateTimeFromMigratedMaterialReceivedDateTime() {
+    void shouldSetReceivedDateTimeFromMigratedMaterialReceivedDateTime() {
         final ZonedDateTime libraUploadDateTime = ZonedDateTime.parse("2019-03-14T10:22:31.107Z");
         final MigratedMaterial migratedMaterial = MigratedMaterial.migratedMaterial()
                 .withValuesFrom(createMigratedMaterials(1, "pdf").get(0))
                 .withReceivedDateTime(libraUploadDateTime)
                 .build();
 
-        final MaterialAdded materialAdded = receiveSingleMaterial(migratedMaterial);
-
-        assertAll(
-                () -> assertThat(materialAdded.getUploadDateTime(), is(libraUploadDateTime)),
-                () -> assertThat(materialAdded.getReceivedDateTime().isAfter(libraUploadDateTime), is(true)));
+        assertThat(receiveSingleMaterial(migratedMaterial).getReceivedDateTime(), is(libraUploadDateTime));
     }
 
     @Test
-    void shouldNotSetUploadDateTimeWhenMigratedMaterialHasNoReceivedDateTime() {
-        final MaterialAdded materialAdded = receiveSingleMaterial(createMigratedMaterials(1, "pdf").get(0));
+    void shouldSetReceivedDateTimeToNowWhenMigratedMaterialHasNoReceivedDateTime() {
+        final ZonedDateTime before = ZonedDateTime.now();
 
-        assertAll(
-                () -> assertThat(materialAdded.getUploadDateTime(), nullValue()),
-                () -> assertThat(materialAdded.getReceivedDateTime(), notNullValue()));
+        final ZonedDateTime receivedDateTime = receiveSingleMaterial(createMigratedMaterials(1, "pdf").get(0)).getReceivedDateTime();
+
+        assertThat(receivedDateTime.isBefore(before), is(false));
     }
 
     private MaterialAdded receiveSingleMaterial(final MigratedMaterial migratedMaterial) {

@@ -35,3 +35,12 @@ across.
 - The transport field is named `receivedDateTime` but carries the source upload date between the two
   services. Each repo's design states this.
 - The repos can merge in either order: each side is a no-op until the other is live.
+
+## Amendment (2026-11-19)
+
+Point 3 changed after testing: CP's "Uploaded" date follows the court document's
+`materials[0].receivedDateTime`, not `uploadDateTime`. pcfdlrm now records the LIBRA upload date as
+`material-added.receivedDateTime` (falling back to the pcfdlrm receive time when no LIBRA date was
+sent) and passes it through the material context to Progression as `materials[0].receivedDateTime`.
+`uploadDateTime` is removed from the `pcfdlrm.events.material-added` schema and is no longer sent.
+`material-added.receivedDateTime` therefore no longer always means "received by pcfdlrm".

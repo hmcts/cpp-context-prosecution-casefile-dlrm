@@ -38,3 +38,11 @@ Confirmed by the developer 2026-11-11.
 - **AC-2:** GIVEN a migrated material with no upload date, WHEN the case is accepted, THEN the court
   document has no `uploadDateTime`, as today.
 - **AC-3:** GIVEN an XHIBIT case, WHEN it is migrated, THEN its materials are handled as today.
+
+## Amendment (2026-11-19)
+
+Q1 and Q5 changed after testing: CP's "Uploaded" date follows `materials[0].receivedDateTime`.
+- FR-1 / FR-2 replaced: `material-added.receivedDateTime` = the migrated material's `receivedDateTime`
+  (LIBRA upload date) when present, else the pcfdlrm receive time. `uploadDateTime` is removed from the
+  event schema.
+- FR-3: the date reaches Progression as `materials[0].receivedDateTime`; `uploadDateTime` is not sent.
