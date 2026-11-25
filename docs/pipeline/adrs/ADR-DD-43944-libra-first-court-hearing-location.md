@@ -1,6 +1,6 @@
 # ADR — Carrying the LIBRA first court hearing location to CP
 
-- **Status:** Accepted (2026-11-13)
+- **Status:** Accepted (2026-11-13); input location revised 2026-11-25
 - **Story:** [DD-43944](https://tools.hmcts.net/jira/browse/DD-43944) / epic [DD-32995](https://tools.hmcts.net/jira/browse/DD-32995)
 - **Repos:** `cpp-context-stagingdlrm`, `cpp-context-prosecution-casefile-dlrm`, `cpp-platform-core-domain`,
   `cpp-context-progression`. This ADR is the single copy; the other stories link here.
@@ -13,15 +13,23 @@ in `migrationSourceSystem` (developer decision). That object comes from `manifes
 at every layer: Function App, stagingdlrm canonical, pcfdlrm, and core `criminal-court-public-model`,
 which Progression validates against.
 
+On 2026-11-25 the business asked for the field to be part of `caseDetails` in the LIBRA extract
+(`case.json`) rather than the manifest. The downstream contract (`migrationSourceSystem` from
+stagingdlrm canonical onwards) is unchanged; only the Function App input changes.
+
 ## Decision
 
-1. **Input:** LIBRA sends `migrationSourceSystem.firstCourtHearingLocation` in `manifest.json`.
+1. **Input:** LIBRA sends `caseDetails.firstCourtHearingLocation` in `case.json` (until 2026-11-25:
+   `migrationSourceSystem.firstCourtHearingLocation` in `manifest.json`, which the manifest schema no
+   longer accepts).
 2. **Core-domain:** `DesignSchemas/global/migrationSourceSystem.json` gains optional
    `firstCourtHearingLocation` on core-domain `team/libra4` (cut from `release/17.104.x`, the line
    consumers' 17.104.4 came from); Progression and pcfdlrm bump to the version it publishes.
 3. **Progression:** on its `team/libra4` (cut from `main`), bumps `coredomain`; no code change (its query schemas `$ref` the core schema).
-4. **stagingdlrm:** Function App and canonical schemas declare it (string, length 7);
-   `MigratedCaseConvertor` copies it to pcfdlrm.
+4. **stagingdlrm:** the Function App's LIBRA case schema declares it on `caseDetails` (string, length 7),
+   and the Function App moves it from `caseDetails` into `migratedCase.migrationSourceSystem` (canonical
+   `caseDetails` is closed). The canonical `migrationSourceSystem` declares it; `MigratedCaseConvertor`
+   copies it to pcfdlrm.
 5. **pcfdlrm:** declares it, bumps `coredomain`, and copies it to `ProsecutionCase.migrationSourceSystem`. The OU code is looked up in reference data; not found → a "Case validation" warning
    (`FIRST_COURT_LOCATION_OUCODE_INVALID`) with the original value (for the reconciliation report), the field is set to null, and the case is accepted.
 6. **Absent field:** today's behaviour everywhere. XHIBIT unchanged.
