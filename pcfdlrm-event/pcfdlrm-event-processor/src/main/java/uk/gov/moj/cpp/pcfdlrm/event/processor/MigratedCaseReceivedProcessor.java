@@ -15,8 +15,8 @@ import uk.gov.moj.cpp.pcfdlrm.event.processor.convertor.MigratedCaseToProsecutio
 import uk.gov.moj.cpp.pcfdlrm.event.processor.counter.PcfMigratedCaseReceivedCounter;
 import uk.gov.moj.cpp.pcfdlrm.event.processor.utils.EnvelopeHelper;
 
-import javax.inject.Inject;
-import javax.json.JsonValue;
+import jakarta.inject.Inject;
+import jakarta.json.JsonValue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -11,7 +11,7 @@ import uk.gov.moj.cpp.pcfdlrm.domain.ProsecutionWithReferenceData;
 
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 public class GroupCasesProsecutorReferenceDataEnricher implements GroupCasesReferenceDataEnricher {
 

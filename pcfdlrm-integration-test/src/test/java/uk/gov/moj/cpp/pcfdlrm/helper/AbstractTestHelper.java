@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import com.google.common.base.Joiner;
 import org.junit.jupiter.api.extension.ExtendWith;

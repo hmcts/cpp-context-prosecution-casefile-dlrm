@@ -146,6 +146,8 @@ final class AggregateScenarios {
         return candidate.toString();
     }
 
+    // DD-43194 / FR7, AC4 — the java.time/tzdata DST pin: the GMT + BST rows pin
+    // MigratedCaseFileAggregate.toDefaultUtcTime's Europe/London → UTC arithmetic.
     static Stream<Arguments> fixedHearingTimeDefaultingScenarios() {
         final List<ExpectedEvent> pastNoWarning = new ArrayList<>(HEARING_DEFENDANT_VALIDATION_NOISE);
         pastNoWarning.add(warning("Hearing validation", "DATE_OF_HEARING_IN_THE_PAST : [2026-03-05]"));

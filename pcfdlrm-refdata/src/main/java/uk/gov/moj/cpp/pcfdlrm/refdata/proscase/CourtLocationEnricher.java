@@ -9,7 +9,7 @@ import uk.gov.moj.cpp.prosecution.casefile.dlrm.json.schemas.OrganisationUnitRef
 import java.util.List;
 import java.util.Optional;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 public class CourtLocationEnricher implements CaseRefDataEnricher {
 

@@ -13,7 +13,7 @@ import uk.gov.moj.cpp.pcfdlrm.event.processor.counter.PcfMigratedCaseSuccessfull
 import uk.gov.moj.cpp.pcfdlrm.event.processor.counter.PcfMigratedCaseFailedCounter;
 import uk.gov.moj.cps.prosecution.casefile.dlrm.domain.event.MigratedCaseFileProcessed;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 @ServiceComponent(EVENT_PROCESSOR)
 public class MigratedCaseFileProcessedProcessor {
