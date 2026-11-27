@@ -4,8 +4,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.findAll;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static com.jayway.jsonpath.matchers.JsonPathMatchers.withJsonPath;
 import static java.util.UUID.randomUUID;
+import static java.util.stream.Collectors.toMap;
 import static uk.gov.justice.services.messaging.JsonObjects.createReader;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -24,6 +26,7 @@ import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_FILE_PRO
 import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_FILE_RECEIVED;
 import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_NOT_FOUND_IN_AUTOMATION;
 import static uk.gov.moj.cpp.pcfdlrm.helper.EventSelector.MIGRATED_CASE_VALIDATED_CREATION_PENDING;
+import static uk.gov.moj.cpp.pcfdlrm.stub.ProgressionStub.ADD_COURT_DOCUMENT_COMMAND;
 import static uk.gov.moj.cpp.pcfdlrm.test.FixtureLoader.fixture;
 import static uk.gov.moj.cpp.pcfdlrm.test.WholePayloadMatcher.matchesWholePayload;
 
@@ -34,6 +37,7 @@ import uk.gov.justice.services.messaging.Metadata;
 
 import java.io.StringReader;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.json.Json;
@@ -290,6 +294,27 @@ public class ReceiveMigratedCaseFileHelper extends AbstractTestHelper {
 
         assertThat(requestBody, containsString(offenceId));
         assertThat(requestBody, not(containsString("custodyTimeLimit")));
+    }
+
+    // Progression's add-court-document takes the materialId as a path parameter; the body is the payload without it.
+    public Map<String, JsonObject> addCourtDocumentRequestsByMaterialIdFor(final String caseId, final int expectedRequests) {
+        await()
+                .atMost(30, TimeUnit.SECONDS)
+                .untilAsserted(() -> assertThat(findAddCourtDocumentRequests(caseId).size(), is(expectedRequests)));
+
+        return findAddCourtDocumentRequests(caseId).stream()
+                .collect(toMap(
+                        loggedRequest -> loggedRequest.getUrl().substring(ADD_COURT_DOCUMENT_COMMAND.length()),
+                        loggedRequest -> {
+                            try (final JsonReader jsonReader = createReader(new StringReader(loggedRequest.getBodyAsString()))) {
+                                return jsonReader.readObject();
+                            }
+                        }));
+    }
+
+    private static List<LoggedRequest> findAddCourtDocumentRequests(final String caseId) {
+        return findAll(postRequestedFor(urlPathMatching(ADD_COURT_DOCUMENT_COMMAND + ".+"))
+                .withRequestBody(containing(caseId)));
     }
 
     public static String getLastLoggedRequest(final String caseUrn) {

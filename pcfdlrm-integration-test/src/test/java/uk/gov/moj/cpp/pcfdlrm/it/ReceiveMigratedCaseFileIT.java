@@ -71,6 +71,15 @@ class ReceiveMigratedCaseFileIT {
             "8", "Case level",
             "99", "Defendant level");
 
+    // documentTypeId of each accepted LIBRA bundle's section in the reference-data stubs.
+    private static final Map<String, String> LIBRA_BUNDLE_DOCUMENT_TYPE_IDS = Map.of(
+            "1", "460f6f7a-c002-11e8-a355-529269fb1662",
+            "2", "540f6f7a-c002-11e9-a355-529269fb1662",
+            "3", "530f6f7a-c002-11e9-a355-529269fb1662",
+            "6", "550f6f7a-c002-11e9-a355-529269fb1662",
+            "8", "530f6f7a-c002-11e9-a355-529269fb1662",
+            "99", "520f6f7a-c002-11e9-a355-529269fb1662");
+
     @BeforeAll
     static void setup() {
         createCommonMockEndpoints();
@@ -230,8 +239,8 @@ class ReceiveMigratedCaseFileIT {
         receiveMigratedCaseFileHelper.verifyCourtProceedingsForCaseCreationHasBeenInitiatedWithAllocationDecision(caseUrn, initiateCourtProceedingsFixture);
     }
 
-    // DD-43463: every accepted LIBRA bundle reaches material-ready-for-court-document on accept at its
-    // reference-data level. Reuses the XHIBIT allocation-decision payload with the source system and
+    // Every accepted LIBRA bundle is matched against reference data and reaches Progression as an
+    // add-court-document on accept, with its reference-data document type and level. Reuses the XHIBIT allocation-decision payload with the source system and
     // materials swapped; upload locations 25-30 are unique across the run.
     @Test
     void shouldSendEveryAcceptedLibraBundleForCourtDocumentOnAccept() {
@@ -250,28 +259,33 @@ class ReceiveMigratedCaseFileIT {
 
         receiveMigratedCaseFileHelper.receiveMigratedCaseFile(withLibraMaterials(staticPayLoad));
 
-        // pcfdlrm sets each material's level from reference data (MaterialAdded.documentCategory).
+        // pcfdlrm sets each material's document type and level from reference data.
         final Map<String, String> materialIdToBundle = new HashMap<>();
         final Map<String, String> bundleToLevel = new HashMap<>();
+        final Map<String, String> bundleToDocumentTypeId = new HashMap<>();
         for (int i = 0; i < LIBRA_BUNDLE_LEVELS.size(); i++) {
             final JsonObject materialAdded = receiveMigratedCaseFileHelper.nextMaterialAdded(addMaterialHelper).payloadAsJsonObject();
             final String bundle = materialAdded.getJsonObject("material").getString("fileType");
             final String level = materialAdded.getString("documentCategory");
+            final String documentTypeId = materialAdded.getString("documentTypeId");
             bundleToLevel.put(bundle, level);
+            bundleToDocumentTypeId.put(bundle, documentTypeId);
 
-            // Material echoes back the category pcfdlrm sent it.
+            // Material echoes back the ccMetadata pcfdlrm sent it.
             final String materialId = randomUUID().toString();
             materialIdToBundle.put(materialId, bundle);
-            sendMaterialAdded(createMaterialAddedPayload(materialId, caseId, defendantId, level));
+            sendMaterialAdded(createMaterialAddedPayload(materialId, caseId, defendantId, level, null, documentTypeId));
         }
         assertThat(bundleToLevel, is(LIBRA_BUNDLE_LEVELS));
+        assertThat(bundleToDocumentTypeId, is(LIBRA_BUNDLE_DOCUMENT_TYPE_IDS));
 
         receiveMigratedCaseFileHelper.verifyMigratedCaseFileReceived(addMaterialHelper, submissionId);
         receiveMigratedCaseFileHelper.triggerAcceptMigratedCase(caseId);
 
+        final Map<String, String> materialsNotYetReady = new HashMap<>(materialIdToBundle);
         for (int i = 0; i < LIBRA_BUNDLE_LEVELS.size(); i++) {
             final JsonObject event = receiveMigratedCaseFileHelper.nextMaterialReadyForCourtDocument(addMaterialHelper).payloadAsJsonObject();
-            final String bundle = materialIdToBundle.remove(event.getString("materialId"));
+            final String bundle = materialsNotYetReady.remove(event.getString("materialId"));
             final JsonObject category = event.getJsonObject("courtDocument").getJsonObject("documentCategory");
 
             if ("Case level".equals(LIBRA_BUNDLE_LEVELS.get(bundle))) {
@@ -282,7 +296,27 @@ class ReceiveMigratedCaseFileIT {
                 assertThat("bundle " + bundle, category.getJsonObject("defendantDocument").getJsonArray("defendants").size(), is(1));
             }
         }
-        assertThat(materialIdToBundle.isEmpty(), is(true));
+        assertThat(materialsNotYetReady.isEmpty(), is(true));
+
+        final Map<String, JsonObject> addCourtDocumentRequests =
+                receiveMigratedCaseFileHelper.addCourtDocumentRequestsByMaterialIdFor(caseId, LIBRA_BUNDLE_LEVELS.size());
+        assertThat(addCourtDocumentRequests.keySet(), is(materialIdToBundle.keySet()));
+        for (final Map.Entry<String, JsonObject> request : addCourtDocumentRequests.entrySet()) {
+            final String materialId = request.getKey();
+            final String bundle = materialIdToBundle.get(materialId);
+            final JsonObject courtDocument = request.getValue().getJsonObject("courtDocument");
+            assertThat("bundle " + bundle, courtDocument.getJsonArray("materials").getJsonObject(0).getString("id"), is(materialId));
+            assertThat("bundle " + bundle, courtDocument.getString("documentTypeId"), is(LIBRA_BUNDLE_DOCUMENT_TYPE_IDS.get(bundle)));
+
+            final JsonObject category = courtDocument.getJsonObject("documentCategory");
+            if ("Case level".equals(LIBRA_BUNDLE_LEVELS.get(bundle))) {
+                assertThat("bundle " + bundle, category.getJsonObject("caseDocument").getString("prosecutionCaseId"), is(caseId));
+                assertThat("bundle " + bundle, category.containsKey("defendantDocument"), is(false));
+            } else {
+                assertThat("bundle " + bundle, category.getJsonObject("defendantDocument").getJsonArray("defendants").getString(0), is(defendantId));
+                assertThat("bundle " + bundle, category.getJsonObject("defendantDocument").getJsonArray("defendants").size(), is(1));
+            }
+        }
 
         receiveMigratedCaseFileHelper.verifyMigratedCaseAccepted(addMaterialHelper, submissionId, caseId, caseUrn);
     }
@@ -528,9 +562,14 @@ class ReceiveMigratedCaseFileIT {
 
     private JsonEnvelope createMaterialAddedPayload(final String materialId, final String caseId, final String defendantId,
                                                     final String documentCategory, final String receivedDateTime) {
+        return createMaterialAddedPayload(materialId, caseId, defendantId, documentCategory, receivedDateTime, randomUUID().toString());
+    }
+
+    private JsonEnvelope createMaterialAddedPayload(final String materialId, final String caseId, final String defendantId,
+                                                    final String documentCategory, final String receivedDateTime, final String documentTypeId) {
 
         final Metadata metadata = JsonEnvelope
-                .metadataFrom(getCCMetadataJsonObject(caseId, defendantId, documentCategory, receivedDateTime))
+                .metadataFrom(getCCMetadataJsonObject(caseId, defendantId, documentCategory, receivedDateTime, documentTypeId))
                 .build();
 
         final JsonObject payload = createObjectBuilder()
@@ -547,13 +586,13 @@ class ReceiveMigratedCaseFileIT {
     }
 
     private static JsonObject getCCMetadataJsonObject(final String caseId, final String defendantId, final String documentCategory,
-                                                      final String receivedDateTime) {
+                                                      final String receivedDateTime, final String documentTypeId) {
         final JsonObjectBuilder ccMetadata = createObjectBuilder()
                 .add("caseId", caseId)
                 .add("defendantId", defendantId)
                 .add("documentCategory", documentCategory)
                 .add("documentTypeDescription", "SJPN")
-                .add("documentTypeId", randomUUID().toString())
+                .add("documentTypeId", documentTypeId)
                 .add("fileCloudLocation", "azure.net")
                 .add("receivedDateTime", receivedDateTime != null ? receivedDateTime : ZonedDateTime.now().toOffsetDateTime().toString())
                 .add("isCpsCase", false);
