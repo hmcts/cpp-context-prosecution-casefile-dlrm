@@ -68,9 +68,10 @@ Azure DevOps (`azure-pipelines.yaml`):
 
 ## Architecture — the three layers you must reason across
 
-For a full source-cited trace of the end-to-end migration flow (stagingdlrm → pcfdlrm →
-progression → listing), the validation rule set, material-upload mechanics, cross-context
-dependencies, and known edge cases, see `docs/architecture/pcfdlrm-flow-reference.md`.
+For a full source-cited trace of the end-to-end migration flow (stagingdlrm → pcfdlrm → progression →
+listing), the validation rule set, material-upload mechanics, cross-context dependencies, and known edge
+cases, see `docs/architecture/pcfdlrm-flow-reference.md`. It predates the Java 25 work, so its version
+pins are the J17 ones — read them as the *before* picture.
 
 Every change touching events needs to be reasoned about across **three layers**. Breaking one without the others produces silent data drift:
 
@@ -170,10 +171,22 @@ local agent/rule/skill overrides are maintained here.
   epic-level artefact directory.
 - **A story belongs to exactly one repo.** Stage 7 (CI) is per-repo, so a change needing work in
   two repos is two stories, one per repo — DD-43099 here and DD-43078 in
-  `cpp-context-stagingdlrm` are the two halves of the same epic-level test hardening. When two
-  such stories share a decision, the ADR lives in **one** repo and the other links to it by URL
-  from its design doc and PR description. It is never copied: the copies drift the moment the
-  decision changes, and nobody can tell which is current.
+  `cpp-context-stagingdlrm` are the two halves of the same epic-level test hardening. The two DLRM repos are worked **independently, by separate
+  developers**, so each repo's pipeline must be self-contained: no stage may need a file that lives
+  only in the other repo.
+- **ADRs are named `<JIRA-KEY>-<slug>.md`, never numbered.** `docs/pipeline/adrs/DD-43191-j25-parity-method.md`.
+  A sequential number has to be allocated by someone at authoring time, which cannot work with stories
+  running in parallel on separate branches: two authors both reach for the next integer and neither sees
+  the other until merge. Every ADR is born from an epic or story that already carries a unique key, so
+  keying to it makes collision impossible, needs no register and no approval round-trip, gives a mirrored
+  ADR the same filename in both repos automatically, and makes `grep DD-43191` find the stories and their
+  ADRs together. An epic with several ADRs distinguishes them by slug, exactly as its story directories
+  do. Pre-existing numbered ADRs keep their names — they are not renumbered retroactively.
+- **Shared ADRs are mirrored, not linked across.** A decision shared with `cpp-context-stagingdlrm` is
+  authored once and committed to **both** repos, under the same filename, carrying a header
+  line that names its mirror. Amend both copies in the same pair of PRs, or neither; sections applying
+  to only one repo say so inline so the two files stay byte-identical. Never reference the other repo by URL for anything a stage needs to read — the other repo may not be
+  checked out, may be ahead, or may not yet carry the file.
 
 ## Java style
 

@@ -26,8 +26,8 @@ import uk.gov.moj.cpp.pcfdlrm.helper.AddMaterialHelper;
 
 import java.time.ZonedDateTime;
 
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

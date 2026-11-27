@@ -8,7 +8,7 @@ import uk.gov.moj.cpp.pcfdlrm.domain.DefendantWithReferenceData;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 public class InitiationTypesRefDataEnricher implements RefDataEnricher<DefendantWithReferenceData> {
 

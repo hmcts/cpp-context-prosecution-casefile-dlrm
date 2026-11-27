@@ -8,7 +8,7 @@ import uk.gov.moj.cpp.pcfdlrm.service.ReferenceDataQueryService;
 
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 public class InitiationTypesRefDataEnricher implements CaseRefDataEnricher {
 
